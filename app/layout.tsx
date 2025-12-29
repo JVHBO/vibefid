@@ -77,6 +77,8 @@ export const metadata: Metadata = {
     images: ["https://vibefid.xyz/screenshot.jpg"],
   },
   other: {
+    // Base.dev App ID (REQUIRED FOR ANALYTICS)
+    "base:app_id": "694b002e4d3a403912ed7d24",
     // Farcaster Mini App Meta Tag (REQUIRED FOR DISCOVERY)
     "fc:miniapp": JSON.stringify({
       "version": "1",

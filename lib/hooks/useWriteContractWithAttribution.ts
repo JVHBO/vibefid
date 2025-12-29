@@ -4,9 +4,7 @@
  * useWriteContractWithAttribution
  *
  * Drop-in replacement for wagmi's useWriteContract that automatically adds
- * Base builder code attribution AND paymaster sponsorship to transactions.
- *
- * Uses ERC-5792 wallet_sendCalls with dataSuffix + paymasterService capabilities.
+ * Base builder code attribution to transactions.
  *
  * Docs: https://docs.base.org/base-chain/quickstart/builder-codes
  */
@@ -15,25 +13,30 @@ import { useWriteContract, useAccount, useSendTransaction } from 'wagmi';
 import { useSendCalls, useCapabilities } from 'wagmi/experimental';
 import { base } from 'viem/chains';
 import { encodeFunctionData, type Abi } from 'viem';
-import { Attribution } from 'ox/erc8021';
 
 // Your unique builder code from base.dev
 export const BUILDER_CODE = 'bc_j3oc0rlv';
 
 // Coinbase Paymaster URL for Base mainnet (gas sponsorship)
-// Get your key from: https://portal.cdp.coinbase.com/
-// Format: https://api.developer.coinbase.com/rpc/v1/base/YOUR_KEY
 const PAYMASTER_URL = process.env.NEXT_PUBLIC_CDP_PAYMASTER_URL || '';
 
-// Generate the dataSuffix for attribution
-export let dataSuffix: `0x${string}`;
-try {
-  dataSuffix = Attribution.toDataSuffix({ codes: [BUILDER_CODE] });
-  console.log('Builder code suffix generated:', { code: BUILDER_CODE, suffix: dataSuffix, length: dataSuffix.length });
-} catch (e) {
-  console.warn('Failed to generate dataSuffix:', e);
-  dataSuffix = '0x';
+/**
+ * Generate ERC-8021 data suffix for builder code attribution
+ * Format: builder_code_hex + 0001 (version) + 8021 (magic)
+ */
+function generateDataSuffix(builderCode: string): `0x${string}` {
+  try {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(builderCode);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `0x${hex}00018021` as `0x${string}`;
+  } catch {
+    return '0x';
+  }
 }
+
+// Generate the dataSuffix for attribution
+export const dataSuffix: `0x${string}` = generateDataSuffix(BUILDER_CODE);
 
 /**
  * Drop-in replacement for useWriteContract with builder code attribution
@@ -66,10 +69,6 @@ export function useWriteContractWithAttribution() {
 
   /**
    * writeContractAsync with automatic builder code attribution
-   * Same signature as wagmi's writeContractAsync
-   *
-   * IMPORTANTE: Farcaster miniapp NÃO suporta dataSuffix capability,
-   * então sempre usamos o método manual (append no calldata)
    */
   const writeContractAsync: typeof writeContractResult.writeContractAsync = async (params: any) => {
     const { address, abi, functionName, args, value, chainId: txChainId } = params;
@@ -80,8 +79,7 @@ export function useWriteContractWithAttribution() {
       return writeContractResult.writeContractAsync(params);
     }
 
-    // SEMPRE usar método manual para garantir builder code attribution
-    // Farcaster miniapp não suporta dataSuffix capability
+    // Use manual method for builder code attribution
     if (dataSuffix !== '0x') {
       try {
         console.log('🏗️ Adding builder code suffix:', BUILDER_CODE);
@@ -105,11 +103,10 @@ export function useWriteContractWithAttribution() {
         return hash;
       } catch (err) {
         console.warn('⚠️ Manual suffix failed:', err);
-        // Continua para fallback
       }
     }
 
-    // Fallback: regular writeContract (sem attribution)
+    // Fallback: regular writeContract
     console.log('📝 Fallback: regular writeContract');
     return writeContractResult.writeContractAsync(params);
   };
