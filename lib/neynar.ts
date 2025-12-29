@@ -56,6 +56,7 @@ export interface NeynarUser {
   verified_addresses: {
     eth_addresses: string[];
   };
+  custody_address: string; // The wallet that holds the FID
   power_badge: boolean;
   experimental: {
     neynar_user_score: number; // 0-1+ score
