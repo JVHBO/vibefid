@@ -222,9 +222,9 @@ export default function FidPage() {
     // Check if user is connected
     if (!farcasterContext.user) {
       // Redirect to main page to connect
-      setError("Redirecting to connect Farcaster wallet...");
+      setError("Opening VibeFID miniapp in Farcaster...");
       setTimeout(() => {
-        window.location.href = '/';
+        window.location.href = 'https://farcaster.xyz/miniapps/aisYLhjuH5_G/vibefid';
       }, 1000);
       return;
     }
