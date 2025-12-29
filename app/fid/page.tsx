@@ -834,7 +834,7 @@ export default function FidPage() {
       }
 
       // Build metadata URL that OpenSea will read
-      const metadataUrl = `https://www.vibefid.xyz/api/metadata/fid/${userData.fid}`;
+      const metadataUrl = `https://vibefid.xyz/api/metadata/fid/${userData.fid}`;
 
       // Get signature from backend
       setError("Verifying FID ownership and getting signature...");
@@ -1147,7 +1147,7 @@ export default function FidPage() {
                 </button>
                 <a
                   href={(() => {
-                    const shareUrl = 'https://www.vibefid.xyz/fid';
+                    const shareUrl = 'https://vibefid.xyz/fid';
                     const castText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}\n${neynarScoreData.rarity} ${t.neynarScoreRarity}\n\n🎴 ${t.neynarScoreCheckMint}`;
                     return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                   })()}

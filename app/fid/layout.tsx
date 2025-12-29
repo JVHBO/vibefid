@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-const baseUrl = 'https://www.vibefid.xyz';
+const baseUrl = 'https://vibefid.xyz';
 const imageUrl = `${baseUrl}/fid/opengraph-image?v=3`; // v=3 for cache busting
 
 export const metadata: Metadata = {
