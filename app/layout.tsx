@@ -40,69 +40,66 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  title: "$VBMS - Meme Card Game",
-  description: "Battle with meme cards in PvE and PvP modes. The most wanted meme card game on Base!",
+  title: "VibeFID - Meme Card Game",
+  description: "Generate and mint your unique Farcaster identity card as an NFT on Base!",
   manifest: "/.well-known/farcaster.json",
   icons: {
     icon: [
-      { url: "/favicon-32x32.png?v=xmas2025", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png?v=xmas2025", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
     ],
-    shortcut: "/favicon-32x32.png?v=xmas2025",
-    apple: "/apple-touch-icon.png?v=xmas2025",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
     other: [
       { rel: "android-chrome-192x192", url: "/android-chrome-192x192.png" },
       { rel: "android-chrome-512x512", url: "/android-chrome-512x512.png" },
     ],
   },
   openGraph: {
-    title: "$VBMS - Meme Card Game",
-    description: "Battle with meme cards in PvE and PvP modes",
-    url: "https://www.vibefid.xyz",
+    title: "VibeFID - Meme Card Game",
+    description: "Generate and mint your unique Farcaster identity card as an NFT on Base",
+    url: "https://vibefid.xyz",
     images: [
       {
-        url: "https://www.vibefid.xyz/screenshot.jpg",
+        url: "https://vibefid.xyz/screenshot.jpg",
         width: 1200,
         height: 800,
-        alt: "$VBMS Game"
+        alt: "VibeFID Game"
       }
     ],
     type: "website",
-    siteName: "$VBMS",
+    siteName: "VibeFID",
   },
   twitter: {
     card: "summary_large_image",
-    title: "$VBMS - Meme Card Game",
-    description: "Battle with meme cards in PvE and PvP modes",
-    images: ["https://www.vibefid.xyz/screenshot.jpg"],
+    title: "VibeFID - Meme Card Game",
+    description: "Generate and mint your unique Farcaster identity card as an NFT on Base",
+    images: ["https://vibefid.xyz/screenshot.jpg"],
   },
   other: {
-    // Base.dev App ID (REQUIRED FOR ANALYTICS)
-    "base:app_id": "6912770b47fdf84bd17202bc",
     // Farcaster Mini App Meta Tag (REQUIRED FOR DISCOVERY)
-    // v=4 cache bust - more cards, removed coquettish/viberuto/baseball
     "fc:miniapp": JSON.stringify({
       "version": "1",
-      "imageUrl": "https://www.vibefid.xyz/opengraph-image?v=4",
+      "imageUrl": "https://vibefid.xyz/opengraph-image",
       "button": {
-        "title": "Play Now",
+        "title": "Mint Your Card",
         "action": {
           "type": "launch_miniapp",
-          "name": "$VBMS",
-          "url": "https://www.vibefid.xyz"
+          "name": "VibeFID",
+          "url": "https://vibefid.xyz"
         }
       }
     }),
     // Backward compatibility with old frame spec
     "fc:frame": JSON.stringify({
       "version": "1",
-      "imageUrl": "https://www.vibefid.xyz/opengraph-image?v=4",
+      "imageUrl": "https://vibefid.xyz/opengraph-image",
       "button": {
-        "title": "Play Now",
+        "title": "Mint Your Card",
         "action": {
           "type": "launch_miniapp",
-          "name": "$VBMS",
-          "url": "https://www.vibefid.xyz"
+          "name": "VibeFID",
+          "url": "https://vibefid.xyz"
         }
       }
     }),
