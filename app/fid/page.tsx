@@ -979,12 +979,19 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             <button
               onClick={async () => {
                 AudioManager.buttonClick();
-                try {
-                  // Open main VBMS miniapp
-                  await sdk.actions.openMiniApp({ url: 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms' });
-                } catch (err) {
-                  // Fallback for non-Farcaster browsers
-                  window.open('https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms', '_blank');
+                const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms';
+
+                // Check if we're in Farcaster miniapp context
+                if (farcasterContext.isInMiniapp) {
+                  try {
+                    await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });
+                  } catch (err) {
+                    console.error('Failed to open miniapp:', err);
+                    window.open(VBMS_MINIAPP_URL, '_blank');
+                  }
+                } else {
+                  // Not in Farcaster - open in new tab
+                  window.open(VBMS_MINIAPP_URL, '_blank');
                 }
               }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
