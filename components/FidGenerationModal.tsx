@@ -385,31 +385,15 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                   </div>
 
                   <div className="flex gap-2 sm:gap-3 w-full">
-                    {onShare && (
-                      <button
-                        onClick={() => {
-                          AudioManager.buttonClick();
-                          setShowShareLangModal(true);
-                        }}
-                        className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
-                      >
-                        📤 Download
-                      </button>
-                    )}
-
                     <button
                       onClick={() => {
                         AudioManager.buttonClick();
-                        if (onShare) {
-                          setShowFarcasterShareModal(true);
-                        } else {
-                          handleShareFarcasterSimple();
-                        }
+                        setShowShareLangModal(true);
                       }}
                       disabled={isGeneratingShare}
                       className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors text-xs sm:text-sm disabled:opacity-50"
                     >
-                      {isGeneratingShare ? '⏳...' : '🎭 Share'}
+                      {isGeneratingShare ? '⏳ Generating...' : '🔮 Share to Farcaster'}
                     </button>
                   </div>
 
@@ -432,7 +416,7 @@ ${emoji} ${generatedTraits.rarity}${foilText}
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
             <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 sm:p-6 max-w-sm w-full">
               <h2 className="text-lg sm:text-xl font-bold text-vintage-gold mb-3 text-center">
-                📤 {t.download || 'Download'}
+                🔮 {t.shareToFarcaster || 'Share to Farcaster'}
               </h2>
 
               <p className="text-vintage-ice text-xs sm:text-sm mb-4 text-center">
@@ -457,7 +441,7 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                     onClick={() => {
                       AudioManager.buttonClick();
                       setShowShareLangModal(false);
-                      onShare(langOption.code as any);
+                      handleShareFarcasterWithLang(langOption.code as any);
                     }}
                     className="p-2 sm:p-3 rounded-lg border-2 transition-all hover:border-vintage-gold hover:bg-vintage-gold/10 border-vintage-gold/30 bg-vintage-black/50"
                   >
