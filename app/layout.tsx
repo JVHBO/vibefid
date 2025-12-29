@@ -40,7 +40,7 @@ const rajdhani = Rajdhani({
 });
 
 export const metadata: Metadata = {
-  title: "VibeFID - Meme Card Game",
+  title: "VibeFID - Farcaster Identity Cards",
   description: "Generate and mint your unique Farcaster identity card as an NFT on Base!",
   manifest: "/.well-known/farcaster.json",
   icons: {
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "VibeFID - Meme Card Game",
+    title: "VibeFID - Farcaster Identity Cards",
     description: "Generate and mint your unique Farcaster identity card as an NFT on Base",
     url: "https://vibefid.xyz",
     images: [
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VibeFID - Meme Card Game",
+    title: "VibeFID - Farcaster Identity Cards",
     description: "Generate and mint your unique Farcaster identity card as an NFT on Base",
     images: ["https://vibefid.xyz/screenshot.jpg"],
   },
