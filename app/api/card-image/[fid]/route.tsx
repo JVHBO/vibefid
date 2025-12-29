@@ -132,10 +132,10 @@ export async function GET(
             fontFamily: 'monospace',
           }}
         >
-          <div style={{ fontSize: '48px', fontWeight: 900, marginBottom: '20px' }}>
+          <div style={{ fontSize: '48px', fontWeight: 900, marginBottom: '20px', display: 'flex' }}>
             VibeFID
           </div>
-          <div style={{ fontSize: '24px', opacity: 0.7 }}>
+          <div style={{ fontSize: '24px', opacity: 0.7, display: 'flex' }}>
             FID: {fid}
           </div>
         </div>
