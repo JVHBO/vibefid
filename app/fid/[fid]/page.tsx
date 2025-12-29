@@ -154,7 +154,7 @@ export default function FidCardPage() {
       const castText = `🃏 Just minted my VibeFID!\n\n${rarityEmoji} ${card.rarity}${foilText}\n⚡ ${correctPower} Power ${foilEmoji}\n🎯 FID #${card.fid}\n\n🎲 Play Poker Battles\n🗡️ Fight in PvE\n💰 Earn coins\n\n🎮 Mint yours! @jvhbo`;
 
       // Share page URL for miniapp button
-      const shareUrl = `https://www.vibefid.xyz/share/fid/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
+      const shareUrl = `https://vibefid.xyz/share/fid/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
 
       // Open Warpcast compose with share page (has miniapp button + OG image from Filebase)
       window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`, '_blank');
@@ -831,7 +831,7 @@ export default function FidCardPage() {
                   </button>
                   <a
                     href={(() => {
-                      const shareUrl = 'https://www.vibefid.xyz/fid';
+                      const shareUrl = 'https://vibefid.xyz/fid';
                       const castText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}\n${neynarScoreData.rarity} ${t.neynarScoreRarity}\n\n🎴 ${t.neynarScoreCheckMint}`;
                       return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                     })()}
@@ -945,7 +945,7 @@ export default function FidCardPage() {
                     <div className="flex gap-2 sm:gap-3">
                       <a
                         href={(() => {
-                          const shareUrl = `https://www.vibefid.xyz/fid/${fid}`;
+                          const shareUrl = `https://vibefid.xyz/fid/${fid}`;
                           const castText = `⚡ My VibeFID just EVOLVED!\n\n🃏 ${evolutionData.oldRarity} → ${evolutionData.newRarity}\n💪 Power: ${evolutionData.oldPower} → ${evolutionData.newPower}\n💰 Bounty: $${evolutionData.newBounty.toLocaleString()}\n\n🎴 @jvhbo`;
                           return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                         })()}
