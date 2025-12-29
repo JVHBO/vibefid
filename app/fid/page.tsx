@@ -976,14 +976,22 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
           {/* Action Buttons */}
           <div className="flex gap-2">
-            <Link
-              href="/"
-              onClick={() => AudioManager.buttonClick()}
+            <button
+              onClick={async () => {
+                AudioManager.buttonClick();
+                try {
+                  // Open main VBMS miniapp
+                  await sdk.actions.openMiniApp({ url: 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms' });
+                } catch (err) {
+                  // Fallback for non-Farcaster browsers
+                  window.open('https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms', '_blank');
+                }
+              }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
             >
               <span>←</span>
               <span>{t.home}</span>
-            </Link>
+            </button>
             <button
               onClick={() => {
                 AudioManager.buttonClick();
