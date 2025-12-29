@@ -72,20 +72,25 @@ export async function POST(request: NextRequest) {
 
     // 2. Verify ownership: check if connected address owns the FID
     const normalizedAddress = address.toLowerCase();
-    const verifiedAddresses = user.verified_addresses.eth_addresses.map((a: string) => a.toLowerCase());
+    const verifiedAddresses = user.verified_addresses?.eth_addresses?.map((a: string) => a.toLowerCase()) || [];
+    const custodyAddress = user.custody_address?.toLowerCase();
 
-    // SECURITY: Verify the connected wallet owns this FID
-    if (!verifiedAddresses.includes(normalizedAddress)) {
+    // SECURITY: Verify the connected wallet owns this FID (either verified address or custody address)
+    const isOwner = verifiedAddresses.includes(normalizedAddress) || custodyAddress === normalizedAddress;
+
+    if (!isOwner) {
       console.error('❌ FID ownership verification failed:', {
         fid,
         claimedAddress: address,
-        fidOwners: user.verified_addresses.eth_addresses,
+        verifiedAddresses: user.verified_addresses?.eth_addresses || [],
+        custodyAddress: user.custody_address,
       });
       return NextResponse.json({
         error: 'You do not own this FID. Connect with a wallet that is verified on your Farcaster account.',
         fid,
         yourAddress: address,
-        fidOwners: user.verified_addresses.eth_addresses,
+        verifiedAddresses: user.verified_addresses?.eth_addresses || [],
+        custodyAddress: user.custody_address,
       }, { status: 403 });
     }
 
