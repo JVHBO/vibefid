@@ -23,7 +23,7 @@ import { fidTranslations } from "@/lib/fidTranslations";
 import type { SupportedLanguage } from "@/lib/translations";
 import FidGenerationModal from "@/components/FidGenerationModal";
 import FidAboutTraitsModal from "@/components/FidAboutTraitsModal";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AudioManager } from "@/lib/audio-manager";
 import { sdk } from "@farcaster/miniapp-sdk";
@@ -47,6 +47,7 @@ export default function FidPage() {
   const { isMusicEnabled, setIsMusicEnabled } = useMusic();
   const t = fidTranslations[lang];
   const router = useRouter();
+const searchParams = useSearchParams();  const testFid = searchParams.get("testFid");  const isTestMode = !!testFid;
 
   // Auto-connect wallet in Farcaster miniapp
   useEffect(() => {
@@ -219,8 +220,8 @@ export default function FidPage() {
     // Play button click sound
     AudioManager.buttonClick();
 
-    // Check if user is connected
-    if (!farcasterContext.user) {
+    // Check if user is connected (skip in test mode)
+    if (!farcasterContext.user && !isTestMode) {
       // Redirect to main page to connect
       setError("Opening VibeFID miniapp in Farcaster...");
       setTimeout(() => {
@@ -241,8 +242,8 @@ export default function FidPage() {
       return;
     }
 
-    // Use logged-in user's FID
-    const fid = farcasterContext.user.fid;
+    // Use logged-in user's FID or test FID
+    const fid = isTestMode ? parseInt(testFid!) : farcasterContext.user!.fid;
 
     setLoading(true);
     setError(null);
@@ -368,13 +369,13 @@ export default function FidPage() {
     // Play button click sound
     AudioManager.buttonClick();
 
-    // Check if user is connected
-    if (!farcasterContext.user) {
+    // Check if user is connected (skip in test mode)
+    if (!farcasterContext.user && !isTestMode) {
       setError("Please connect your Farcaster account first");
       return;
     }
 
-    const fid = farcasterContext.user.fid;
+    const fid = isTestMode ? parseInt(testFid!) : farcasterContext.user!.fid;
 
     setLoading(true);
     setError(null);

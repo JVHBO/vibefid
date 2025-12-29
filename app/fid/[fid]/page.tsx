@@ -591,18 +591,20 @@ export default function FidCardPage() {
               {/* Action Buttons */}
               <div className="mt-6 w-full max-w-md space-y-3">
                 <div className="flex gap-4">
-                  {/* Share with Language Selection */}
-                  <button
-                    onClick={() => {
-                      AudioManager.buttonClick();
-                      setShowShareModal(true);
-                    }}
-                    className="flex-1 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span className="text-xl">🔮</span>
-                    <span className="hidden sm:inline">Share to Farcaster</span>
-                    <span className="sm:hidden">Share</span>
-                  </button>
+                  {/* Share with Language Selection - Only for card owner */}
+                  {isOwnCard && (
+                    <button
+                      onClick={() => {
+                        AudioManager.buttonClick();
+                        setShowShareModal(true);
+                      }}
+                      className="flex-1 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span className="text-xl">🔮</span>
+                      <span className="hidden sm:inline">Share to Farcaster</span>
+                      <span className="sm:hidden">Share</span>
+                    </button>
+                  )}
 
                   {/* View on OpenSea */}
                   <a
