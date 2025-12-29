@@ -1,18 +1,45 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjI4MjcyNSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGNFRDc5RjdBN2Q2QjZmMUMxQ0M1NzE2NTNmODU4MDBENjJBMjc2N2YifQ",
+    "header": "eyJmaWQiOjIxNDc0NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweEJCMWY4ZGI2NzExQTEyNzE3NTBFNTlhNTJDMEUzNjA2ZDY2RURhMjEifQ",
     "payload": "eyJkb21haW4iOiJ2aWJlZmlkLnh5eiJ9",
-    "signature": "NEEDS_NEW_SIGNATURE"
+    "signature": "3s+FuJgc8l1Oh8u4Mbcc6nyr8efj+vvUP4WRKNBYgwtCZYJYsGOvVOoTPOlZeiE/r0fntljfhlYnWnO6QnMtTxw="
   },
-  "frame": {
+  "miniapp": {
     "version": "1",
     "name": "VibeFID",
     "iconUrl": "https://vibefid.xyz/images/vibefid-icon.png",
     "homeUrl": "https://vibefid.xyz",
     "imageUrl": "https://vibefid.xyz/images/og-vibefid.png",
+    "aspectRatio": "3:2",
     "buttonTitle": "Mint Your Card",
     "splashImageUrl": "https://vibefid.xyz/images/splash.png",
     "splashBackgroundColor": "#1a1a1a",
-    "webhookUrl": "https://vibefid.xyz/api/farcaster/webhook"
+    "webhookUrl": "https://api.neynar.com/f/app/e4b053fc-a6bd-4975-a6bc-a3174e617d19/event",
+    "castShareUrl": "https://vibefid.xyz",
+    "subtitle": "Farcaster Identity Cards",
+    "description": "Generate and mint your unique Farcaster identity card as an NFT on Base. Your FID, your card, your legacy!",
+    "screenshotUrls": [
+      "https://vibefid.xyz/images/og-vibefid.png"
+    ],
+    "primaryCategory": "social",
+    "tags": [
+      "farcaster",
+      "nft",
+      "identity",
+      "cards",
+      "base"
+    ],
+    "heroImageUrl": "https://vibefid.xyz/images/og-vibefid.png",
+    "tagline": "Your FID, Your Card",
+    "ogTitle": "VibeFID - Farcaster Identity Cards",
+    "ogDescription": "Generate and mint your unique Farcaster identity card as an NFT on Base!",
+    "ogImageUrl": "https://vibefid.xyz/images/og-vibefid.png",
+    "requiredCapabilities": [
+      "wallet.getEthereumProvider"
+    ],
+    "noindex": false
+  },
+  "baseBuilder": {
+    "ownerAddress": "0x89b0E4670c44246CC9c2d86D04c34D91064311Ed"
   }
 }
