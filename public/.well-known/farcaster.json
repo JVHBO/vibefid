@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjI4MjcyNSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGNFRDc5RjdBN2Q2QjZmMUMxQ0M1NzE2NTNmODU4MDBENjJBMjc2N2YifQ",
+    "payload": "eyJkb21haW4iOiJ2aWJlZmlkLnh5eiJ9",
+    "signature": "NEEDS_NEW_SIGNATURE"
+  },
+  "frame": {
+    "version": "1",
+    "name": "VibeFID",
+    "iconUrl": "https://vibefid.xyz/images/vibefid-icon.png",
+    "homeUrl": "https://vibefid.xyz",
+    "imageUrl": "https://vibefid.xyz/images/og-vibefid.png",
+    "buttonTitle": "Mint Your Card",
+    "splashImageUrl": "https://vibefid.xyz/images/splash.png",
+    "splashBackgroundColor": "#1a1a1a",
+    "webhookUrl": "https://vibefid.xyz/api/farcaster/webhook"
+  }
+}
