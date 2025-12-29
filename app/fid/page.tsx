@@ -967,10 +967,10 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       <div className="max-w-4xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 relative">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-vintage-gold mb-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-vintage-gold mb-2 drop-shadow-[0_0_25px_rgba(255,215,0,0.5)]">
             {t.fidPageTitle}
           </h1>
-          <p className="text-sm sm:text-base text-vintage-ice mb-3">
+          <p className="text-sm sm:text-base text-vintage-ice/80 mb-4 tracking-wide uppercase">
             {t.fidPageDesc}
           </p>
 
