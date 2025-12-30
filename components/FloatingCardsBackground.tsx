@@ -16,7 +16,7 @@ export function FloatingCardsBackground() {
   const [floatingCards, setFloatingCards] = useState<FloatingCard[]>([]);
 
   const recentCards = useQuery(api.farcasterCards.searchFarcasterCards, {
-    limit: 8,
+    limit: 5,
     offset: 0,
   });
 
@@ -25,7 +25,7 @@ export function FloatingCardsBackground() {
       // Função para gerar número aleatório em range
       const random = (min: number, max: number) => Math.random() * (max - min) + min;
 
-      const numCards = Math.min(8, recentCards.cards.length);
+      const numCards = Math.min(5, recentCards.cards.length);
 
       // Dividir a tela horizontalmente em seções (uma por carta)
       const sectionWidth = 100 / numCards;
@@ -38,13 +38,13 @@ export function FloatingCardsBackground() {
 
         // Delay escalonado para não começarem todas juntas
         // Delays mais curtos para aparecer mais rápido
-        const delay = random(0, 1) + (index * 5) + random(0, 2);
+        const delay = index === 0 ? 0 : (index * 3) + random(0, 1);
 
         return {
           id: card._id || `card-${index}`,
           imageUrl: card.cardImageUrl || card.pfpUrl,
           x,
-          duration: random(40, 60),
+          duration: random(25, 35),
           delay, // Delay em segundos
         };
       });
