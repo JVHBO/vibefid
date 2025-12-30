@@ -1177,14 +1177,15 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                     // Calculate score diff from mint
                     const scoreDiff = myCard && myCard.neynarScore ? neynarScoreData.score - myCard.neynarScore : 0;
                     const diffSign = scoreDiff >= 0 ? '+' : '';
-                    // Check if rarity changed
-                    const rarityChanged = myCard && myCard.rarity !== neynarScoreData.rarity;
+                    // Check if rarity changed from ORIGINAL mint rarity (stored in scoreHistory)
+                    const mintRarity = scoreHistory?.firstCheck?.rarity || myCard?.rarity;
+                    const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
                     // Format: "0.950 +0.1000 since mint\nCard leveled up! Epic → Legendary"
                     const scoreLine = myCard && myCard.neynarScore
                       ? `${neynarScoreData.score.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${t.sinceMint || 'since mint'}`
                       : `${neynarScoreData.score.toFixed(3)}`;
                     const rarityLine = rarityChanged
-                      ? `${t.cardLeveledUp || 'Card leveled up!'} ${myCard.rarity} → ${neynarScoreData.rarity}`
+                      ? `${t.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${neynarScoreData.rarity}`
                       : neynarScoreData.rarity;
                     const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
                     return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
