@@ -426,7 +426,7 @@ export default function FidCardPage() {
       try {
         if (typeof window !== 'undefined') {
           await sdk.actions.ready();
-          console.log('✅ Farcaster SDK ready called');
+          console.log('Farcaster SDK ready called');
         }
       } catch (error) {
         console.error('Error calling Farcaster SDK ready:', error);
@@ -527,7 +527,7 @@ export default function FidCardPage() {
                     href={`https://farcaster.xyz/${card.username}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-vintage-gold font-bold text-sm leading-tight hover:text-vintage-burnt-gold"
+                    className="text-vintage-gold font-bold text-xs leading-tight hover:text-vintage-burnt-gold"
                   >
                     @{card.username}
                   </a>
@@ -560,9 +560,9 @@ export default function FidCardPage() {
       </div>
 
       {/* Main Content - Fixed viewport */}
-      <div className="fixed inset-0 overflow-y-auto z-10" style={{ top: '56px', bottom: '64px' }}>
+      <div className="fixed inset-0 flex flex-col items-center justify-center z-10" style={{ top: '56px', bottom: '64px' }}>
         {card && (
-          <div className="flex flex-col items-center gap-3 px-4 py-4 w-full max-w-sm mx-auto">
+          <div className="flex flex-col items-center gap-2 px-4 w-full max-w-xs">
             {/* Card with Refresh Button */}
             <div className="relative w-full">
               {/* Refresh Metadata Button - Top Right Corner */}
@@ -577,11 +577,11 @@ export default function FidCardPage() {
                 title="Refresh OpenSea Metadata"
               >
                 {isRefreshingMetadata ? (
-                  <span className="animate-spin text-sm">⟳</span>
+                  <span className="animate-spin text-xs">⟳</span>
                 ) : metadataRefreshed ? (
-                  <span className="text-sm">✓</span>
+                  <span className="text-xs">✓</span>
                 ) : (
-                  <span className="text-sm">⟳</span>
+                  <span className="text-xs">⟳</span>
                 )}
               </button>
 
@@ -600,7 +600,7 @@ export default function FidCardPage() {
 
             {/* Compact Stats Row */}
             <div className="w-full bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
                   <span className={`font-bold text-lg ${card.color === 'red' ? 'text-red-500' : 'text-white'}`}>
                     {card.rank}{card.suitSymbol}
@@ -632,16 +632,16 @@ export default function FidCardPage() {
                     AudioManager.buttonClick();
                     setShowShareModal(true);
                   }}
-                  className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-sm"
+                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-xs"
                 >
-                  🔮 Share
+                  Share
                 </button>
               )}
               <a
                 href={`https://opensea.io/assets/base/${card.contractAddress || '0x60274A138d026E3cB337B40567100FdEC3127565'}/${card.fid}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 px-4 py-3 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-sm text-center"
+                className="flex-1 px-3 py-2 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-xs text-center"
               >
                 OpenSea
               </a>
@@ -651,18 +651,18 @@ export default function FidCardPage() {
                     AudioManager.buttonClick();
                     setShowBackstoryModal(true);
                   }}
-                  className="flex-1 px-4 py-3 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
+                  className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs"
                 >
-                  📜
+                  Lore
                 </button>
               )}
               {isOwnCard && farcasterContext.user && (
                 <button
                   onClick={handleCheckNeynarScore}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs disabled:opacity-50"
                 >
-                  {loading ? '...' : '📊'}
+                  {loading ? '...' : 'Score'}
                 </button>
               )}
             </div>
@@ -671,14 +671,14 @@ export default function FidCardPage() {
             {viewerFid > 0 && viewerFid !== fid && (
               <div className="w-full bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-500/50 p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-purple-300 text-sm">🗳️ {totalVotes} votes</span>
+                  <span className="text-purple-300 text-xs">{totalVotes} votes</span>
                   {hasVoted ? (
-                    <span className="text-green-400 text-sm">✅ Voted</span>
+                    <span className="text-green-400 text-xs">Voted</span>
                   ) : freeVotesRemaining > 0 ? (
                     <button
                       onClick={() => { AudioManager.buttonClick(); voteFree(); }}
                       disabled={isVoting}
-                      className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg disabled:opacity-50"
+                      className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg disabled:opacity-50"
                     >
                       Vote Free
                     </button>
@@ -686,7 +686,7 @@ export default function FidCardPage() {
                     <button
                       onClick={() => { AudioManager.buttonClick(); votePaid(); }}
                       disabled={isVoting}
-                      className="px-3 py-1 bg-yellow-500 text-black text-sm rounded-lg disabled:opacity-50"
+                      className="px-3 py-1 bg-yellow-500 text-black text-xs rounded-lg disabled:opacity-50"
                     >
                       100 coins
                     </button>
@@ -741,16 +741,16 @@ export default function FidCardPage() {
 
               <div className="bg-vintage-black/50 rounded-lg border border-vintage-gold/30 p-6 mb-6">
                 <div className="text-center mb-4">
-                  <p className="text-vintage-burnt-gold text-sm mb-2">@{neynarScoreData.username} (FID #{neynarScoreData.fid})</p>
+                  <p className="text-vintage-burnt-gold text-xs mb-2">@{neynarScoreData.username} (FID #{neynarScoreData.fid})</p>
                   <div className="text-5xl font-bold text-vintage-gold mb-2">
                     {neynarScoreData.score.toFixed(3)}
                   </div>
-                  <p className="text-vintage-ice text-sm font-bold">{t.currentScore} ⚡</p>
+                  <p className="text-vintage-ice text-xs font-bold">{t.currentScore} ⚡</p>
                   <p className="text-vintage-ice/60 text-xs mt-1">(Real-time from Neynar API)</p>
                 </div>
 
                 <div className="border-t border-vintage-gold/20 pt-4">
-                  <p className="text-vintage-burnt-gold text-sm mb-2 text-center">{t.rarity}</p>
+                  <p className="text-vintage-burnt-gold text-xs mb-2 text-center">{t.rarity}</p>
                   <p className="text-vintage-ice text-xl font-bold text-center">{neynarScoreData.rarity}</p>
                 </div>
 
@@ -759,7 +759,7 @@ export default function FidCardPage() {
                   <div className="border-t border-vintage-gold/20 pt-4 mt-4">
                     <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg p-4 text-center">
                       <p className="text-yellow-400 font-bold text-lg mb-1">⬆️ UPGRADE AVAILABLE!</p>
-                      <p className="text-vintage-ice text-sm">
+                      <p className="text-vintage-ice text-xs">
                         Your score improved! Upgrade from <span className="text-vintage-burnt-gold font-bold">{card.rarity}</span> to{' '}
                         <span className="text-yellow-400 font-bold">{neynarScoreData.rarity}</span>
                       </p>
@@ -786,7 +786,7 @@ export default function FidCardPage() {
                       AudioManager.buttonClick();
                       setShowScoreModal(false);
                     }}
-                    className="flex-1 px-4 py-3 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors"
+                    className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors"
                   >
                     {t.back}
                   </button>
@@ -799,7 +799,7 @@ export default function FidCardPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => AudioManager.buttonClick()}
-                    className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center"
+                    className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center"
                   >
                     {t.shareToFarcaster}
                   </a>
@@ -871,7 +871,7 @@ export default function FidCardPage() {
                   <div className="space-y-2">
                     <p className="text-lg sm:text-2xl font-bold text-cyan-400 animate-pulse">🎬 Regenerating...</p>
                     {regenerationStatus && (
-                      <p className="text-vintage-ice text-xs sm:text-sm">{regenerationStatus}</p>
+                      <p className="text-vintage-ice text-xs sm:text-xs">{regenerationStatus}</p>
                     )}
                   </div>
                 )}
@@ -883,21 +883,21 @@ export default function FidCardPage() {
                       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                         <div className="text-center">
                           <p className="text-vintage-burnt-gold text-[10px] sm:text-xs">Before</p>
-                          <p className="text-vintage-ice text-sm sm:text-lg font-bold">{evolutionData.oldRarity}</p>
-                          <p className="text-vintage-ice/60 text-xs sm:text-sm">⚡ {evolutionData.oldPower}</p>
+                          <p className="text-vintage-ice text-xs sm:text-lg font-bold">{evolutionData.oldRarity}</p>
+                          <p className="text-vintage-ice/60 text-xs sm:text-xs">⚡ {evolutionData.oldPower}</p>
                         </div>
                         <div className="text-xl sm:text-3xl">→</div>
                         <div className="text-center">
                           <p className="text-yellow-400 text-[10px] sm:text-xs">After</p>
                           <p className="text-yellow-400 text-base sm:text-xl font-bold">{evolutionData.newRarity}</p>
-                          <p className="text-yellow-400 text-xs sm:text-sm">⚡ {evolutionData.newPower}</p>
+                          <p className="text-yellow-400 text-xs sm:text-xs">⚡ {evolutionData.newPower}</p>
                           <p className="text-green-400 text-[10px] sm:text-xs mt-1">💰 ${evolutionData.newBounty.toLocaleString()}</p>
                         </div>
                       </div>
 
                       <div className="text-center border-t border-vintage-gold/20 pt-2 sm:pt-4">
                         <p className="text-vintage-burnt-gold text-[10px] sm:text-xs">Neynar Score</p>
-                        <p className="text-vintage-gold font-bold text-sm sm:text-base">
+                        <p className="text-vintage-gold font-bold text-xs sm:text-base">
                           {evolutionData.oldScore.toFixed(3)} → {evolutionData.newScore.toFixed(3)}
                         </p>
                       </div>
@@ -913,7 +913,7 @@ export default function FidCardPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => AudioManager.buttonClick()}
-                        className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm sm:text-base"
+                        className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-xs sm:text-base"
                       >
                         📢 Share
                       </a>
@@ -925,7 +925,7 @@ export default function FidCardPage() {
                           setEvolutionData(null);
                           setNeynarScoreData(null);
                         }}
-                        className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-sm sm:text-base"
+                        className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-xs sm:text-base"
                       >
                         ✓ Close
                       </button>
@@ -945,7 +945,7 @@ export default function FidCardPage() {
                 📤 {t.shareToFarcaster || 'Share to Farcaster'}
               </h2>
 
-              <p className="text-vintage-ice text-sm mb-4 text-center">
+              <p className="text-vintage-ice text-xs mb-4 text-center">
                 {t.selectLanguageForShare || 'Select language for share image:'}
               </p>
 
@@ -995,7 +995,7 @@ export default function FidCardPage() {
                   setShowShareModal(false);
                 }}
                 disabled={isGeneratingShare}
-                className="w-full px-4 py-3 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors disabled:opacity-50"
+                className="w-full px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors disabled:opacity-50"
               >
                 {t.cancel || 'Cancel'}
               </button>
@@ -1009,7 +1009,7 @@ export default function FidCardPage() {
             <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 max-w-md w-full max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-vintage-gold">
-                  📜 Criminal Record
+                  Lore Criminal Record
                 </h2>
                 <button
                   onClick={() => {
