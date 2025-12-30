@@ -1586,14 +1586,14 @@ export default defineSchema({
   // 🎁 VIBE REWARDS SYSTEM
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  // Vibe Rewards - VBMS earned from votes
+  // 🎁 Vibe Rewards - VBMS rewards from votes
   vibeRewards: defineTable({
-    fid: v.number(),
-    pendingVbms: v.number(),
-    claimedVbms: v.number(),
-    totalVotes: v.number(),
-    lastVoteAt: v.number(),
-    lastClaimAt: v.union(v.number(), v.null()),
+    fid: v.number(), // Card owner FID
+    pendingVbms: v.number(), // Unclaimed VBMS
+    claimedVbms: v.number(), // Already claimed VBMS
+    totalVotes: v.number(), // Total votes received
+    lastVoteAt: v.number(), // Last vote timestamp
+    lastClaimAt: v.optional(v.number()), // Last claim timestamp
   })
     .index("by_fid", ["fid"]),
 });
