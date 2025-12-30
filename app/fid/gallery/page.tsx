@@ -131,32 +131,15 @@ export default function GalleryPage() {
                 {/* Card Image */}
                 <div className="aspect-[3/4] relative">
                   <img
-                    src={card.cardImageUrl || card.pfpUrl}
+                    src={card.cardImageUrl}
                     alt={card.username}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      if (card.cardImageUrl) {
-                        (e.target as HTMLImageElement).src = card.pfpUrl;
-                      }
-                    }}
                   />
 
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-gradient-to-t from-vintage-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
                     <span className="text-vintage-gold text-sm font-bold">
                       {t.viewCard} →
-                    </span>
-                  </div>
-
-                  {/* Card rank */}
-                  <div className="absolute top-2 left-2 bg-vintage-black/70 rounded px-2 py-1">
-                    <span
-                      className={`text-lg font-bold ${
-                        card.color === "red" ? "text-red-500" : "text-gray-300"
-                      }`}
-                    >
-                      {card.rank}
-                      {card.suitSymbol}
                     </span>
                   </div>
 

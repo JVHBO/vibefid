@@ -455,7 +455,6 @@ export const deleteOrphanCardById = internalMutation({
       deleted: {
         fid: card.fid,
         username: card.username,
-        rank: card.rank,
         suit: card.suitSymbol,
       },
     };
@@ -662,10 +661,6 @@ export const getCardImagesOnly = query({
     return cards.map(card => ({
       _id: card._id,
       cardImageUrl: card.cardImageUrl,
-      pfpUrl: card.pfpUrl,
-        rank: card.rank,
-        suitSymbol: card.suitSymbol,
-        color: card.color,
     }));
   },
 });
@@ -741,10 +736,6 @@ export const getCardsForGallery = query({
         fid: card.fid,
         username: card.username,
         cardImageUrl: card.cardImageUrl,
-        pfpUrl: card.pfpUrl,
-        rank: card.rank,
-        suitSymbol: card.suitSymbol,
-        color: card.color,
       })),
       totalCount,
       hasMore,
