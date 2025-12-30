@@ -34,7 +34,7 @@ import { FloatingCardsBackground } from "@/components/FloatingCardsBackground";
 
 
 // Helper to calculate rarity from score for display
-const getRarityFromScore = (score) => {
+const getRarityFromScore = (score: number) => {
   if (score >= 0.99) return 'Mythic';
   if (score >= 0.90) return 'Legendary';
   if (score >= 0.79) return 'Epic';

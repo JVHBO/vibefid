@@ -8,6 +8,19 @@ import { AudioManager } from "@/lib/audio-manager";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fidTranslations } from "@/lib/fidTranslations";
 
+interface MostWantedCard {
+  _id: string;
+  fid: number;
+  username: string;
+  displayName: string;
+  pfpUrl: string;
+  cardImageUrl?: string;
+  rarity: string;
+  mintScore: number;
+  currentScore: number;
+  scoreDiff: number;
+}
+
 const ITEMS_PER_PAGE = 50;
 
 export default function MostWantedPage() {
@@ -28,11 +41,11 @@ export default function MostWantedPage() {
   }
 
   // Filter cards by search term
-  const filteredCards = mostWanted.cards?.filter(card =>
+  const filteredCards = (mostWanted.cards as MostWantedCard[] || []).filter((card: MostWantedCard) =>
     searchTerm === "" ||
     card.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.fid.toString().includes(searchTerm)
-  ) || [];
+  );
 
   // Pagination
   const totalPages = Math.ceil(filteredCards.length / ITEMS_PER_PAGE);
@@ -94,15 +107,15 @@ export default function MostWantedPage() {
 
         {/* Stats bar */}
         <div className="flex items-center justify-between mb-4 text-vintage-ice/60 text-sm">
-          <span>{filteredCards.length} {t.cardsTotal || "cards"}</span>
+          <span>{filteredCards.length} {(t as unknown as Record<string, string>).cardsTotal || "cards"}</span>
           {totalPages > 1 && (
-            <span>{t.page || "Page"} {currentPage + 1} / {totalPages}</span>
+            <span>{(t as unknown as Record<string, string>).page || "Page"} {currentPage + 1} / {totalPages}</span>
           )}
         </div>
 
         {paginatedCards.length > 0 ? (
           <div className="space-y-2 mb-4">
-            {paginatedCards.map((card, index) => {
+            {paginatedCards.map((card: MostWantedCard, index: number) => {
               const globalIndex = currentPage * ITEMS_PER_PAGE + index;
               return (
                 <Link
