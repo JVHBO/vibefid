@@ -257,6 +257,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Minha Pontuação Neynar',
     neynarScoreRarity: 'Raridade',
     neynarScoreCheckMint: 'Confira sua pontuação e minte sua carta VibeFID!',
+    openOpenSea: "Abrir OpenSea?",
+    openOpenSeaDesc: "Você será redirecionado para o OpenSea para ver este NFT.",
   },
 
   "en": {
@@ -509,6 +511,8 @@ export const fidTranslations = {
     neynarScoreShare: 'My Neynar Score',
     neynarScoreRarity: 'Rarity',
     neynarScoreCheckMint: 'Check your score and mint your VibeFID card!',
+    openOpenSea: "Open OpenSea?",
+    openOpenSeaDesc: "You will be redirected to OpenSea to view this NFT.",
   },
 
   "es": {
@@ -761,6 +765,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Mi Puntuación Neynar',
     neynarScoreRarity: 'Rareza',
     neynarScoreCheckMint: '¡Consulta tu puntuación y mintea tu carta VibeFID!',
+    openOpenSea: "¿Abrir OpenSea?",
+    openOpenSeaDesc: "Serás redirigido a OpenSea para ver este NFT.",
   },
 
   "hi": {
@@ -1013,6 +1019,8 @@ export const fidTranslations = {
     neynarScoreShare: 'मेरी Neynar स्कोर',
     neynarScoreRarity: 'दुर्लभता',
     neynarScoreCheckMint: 'अपना स्कोर देखें और अपना VibeFID कार्ड मिंट करें!',
+    openOpenSea: "OpenSea खोलें?",
+    openOpenSeaDesc: "आपको इस NFT को देखने के लिए OpenSea पर रीडायरेक्ट किया जाएगा।",
   },
 
   "ru": {
@@ -1265,6 +1273,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Мой счёт Neynar',
     neynarScoreRarity: 'Редкость',
     neynarScoreCheckMint: 'Проверь свой счёт и сминти свою карту VibeFID!',
+    openOpenSea: "Открыть OpenSea?",
+    openOpenSeaDesc: "Вы будете перенаправлены на OpenSea для просмотра этого NFT.",
   },
 
   "zh-CN": {
@@ -1517,6 +1527,8 @@ export const fidTranslations = {
     neynarScoreShare: '我的 Neynar 分数',
     neynarScoreRarity: '稀有度',
     neynarScoreCheckMint: '查看你的分数并铸造你的 VibeFID 卡！',
+    openOpenSea: "打开 OpenSea？",
+    openOpenSeaDesc: "您将被重定向到 OpenSea 查看此 NFT。",
   },
 
   "id": {
@@ -1738,6 +1750,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Skor Neynar Saya',
     neynarScoreRarity: 'Kelangkaan',
     neynarScoreCheckMint: 'Cek skor kamu dan mint kartu VibeFID kamu!',
+    openOpenSea: "Buka OpenSea?",
+    openOpenSeaDesc: "Anda akan diarahkan ke OpenSea untuk melihat NFT ini.",
   },
 
   "fr": {
@@ -1959,6 +1973,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Mon Score Neynar',
     neynarScoreRarity: 'Rareté',
     neynarScoreCheckMint: 'Vérifie ton score et mint ta carte VibeFID !',
+    openOpenSea: "Ouvrir OpenSea ?",
+    openOpenSeaDesc: "Vous serez redirigé vers OpenSea pour voir ce NFT.",
   },
   "ja": {
     // Password screen
@@ -2192,6 +2208,8 @@ export const fidTranslations = {
     evolutionCheckButton: '📊 進化チェック',
     evolutionModalTitle: '✨ カード進化',
     evolutionModalDesc: 'Neynarスコアをチェックして、カードがより高いレアリティに進化するか確認しましょう！',
+    openOpenSea: "OpenSeaを開きますか？",
+    openOpenSeaDesc: "このNFTを見るためにOpenSeaにリダイレクトされます。",
     oldScore: '旧スコア',
     newScore: '新スコア',
     regeneratingImages: '画像を再生成中...',
@@ -2501,5 +2519,7 @@ export const fidTranslations = {
     neynarScoreShare: 'Il Mio Punteggio Neynar',
     neynarScoreRarity: 'Rarità',
     neynarScoreCheckMint: 'Controlla il tuo punteggio e minta la tua carta VibeFID!',
+    openOpenSea: "Aprire OpenSea?",
+    openOpenSeaDesc: "Sarai reindirizzato su OpenSea per vedere questo NFT.",
   },
 };
