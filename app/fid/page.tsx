@@ -1186,7 +1186,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                     const rarityLine = rarityChanged
                       ? `${t.cardLeveledUp || 'Card leveled up!'} ${myCard.rarity} → ${neynarScoreData.rarity}`
                       : neynarScoreData.rarity;
-                    const castText = `${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
+                    const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
                     return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                   })()}
                   target="_blank"
