@@ -24,7 +24,7 @@ export default function GalleryPage() {
   }, [searchTerm]);
 
   // Query cards
-  const searchResult = useQuery(api.farcasterCards.searchFarcasterCards, {
+  const searchResult = useQuery(api.farcasterCards.getCardsForGallery, {
     searchTerm: debouncedSearch || undefined,
     limit: cardsPerPage,
     offset: (currentPage - 1) * cardsPerPage,
@@ -160,10 +160,6 @@ export default function GalleryPage() {
                     </span>
                   </div>
 
-                  {/* Rarity badge */}
-                  <div className="absolute top-2 right-2 bg-vintage-gold/90 text-vintage-black px-2 py-0.5 rounded text-xs font-bold">
-                    {card.rarity}
-                  </div>
                 </div>
 
                 {/* Card Info */}
@@ -171,14 +167,6 @@ export default function GalleryPage() {
                   <p className="text-vintage-gold font-bold truncate">
                     @{card.username}
                   </p>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-vintage-ice text-sm">
-                      {card.power} PWR
-                    </span>
-                    <span className="text-vintage-burnt-gold text-sm">
-                      {card.votes || 0} votes
-                    </span>
-                  </div>
                 </div>
               </Link>
             ))}
