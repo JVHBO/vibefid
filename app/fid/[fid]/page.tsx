@@ -812,7 +812,7 @@ export default function FidCardPage() {
                       const scoreDiff = card && card.neynarScore ? neynarScoreData.score - card.neynarScore : 0;
                       const diffSign = scoreDiff >= 0 ? '+' : '';
                       // Check if rarity changed from ORIGINAL mint rarity (stored in scoreHistory)
-                      const mintRarity = scoreHistory?.firstCheck?.rarity || card?.rarity;
+                      const mintRarity = scoreHistory?.mintRarity || card?.rarity;
                       const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
                       // Format: "0.950 +0.1000 since mint\nCard leveled up! Epic → Legendary"
                       const scoreLine = card && card.neynarScore
