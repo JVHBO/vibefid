@@ -1834,9 +1834,12 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             setIsClaimingRewards(false);
           }}
           disabled={isClaimingRewards || isClaimTxPending}
-          className="fixed bottom-20 right-4 z-[9998] px-3 py-2 rounded-xl bg-vintage-gold/40 text-vintage-gold hover:bg-vintage-gold/60 transition-all flex flex-col items-center gap-0 disabled:opacity-50 shadow-lg backdrop-blur-sm border border-vintage-gold/30"
+          className="z-[9998] px-3 py-2 rounded-xl bg-vintage-gold/40 text-vintage-gold hover:bg-vintage-gold/60 hover:brightness-125 transition-all flex flex-col items-center gap-0 disabled:opacity-50 shadow-lg backdrop-blur-sm border border-vintage-gold/30"
           style={{
-            animation: 'floatClaim 4s ease-in-out infinite',
+            position: 'fixed',
+            right: '16px',
+            top: 'calc(100% + 60px)',
+            animation: 'floatClaimUp 25s linear infinite',
           }}
           title={`Claim ${vibeRewards.pendingVbms} VBMS`}
         >
@@ -1872,12 +1875,12 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
       {/* Floating Animation CSS */}
       <style jsx global>{`
-        @keyframes floatClaim {
-          0% { transform: translateY(0px) rotate(0deg); }
-          25% { transform: translateY(-8px) rotate(2deg); }
-          50% { transform: translateY(-15px) rotate(0deg); }
-          75% { transform: translateY(-8px) rotate(-2deg); }
-          100% { transform: translateY(0px) rotate(0deg); }
+        @keyframes floatClaimUp {
+          0% { transform: translateY(0) rotate(0deg); }
+          25% { transform: translateY(-40vh) rotate(3deg); }
+          50% { transform: translateY(-80vh) rotate(-2deg); }
+          75% { transform: translateY(-120vh) rotate(2deg); }
+          100% { transform: translateY(-150vh) rotate(0deg); }
         }
       `}</style>
     </div>

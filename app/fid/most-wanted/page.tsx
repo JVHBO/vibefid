@@ -152,6 +152,25 @@ export default function MostWantedPage() {
                     <p className="text-vintage-ice/50 text-xs">
                       {card.mintScore.toFixed(3)} {'→'} {card.currentScore.toFixed(3)}
                     </p>
+                    {(() => {
+                      // Check if card can upgrade based on current score
+                      const getRarityFromScore = (score) => {
+                        if (score >= 0.90) return 'Mythic';
+                        if (score >= 0.80) return 'Legendary';
+                        if (score >= 0.70) return 'Epic';
+                        if (score >= 0.60) return 'Rare';
+                        return 'Common';
+                      };
+                      const currentRarityLevel = getRarityFromScore(card.currentScore);
+                      const mintRarityLevel = card.rarity;
+                      const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
+                      const canUpgrade = rarityOrder.indexOf(currentRarityLevel) > rarityOrder.indexOf(mintRarityLevel);
+                      return canUpgrade ? (
+                        <p className="text-yellow-400 text-[10px] font-bold animate-pulse mt-0.5">
+                          ⬆ Upgrade Available
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
                 </Link>
               );
