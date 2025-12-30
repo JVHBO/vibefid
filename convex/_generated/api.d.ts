@@ -10,8 +10,10 @@
 
 import type * as cardVotes from "../cardVotes.js";
 import type * as farcasterCards from "../farcasterCards.js";
+import type * as mostWanted from "../mostWanted.js";
 import type * as neynarScore from "../neynarScore.js";
 import type * as notifications from "../notifications.js";
+import type * as vibeRewards from "../vibeRewards.js";
 
 import type {
   ApiFromModules,
@@ -22,8 +24,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   cardVotes: typeof cardVotes;
   farcasterCards: typeof farcasterCards;
+  mostWanted: typeof mostWanted;
   neynarScore: typeof neynarScore;
   notifications: typeof notifications;
+  vibeRewards: typeof vibeRewards;
 }>;
 
 /**

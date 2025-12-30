@@ -32,6 +32,7 @@ export const fidTranslations = {
     score: 'Pontuação',
     followers: 'Seguidores',
     rarity: 'Raridade',
+    rarityAvailable: 'Raridade Disponível',
     cardRange: 'Faixa de Carta',
     powerBadge: '⚡ Power Badge',
 
@@ -55,6 +56,8 @@ export const fidTranslations = {
     of: 'de',
     showing: 'Mostrando',
     cards: 'cartas',
+    cardsTotal: 'cartas',
+    page: 'Página',
 
     // Search
     searchPlaceholder: 'Buscar por nome ou FID...',
@@ -259,6 +262,28 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'Confira sua pontuação e minte sua carta VibeFID!',
     sinceMint: 'desde o mint',
     cardLeveledUp: 'A carta upou!',
+    upgradeAvailable: 'UPGRADE DISPONÍVEL',
+    scoreHistory: 'Histórico de Pontuação',
+    checks: 'verificações',
+    upgrading: 'Atualizando...',
+    upgradeRarity: 'UPGRADE DE RARIDADE',
+    channelingPower: '🔮 Canalizando poder...',
+    energyBuilding: '✨ Energia crescendo...',
+    evolving: '⚡ EVOLUINDO!',
+    regenerating: '🎬 Regenerando...',
+    evolved: '🎉 EVOLUIU!',
+    before: 'Antes',
+    after: 'Depois',
+    close: '✓ Fechar',
+    myVibeFidEvolved: 'Meu VibeFID EVOLUIU!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'Mais Procurados',
+    mostWantedDesc: 'Maior aumento de Pontuação Neynar desde o mint',
+    searchByUsernameOrFid: 'Buscar por nome ou FID...',
+    noCardsFoundSearch: 'Nenhuma carta encontrada',
+    noRankingData: 'Sem dados de ranking ainda',
+    bounty: 'Recompensa',
   },
 
   "en": {
@@ -289,6 +314,7 @@ export const fidTranslations = {
     score: 'Score',
     followers: 'Followers',
     rarity: 'Rarity',
+    rarityAvailable: 'Rarity Available',
     cardRange: 'Card Range',
     powerBadge: '⚡ Power Badge',
 
@@ -356,7 +382,7 @@ export const fidTranslations = {
     viewCard: 'View Card →',
     yourVibeFidCard: 'Your VibeFID Card',
     cardStats: 'Card Stats',
-    back: '← Back',
+    back: 'Back',
     cancel: 'Cancel',
     openOpenSea: 'Open OpenSea?',
     openOpenSeaDesc: 'You will be redirected to OpenSea to view this NFT.',
@@ -516,6 +542,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'Check your score and mint your VibeFID card!',
     sinceMint: 'since mint',
     cardLeveledUp: 'Card leveled up!',
+
+    // Upgrade system
+    upgradeAvailable: 'UPGRADE AVAILABLE',
+    scoreHistory: 'Score History',
+    checks: 'checks',
+    upgrading: 'Upgrading...',
+    upgradeRarity: 'UPGRADE RARITY',
+    channelingPower: 'Channeling power...',
+    energyBuilding: 'Energy building...',
+    evolving: 'EVOLVING!',
+    regenerating: 'Regenerating...',
+    evolved: 'EVOLVED!',
+    before: 'Before',
+    after: 'After',
+    close: 'Close',
+    myVibeFidEvolved: 'My VibeFID just EVOLVED!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'Most Wanted',
+    mostWantedDesc: 'Biggest Neynar Score increase since mint',
+    searchByUsernameOrFid: 'Search by username or FID...',
+    noCardsFoundSearch: 'No cards found matching your search',
+    noRankingData: 'No ranking data yet',
   },
 
   "es": {
@@ -546,6 +595,7 @@ export const fidTranslations = {
     score: 'Puntuación',
     followers: 'Seguidores',
     rarity: 'Rareza',
+    rarityAvailable: 'Rareza Disponible',
     cardRange: 'Rango de Carta',
     powerBadge: '⚡ Insignia de Poder',
 
@@ -773,6 +823,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: '¡Consulta tu puntuación y mintea tu carta VibeFID!',
     sinceMint: 'desde el mint',
     cardLeveledUp: '¡La carta subió de nivel!',
+
+    // Upgrade system
+    upgradeAvailable: 'MEJORA DISPONIBLE',
+    scoreHistory: 'Historial de Puntuación',
+    checks: 'verificaciones',
+    upgrading: 'Mejorando...',
+    upgradeRarity: 'MEJORAR RAREZA',
+    channelingPower: 'Canalizando poder...',
+    energyBuilding: 'Energía creciendo...',
+    evolving: '¡EVOLUCIONANDO!',
+    regenerating: 'Regenerando...',
+    evolved: '¡EVOLUCIONÓ!',
+    before: 'Antes',
+    after: 'Después',
+    close: 'Cerrar',
+    myVibeFidEvolved: '¡Mi VibeFID acaba de EVOLUCIONAR!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'Más Buscados',
+    mostWantedDesc: 'Mayor aumento de Puntuación Neynar desde el mint',
+    searchByUsernameOrFid: 'Buscar por nombre o FID...',
+    noCardsFoundSearch: 'No se encontraron cartas',
+    noRankingData: 'Sin datos de ranking aún',
   },
 
   "hi": {
@@ -803,6 +876,7 @@ export const fidTranslations = {
     score: 'स्कोर',
     followers: 'अनुयायी',
     rarity: 'दुर्लभता',
+    rarityAvailable: 'उपलब्ध दुर्लभता',
     cardRange: 'कार्ड रेंज',
     powerBadge: '⚡ पावर बैज',
 
@@ -1030,6 +1104,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'अपना स्कोर देखें और अपना VibeFID कार्ड मिंट करें!',
     sinceMint: 'मिंट के बाद से',
     cardLeveledUp: 'कार्ड अपग्रेड हुआ!',
+
+    // Upgrade system
+    upgradeAvailable: 'अपग्रेड उपलब्ध',
+    scoreHistory: 'स्कोर इतिहास',
+    checks: 'जांच',
+    upgrading: 'अपग्रेड हो रहा है...',
+    upgradeRarity: 'रेरिटी अपग्रेड करें',
+    channelingPower: 'शक्ति चैनल हो रही है...',
+    energyBuilding: 'ऊर्जा बढ़ रही है...',
+    evolving: 'विकसित हो रहा है!',
+    regenerating: 'पुनर्जनन...',
+    evolved: 'विकसित हो गया!',
+    before: 'पहले',
+    after: 'बाद में',
+    close: 'बंद करें',
+    myVibeFidEvolved: 'मेरा VibeFID अभी विकसित हुआ!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'सबसे वांछित',
+    mostWantedDesc: 'मिंट के बाद से सबसे बड़ी Neynar स्कोर वृद्धि',
+    searchByUsernameOrFid: 'नाम या FID से खोजें...',
+    noCardsFoundSearch: 'कोई कार्ड नहीं मिला',
+    noRankingData: 'अभी तक कोई रैंकिंग डेटा नहीं',
   },
 
   "ru": {
@@ -1060,6 +1157,7 @@ export const fidTranslations = {
     score: 'Счет',
     followers: 'Подписчики',
     rarity: 'Редкость',
+    rarityAvailable: 'Доступная редкость',
     cardRange: 'Диапазон Карт',
     powerBadge: '⚡ Значок Силы',
 
@@ -1287,6 +1385,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'Проверь свой счёт и сминти свою карту VibeFID!',
     sinceMint: 'с момента минта',
     cardLeveledUp: 'Карта прокачалась!',
+
+    // Upgrade system
+    upgradeAvailable: 'УЛУЧШЕНИЕ ДОСТУПНО',
+    scoreHistory: 'История очков',
+    checks: 'проверок',
+    upgrading: 'Улучшаем...',
+    upgradeRarity: 'УЛУЧШИТЬ РЕДКОСТЬ',
+    channelingPower: 'Накапливаем силу...',
+    energyBuilding: 'Энергия растёт...',
+    evolving: 'ЭВОЛЮЦИОНИРУЕМ!',
+    regenerating: 'Регенерация...',
+    evolved: 'ЭВОЛЮЦИОНИРОВАЛ!',
+    before: 'До',
+    after: 'После',
+    close: 'Закрыть',
+    myVibeFidEvolved: 'Мой VibeFID только что ЭВОЛЮЦИОНИРОВАЛ!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'Самые разыскиваемые',
+    mostWantedDesc: 'Наибольший рост очков Neynar с момента минта',
+    searchByUsernameOrFid: 'Поиск по имени или FID...',
+    noCardsFoundSearch: 'Карты не найдены',
+    noRankingData: 'Данные рейтинга пока отсутствуют',
   },
 
   "zh-CN": {
@@ -1317,6 +1438,7 @@ export const fidTranslations = {
     score: '分数',
     followers: '关注者',
     rarity: '稀有度',
+    rarityAvailable: '可用稀有度',
     cardRange: '卡片范围',
     powerBadge: '⚡ 能量徽章',
 
@@ -1544,6 +1666,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: '查看你的分数并铸造你的 VibeFID 卡！',
     sinceMint: '自铸造以来',
     cardLeveledUp: '卡牌升级了！',
+
+    // Upgrade system
+    upgradeAvailable: '可升级',
+    scoreHistory: '分数历史',
+    checks: '次检查',
+    upgrading: '升级中...',
+    upgradeRarity: '升级稀有度',
+    channelingPower: '汇聚力量...',
+    energyBuilding: '能量积蓄中...',
+    evolving: '进化中！',
+    regenerating: '重新生成中...',
+    evolved: '进化完成！',
+    before: '之前',
+    after: '之后',
+    close: '关闭',
+    myVibeFidEvolved: '我的 VibeFID 刚刚进化了！',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: '通缉榜',
+    mostWantedDesc: '自铸造以来 Neynar 分数增长最大',
+    searchByUsernameOrFid: '按用户名或 FID 搜索...',
+    noCardsFoundSearch: '未找到卡片',
+    noRankingData: '暂无排名数据',
   },
 
   "id": {
@@ -1574,6 +1719,7 @@ export const fidTranslations = {
     score: 'Skor',
     followers: 'Pengikut',
     rarity: 'Kelangkaan',
+    rarityAvailable: 'Kelangkaan Tersedia',
     cardRange: 'Rentang Kartu',
     powerBadge: '⚡ Lencana Kekuatan',
 
@@ -1770,6 +1916,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'Cek skor kamu dan mint kartu VibeFID kamu!',
     sinceMint: 'sejak mint',
     cardLeveledUp: 'Kartu naik level!',
+
+    // Upgrade system
+    upgradeAvailable: 'UPGRADE TERSEDIA',
+    scoreHistory: 'Riwayat Skor',
+    checks: 'pengecekan',
+    upgrading: 'Mengupgrade...',
+    upgradeRarity: 'UPGRADE KELANGKAAN',
+    channelingPower: 'Menyalurkan kekuatan...',
+    energyBuilding: 'Energi meningkat...',
+    evolving: 'BEREVOLUSI!',
+    regenerating: 'Meregenerasi...',
+    evolved: 'BEREVOLUSI!',
+    before: 'Sebelum',
+    after: 'Sesudah',
+    close: 'Tutup',
+    myVibeFidEvolved: 'VibeFID saya baru saja BEREVOLUSI!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'Paling Dicari',
+    mostWantedDesc: 'Peningkatan Skor Neynar terbesar sejak mint',
+    searchByUsernameOrFid: 'Cari berdasarkan nama atau FID...',
+    noCardsFoundSearch: 'Tidak ada kartu ditemukan',
+    noRankingData: 'Belum ada data peringkat',
   },
 
   "fr": {
@@ -1800,6 +1969,7 @@ export const fidTranslations = {
     score: 'Score',
     followers: 'Abonnés',
     rarity: 'Rareté',
+    rarityAvailable: 'Rareté Disponible',
     cardRange: 'Gamme de Cartes',
     powerBadge: '⚡ Badge de Puissance',
 
@@ -1996,6 +2166,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'Vérifie ton score et mint ta carte VibeFID !',
     sinceMint: 'depuis le mint',
     cardLeveledUp: 'La carte a monté de niveau !',
+
+    // Upgrade system
+    upgradeAvailable: 'AMÉLIORATION DISPONIBLE',
+    scoreHistory: 'Historique des scores',
+    checks: 'vérifications',
+    upgrading: 'Amélioration...',
+    upgradeRarity: 'AMÉLIORER RARETÉ',
+    channelingPower: 'Canalisation du pouvoir...',
+    energyBuilding: 'Énergie croissante...',
+    evolving: 'ÉVOLUTION!',
+    regenerating: 'Régénération...',
+    evolved: 'ÉVOLUÉ!',
+    before: 'Avant',
+    after: 'Après',
+    close: 'Fermer',
+    myVibeFidEvolved: "Mon VibeFID vient d'ÉVOLUER!",
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'Les Plus Recherchés',
+    mostWantedDesc: 'Plus grande augmentation du Score Neynar depuis le mint',
+    searchByUsernameOrFid: 'Rechercher par nom ou FID...',
+    noCardsFoundSearch: 'Aucune carte trouvée',
+    noRankingData: 'Pas encore de données de classement',
   },
   "ja": {
     // Password screen
@@ -2025,6 +2218,7 @@ export const fidTranslations = {
     score: 'スコア',
     followers: 'フォロワー',
     rarity: 'レアリティ',
+    rarityAvailable: '利用可能レアリティ',
     cardRange: 'カード範囲',
     powerBadge: '⚡ パワーバッジ',
 
@@ -2292,6 +2486,29 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'スコアをチェックしてVibeFIDカードをミントしよう！',
     sinceMint: 'ミント時から',
     cardLeveledUp: 'カードがレベルアップ！',
+
+    // Upgrade system
+    upgradeAvailable: 'アップグレード可能',
+    scoreHistory: 'スコア履歴',
+    checks: '回チェック',
+    upgrading: 'アップグレード中...',
+    upgradeRarity: 'レアリティアップグレード',
+    channelingPower: 'パワーを集めています...',
+    energyBuilding: 'エネルギーが高まっています...',
+    evolving: '進化中！',
+    regenerating: '再生成中...',
+    evolved: '進化完了！',
+    before: 'ビフォー',
+    after: 'アフター',
+    close: '閉じる',
+    myVibeFidEvolved: '私のVibeFIDが進化しました！',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: '最重要指名手配',
+    mostWantedDesc: 'ミント以来最大のNeynarスコア上昇',
+    searchByUsernameOrFid: 'ユーザー名またはFIDで検索...',
+    noCardsFoundSearch: 'カードが見つかりません',
+    noRankingData: 'ランキングデータはまだありません',
   },
   "it": {
     // Password screen
@@ -2321,6 +2538,7 @@ export const fidTranslations = {
     score: 'Punteggio',
     followers: 'Follower',
     rarity: 'Rarità',
+    rarityAvailable: 'Rarità Disponibile',
     cardRange: 'Gamma Carta',
     powerBadge: '⚡ Power Badge',
 
@@ -2548,5 +2766,28 @@ export const fidTranslations = {
     neynarScoreCheckMint: 'Controlla il tuo punteggio e minta la tua carta VibeFID!',
     sinceMint: 'dal mint',
     cardLeveledUp: 'La carta è salita di livello!',
+
+    // Upgrade system
+    upgradeAvailable: 'UPGRADE DISPONIBILE',
+    scoreHistory: 'Cronologia Punteggi',
+    checks: 'controlli',
+    upgrading: 'Aggiornando...',
+    upgradeRarity: 'MIGLIORA RARITÀ',
+    channelingPower: 'Canalizzando potere...',
+    energyBuilding: 'Energia in crescita...',
+    evolving: 'EVOLVENDO!',
+    regenerating: 'Rigenerando...',
+    evolved: 'EVOLUTO!',
+    before: 'Prima',
+    after: 'Dopo',
+    close: 'Chiudi',
+    myVibeFidEvolved: 'Il mio VibeFID si è appena EVOLUTO!',
+
+    // Gallery/Most Wanted page
+    mostWantedTitle: 'I Più Ricercati',
+    mostWantedDesc: 'Maggiore aumento del Punteggio Neynar dal mint',
+    searchByUsernameOrFid: 'Cerca per nome o FID...',
+    noCardsFoundSearch: 'Nessuna carta trovata',
+    noRankingData: 'Nessun dato di classifica ancora',
   },
 };
