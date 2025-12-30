@@ -17,7 +17,7 @@ export function FloatingCardsBackground() {
   const [floatingCards, setFloatingCards] = useState<FloatingCard[]>([]);
 
   const recentCards = useQuery(api.farcasterCards.getCardImagesOnly, {
-    limit: 5,
+    limit: 8,
   });
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function FloatingCardsBackground() {
       // Função para gerar número aleatório em range
       const random = (min: number, max: number) => Math.random() * (max - min) + min;
 
-      const numCards = Math.min(5, recentCards.length);
+      const numCards = Math.min(8, recentCards.length);
 
       // Dividir a tela horizontalmente em seções (uma por carta)
       const sectionWidth = 100 / numCards;
