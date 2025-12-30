@@ -652,14 +652,20 @@ export const getCardImagesOnly = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit || 8, 20);
 
+    // Get more to filter unminted cards
     const cards = await ctx.db
       .query("farcasterCards")
       .order("desc")
-      .take(limit);
+      .take(limit * 5);
 
-    // Return only what's needed for floating cards
-    return cards.map(card => ({
+    // Filter only cards with cardImageUrl (properly minted)
+    const validCards = cards
+      .filter(card => card.cardImageUrl && card.cardImageUrl.length > 0)
+      .slice(0, limit);
+
+    return validCards.map(card => ({
       _id: card._id,
+      fid: card.fid,
       cardImageUrl: card.cardImageUrl,
     }));
   },
