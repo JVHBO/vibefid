@@ -641,3 +641,28 @@ export const updateCardImages = mutation({
     };
   },
 });
+
+/**
+ * Get card images only (lightweight query for floating background)
+ * Returns only imageUrl/cardImageUrl - much faster than full card data
+ */
+export const getCardImagesOnly = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit || 8, 20);
+
+    const cards = await ctx.db
+      .query("farcasterCards")
+      .order("desc")
+      .take(limit);
+
+    // Return only what's needed for floating cards
+    return cards.map(card => ({
+      _id: card._id,
+      cardImageUrl: card.cardImageUrl,
+      pfpUrl: card.pfpUrl,
+    }));
+  },
+});
