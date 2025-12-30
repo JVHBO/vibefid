@@ -446,6 +446,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   const mintCard = useMutation(api.farcasterCards.mintFarcasterCard);
   const saveScoreCheck = useMutation(api.neynarScore.saveScoreCheck);
 
+  // Score history query - use user's fid if available  
+  const scoreHistory = useQuery(api.neynarScore.getScoreHistory, farcasterContext.user?.fid ? { fid: farcasterContext.user.fid } : "skip");
+
   // 🔒 FIX: Check for pending mint data on page load and try to save
   // This handles cases where user refreshed page or transaction was pending
   useEffect(() => {
@@ -947,7 +950,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       <FloatingCardsBackground />
 
       {/* Header Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
+      <div className="fixed top-0 left-0 right-0 z-[9999] bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           {/* Left: User Info */}
           <div className="flex items-center gap-2">
@@ -972,8 +975,18 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             )}
           </div>
 
-          {/* Right: Sound & Language */}
+          {/* Right: About, Sound & Language */}
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                AudioManager.buttonClick();
+                setShowAboutModal(true);
+              }}
+              className="w-8 h-8 flex items-center justify-center bg-vintage-black/50 border border-vintage-gold/30 rounded-lg text-vintage-gold hover:border-vintage-gold hover:bg-vintage-gold/10 transition-all font-bold text-lg"
+              title="About"
+            >
+              ?
+            </button>
             <button
               onClick={() => setIsMusicEnabled(!isMusicEnabled)}
               className="w-8 h-8 flex items-center justify-center bg-vintage-black/50 border border-vintage-gold/30 rounded-lg text-vintage-gold hover:border-vintage-gold hover:bg-vintage-gold/10 transition-all"
@@ -1089,59 +1102,94 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
         {/* Neynar Score Modal */}
         {showScoreModal && neynarScoreData && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-6 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-vintage-gold mb-4 text-center">
+          <div className="fixed inset-0 bg-black/80 flex items-start justify-center z-50 p-4 pt-16 pb-20 overflow-y-auto">
+            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 max-w-md w-full">
+              <h2 className="text-xl font-bold text-vintage-gold mb-3 text-center">
                 {t.neynarScoreTitle}
               </h2>
 
-              <div className="bg-vintage-black/50 rounded-lg border border-vintage-gold/30 p-6 mb-6">
-                <div className="text-center mb-4">
-                  <p className="text-vintage-burnt-gold text-sm mb-2">@{neynarScoreData.username} (FID #{neynarScoreData.fid})</p>
-                  <div className="text-5xl font-bold text-vintage-gold mb-2">
+              {/* Current Score */}
+              <div className="bg-vintage-black/50 rounded-lg border border-vintage-gold/30 p-4 mb-3">
+                <div className="text-center">
+                  <p className="text-vintage-burnt-gold text-xs mb-1">@{neynarScoreData.username}</p>
+                  <div className="text-4xl font-bold text-vintage-gold mb-1">
                     {neynarScoreData.score.toFixed(3)}
                   </div>
-                  <p className="text-vintage-ice text-sm font-bold">{t.currentScore}</p>
-                  <p className="text-vintage-ice/60 text-xs mt-1">(Real-time from Neynar API)</p>
+                  <p className="text-vintage-ice text-xs">{t.currentScore}</p>
+                  {myCard && myCard.neynarScore && (
+                    <p className={`text-xs mt-1 font-bold ${
+                      neynarScoreData.score > myCard.neynarScore ? 'text-green-400' :
+                      neynarScoreData.score < myCard.neynarScore ? 'text-red-400' : 'text-vintage-ice/50'
+                    }`}>
+                      {neynarScoreData.score > myCard.neynarScore ? '+' : ''}
+                      {(neynarScoreData.score - myCard.neynarScore).toFixed(4)} from mint
+                    </p>
+                  )}
                 </div>
-
-                <div className="border-t border-vintage-gold/20 pt-4">
-                  <p className="text-vintage-burnt-gold text-sm mb-2 text-center">{t.rarity}</p>
-                  <p className="text-vintage-ice text-xl font-bold text-center">{neynarScoreData.rarity}</p>
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-vintage-gold/20">
+                  <span className="text-vintage-burnt-gold text-xs">{t.rarity}</span>
+                  <span className="text-vintage-ice font-bold">{neynarScoreData.rarity}</span>
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              {/* Score History */}
+              {scoreHistory && scoreHistory.history && scoreHistory.history.length > 0 && (
+                <div className="bg-vintage-black/30 rounded-lg border border-vintage-gold/20 p-3 mb-3">
+                  <p className="text-vintage-burnt-gold text-xs mb-2 font-bold">Score History ({scoreHistory.totalChecks} checks)</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {scoreHistory.history.slice(0, 10).map((entry: any, i: number) => {
+                      const prevScore = i < scoreHistory.history.length - 1 ? scoreHistory.history[i + 1]?.score : null;
+                      const diff = prevScore !== null ? entry.score - prevScore : 0;
+                      return (
+                        <div key={i} className="flex justify-between items-center text-xs">
+                          <span className="text-vintage-ice/60">
+                            {new Date(entry.checkedAt).toLocaleDateString()}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-vintage-ice">{entry.score.toFixed(3)}</span>
+                            {prevScore !== null && diff !== 0 && (
+                              <span className={diff > 0 ? 'text-green-400' : 'text-red-400'}>
+                                {diff > 0 ? '+' : ''}{diff.toFixed(4)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2">
                 <button
                   onClick={() => {
                     AudioManager.buttonClick();
                     setShowScoreModal(false);
                   }}
-                  className="flex-1 px-4 py-3 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors"
+                  className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
                 >
                   {t.back}
                 </button>
                 <a
                   href={(() => {
                     const shareUrl = 'https://vibefid.xyz/fid';
-
-                    // Build score text - show difference if user has a minted VibeFID
-                    let scoreText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}`;
-                    if (myCard && myCard.neynarScore) {
-                      const scoreDiff = neynarScoreData.score - myCard.neynarScore;
-                      const diffSign = scoreDiff >= 0 ? '+' : '';
-                      scoreText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)} (${diffSign}${scoreDiff.toFixed(3)})`;
-                    }
-
-                    const castText = `${scoreText}\n🎴 ${neynarScoreData.rarity} ${t.neynarScoreRarity}\n\n${t.neynarScoreCheckMint}`;
+                    // Calculate score diff from mint
+                    const scoreDiff = myCard && myCard.neynarScore ? neynarScoreData.score - myCard.neynarScore : 0;
+                    const diffSign = scoreDiff >= 0 ? '+' : '';
+                    const diffText = myCard && myCard.neynarScore ? ` (${diffSign}${scoreDiff.toFixed(4)})` : '';
+                    // Check if rarity changed
+                    const rarityChanged = myCard && myCard.rarity !== neynarScoreData.rarity;
+                    const rarityText = rarityChanged ? `\n${myCard.rarity} → ${neynarScoreData.rarity}` : `\n${neynarScoreData.rarity}`;
+                    const castText = `${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}${diffText}${rarityText}\n\n${t.neynarScoreCheckMint}`;
                     return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                   })()}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => AudioManager.buttonClick()}
-                  className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center"
+                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
                 >
-                  {t.shareToFarcaster}
+                  Share
                 </a>
               </div>
             </div>
@@ -1183,7 +1231,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                     AudioManager.toggleOn();
                     setLang(e.target.value as any);
                   }}
-                  className="px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg text-vintage-ice focus:outline-none focus:border-vintage-gold text-sm"
+                  className="px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg text-vintage-ice focus:outline-none focus:border-vintage-gold text-sm [&>option]:bg-vintage-charcoal [&>option]:text-vintage-ice"
                 >
                   <option value="en">🇺🇸 English</option>
                   <option value="pt-BR">🇧🇷 Português</option>
@@ -1386,16 +1434,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             <span className="text-[10px] font-bold whitespace-nowrap">Gallery</span>
             <span className="text-xl leading-none">♦</span>
           </Link>
-          <button
-            onClick={() => {
-              AudioManager.buttonClick();
-              setShowAboutModal(true);
-            }}
-            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
-          >
-            <span className="text-[10px] font-bold whitespace-nowrap">About</span>
-            <span className="text-xl leading-none">♣</span>
-          </button>
+
         </div>
       </div>
     </div>

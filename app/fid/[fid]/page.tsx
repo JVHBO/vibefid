@@ -98,6 +98,7 @@ export default function FidCardPage() {
   const [regenerationStatus, setRegenerationStatus] = useState<string>('');
   const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
   const [metadataRefreshed, setMetadataRefreshed] = useState(false);
+  const [showOpenSeaModal, setShowOpenSeaModal] = useState(false);
 
   // Share with language state
   const [showShareModal, setShowShareModal] = useState(false);
@@ -163,27 +164,22 @@ export default function FidCardPage() {
       // Get translations for selected language
       const shareT = fidTranslations[selectedLang];
 
-      // Build cast text
-      const rarityEmojiMap: Record<string, string> = {
-        'Mythic': '👑', 'Legendary': '⚡', 'Epic': '💎', 'Rare': '🔥', 'Common': '⭐'
-      };
-      const rarityEmoji = rarityEmojiMap[card.rarity] || '🎴';
-      const foilEmoji = currentTraits?.foil === 'Prize' ? '✨' : currentTraits?.foil === 'Standard' ? '💫' : '';
+      // Build cast text (clean, no emojis)
       const foilText = currentTraits?.foil !== 'None' ? ` ${currentTraits?.foil} Foil` : '';
 
       // Check if card was upgraded and build score/upgrade text
       const wasUpgraded = card.upgradedAt && card.previousRarity && card.previousNeynarScore;
-      let scoreText = `📊 Neynar Score: ${card.neynarScore.toFixed(3)}`;
+      let scoreText = `Neynar Score: ${card.neynarScore.toFixed(3)}`;
       let upgradeText = '';
 
       if (wasUpgraded) {
         const scoreDiff = card.neynarScore - card.previousNeynarScore!;
         const diffSign = scoreDiff >= 0 ? '+' : '';
-        scoreText = `📊 Neynar Score: ${card.neynarScore.toFixed(3)} (${diffSign}${scoreDiff.toFixed(3)})`;
-        upgradeText = `\n🆙 ${card.previousRarity} → ${card.rarity}`;
+        scoreText = `Neynar Score: ${card.neynarScore.toFixed(3)} (${diffSign}${scoreDiff.toFixed(3)})`;
+        upgradeText = `\n${card.previousRarity} → ${card.rarity}`;
       }
 
-      const castText = `🃏 ${shareT.yourVibeFidCard}\n\n${rarityEmoji} ${card.rarity}${foilText}\n⚡ ${correctPower} ${shareT.shareTextPower} ${foilEmoji}\n${scoreText}${upgradeText}\n🎯 FID #${card.fid}\n\n🎮 ${shareT.shareTextMintYours} @jvhbo`;
+      const castText = `${shareT.yourVibeFidCard}\n\n${card.rarity}${foilText}\n${correctPower} ${shareT.shareTextPower}\n${scoreText}${upgradeText}\nFID #${card.fid}\n\n${shareT.shareTextMintYours} @jvhbo`;
 
       // Share page URL for miniapp button
       const shareUrl = `https://vibefid.xyz/share/fid/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
@@ -234,14 +230,15 @@ export default function FidCardPage() {
       return;
     }
 
-    const userFid = farcasterContext.user.fid;
+    // Use the card's FID (from URL), not the viewer's FID
+    const cardFid = fid;
     setLoading(true);
     setError(null);
 
     try {
-      const user = await getUserByFid(userFid);
+      const user = await getUserByFid(cardFid);
       if (!user) {
-        setError(`No user found for FID ${userFid}`);
+        setError(`No user found for FID ${cardFid}`);
         setLoading(false);
         setTimeout(() => setError(null), 3000);
         return;
@@ -250,13 +247,15 @@ export default function FidCardPage() {
       const score = user.experimental.neynar_user_score;
       const rarity = calculateRarityFromScore(score);
 
-      // Save score to history
-      await saveScoreCheck({
-        fid: user.fid,
-        username: user.username,
-        score,
-        rarity,
-      });
+      // Only save score to history if viewing own card
+      if (isOwnCard) {
+        await saveScoreCheck({
+          fid: user.fid,
+          username: user.username,
+          score,
+          rarity,
+        });
+      }
 
       setNeynarScoreData({
         score,
@@ -511,7 +510,7 @@ export default function FidCardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black overflow-hidden">
       {/* Fixed Header Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
+      <div className="fixed top-0 left-0 right-0 z-[9999] bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           {/* Left: User Info */}
           <div className="flex items-center gap-2">
@@ -565,6 +564,20 @@ export default function FidCardPage() {
           <div className="flex flex-col items-center gap-2 px-4 w-full max-w-xs">
             {/* Card with Refresh Button */}
             <div className="relative w-full">
+              {/* Lore Button - Top Left Corner */}
+              {backstory && (
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowBackstoryModal(true);
+                  }}
+                  className="absolute -top-2 -left-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20"
+                  title="View Lore"
+                >
+                  <span className="text-xs font-bold">L</span>
+                </button>
+              )}
+
               {/* Refresh Metadata Button - Top Right Corner */}
               <button
                 onClick={handleRefreshMetadata}
@@ -637,26 +650,17 @@ export default function FidCardPage() {
                   Share
                 </button>
               )}
-              <a
-                href={`https://opensea.io/assets/base/${card.contractAddress || '0x60274A138d026E3cB337B40567100FdEC3127565'}/${card.fid}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => {
+                  AudioManager.buttonClick();
+                  setShowOpenSeaModal(true);
+                }}
                 className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs text-center"
               >
                 OpenSea
-              </a>
-              {backstory && (
-                <button
-                  onClick={() => {
-                    AudioManager.buttonClick();
-                    setShowBackstoryModal(true);
-                  }}
-                  className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs"
-                >
-                  Lore
-                </button>
-              )}
-              {isOwnCard && farcasterContext.user && (
+              </button>
+
+              {farcasterContext.user && (
                 <button
                   onClick={handleCheckNeynarScore}
                   disabled={loading}
@@ -667,33 +671,7 @@ export default function FidCardPage() {
               )}
             </div>
 
-            {/* Vote Section - Compact */}
-            {viewerFid > 0 && viewerFid !== fid && (
-              <div className="w-full bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-500/50 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-purple-300 text-xs">{totalVotes} votes</span>
-                  {hasVoted ? (
-                    <span className="text-green-400 text-xs">Voted</span>
-                  ) : freeVotesRemaining > 0 ? (
-                    <button
-                      onClick={() => { AudioManager.buttonClick(); voteFree(); }}
-                      disabled={isVoting}
-                      className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg disabled:opacity-50"
-                    >
-                      Vote Free
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => { AudioManager.buttonClick(); votePaid(); }}
-                      disabled={isVoting}
-                      className="px-3 py-1 bg-yellow-500 text-black text-xs rounded-lg disabled:opacity-50"
-                    >
-                      100 coins
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+
 
             {/* Error message */}
             {error && (
@@ -724,90 +702,136 @@ export default function FidCardPage() {
             <span className="text-[10px] font-bold whitespace-nowrap">Gallery</span>
             <span className="text-xl leading-none">♦</span>
           </Link>
-          <div className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold text-[10px] leading-tight bg-vintage-gold/20 text-vintage-gold border-2 border-vintage-gold">
-            <span className="text-[10px] font-bold whitespace-nowrap">Card</span>
-            <span className="text-xl leading-none">♣</span>
-          </div>
+          <Link
+            href="/fid"
+            onClick={() => AudioManager.buttonClick()}
+            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
+          >
+            <span className="text-[10px] font-bold whitespace-nowrap">Back</span>
+            <span className="text-xl leading-none">←</span>
+          </Link>
         </div>
       </div>
 
       {/* Neynar Score Modal */}
       {showScoreModal && neynarScoreData && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-6 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-vintage-gold mb-4 text-center">
+          <div className="fixed inset-0 bg-black/80 flex items-start justify-center z-50 p-4 pt-16 pb-20 overflow-y-auto">
+            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 max-w-md w-full">
+              <h2 className="text-xl font-bold text-vintage-gold mb-3 text-center">
                 {t.neynarScoreTitle}
               </h2>
 
-              <div className="bg-vintage-black/50 rounded-lg border border-vintage-gold/30 p-6 mb-6">
-                <div className="text-center mb-4">
-                  <p className="text-vintage-burnt-gold text-xs mb-2">@{neynarScoreData.username} (FID #{neynarScoreData.fid})</p>
-                  <div className="text-5xl font-bold text-vintage-gold mb-2">
+              {/* Current Score */}
+              <div className="bg-vintage-black/50 rounded-lg border border-vintage-gold/30 p-4 mb-3">
+                <div className="text-center">
+                  <p className="text-vintage-burnt-gold text-xs mb-1">@{neynarScoreData.username}</p>
+                  <div className="text-4xl font-bold text-vintage-gold mb-1">
                     {neynarScoreData.score.toFixed(3)}
                   </div>
-                  <p className="text-vintage-ice text-xs font-bold">{t.currentScore} ⚡</p>
-                  <p className="text-vintage-ice/60 text-xs mt-1">(Real-time from Neynar API)</p>
+                  <p className="text-vintage-ice text-xs">{t.currentScore}</p>
+                  {card && card.neynarScore && (
+                    <p className={`text-xs mt-1 font-bold ${
+                      neynarScoreData.score > card.neynarScore ? 'text-green-400' :
+                      neynarScoreData.score < card.neynarScore ? 'text-red-400' : 'text-vintage-ice/50'
+                    }`}>
+                      {neynarScoreData.score > card.neynarScore ? '+' : ''}
+                      {(neynarScoreData.score - card.neynarScore).toFixed(4)} from mint
+                    </p>
+                  )}
                 </div>
-
-                <div className="border-t border-vintage-gold/20 pt-4">
-                  <p className="text-vintage-burnt-gold text-xs mb-2 text-center">{t.rarity}</p>
-                  <p className="text-vintage-ice text-xl font-bold text-center">{neynarScoreData.rarity}</p>
+                <div className="flex justify-between items-center mt-3 pt-3 border-t border-vintage-gold/20">
+                  <span className="text-vintage-burnt-gold text-xs">{t.rarity}</span>
+                  <span className="text-vintage-ice font-bold">{neynarScoreData.rarity}</span>
                 </div>
-
-                {/* Upgrade Available Banner */}
-                {canUpgrade() && card && (
-                  <div className="border-t border-vintage-gold/20 pt-4 mt-4">
-                    <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg p-4 text-center">
-                      <p className="text-yellow-400 font-bold text-lg mb-1">⬆️ UPGRADE AVAILABLE!</p>
-                      <p className="text-vintage-ice text-xs">
-                        Your score improved! Upgrade from <span className="text-vintage-burnt-gold font-bold">{card.rarity}</span> to{' '}
-                        <span className="text-yellow-400 font-bold">{neynarScoreData.rarity}</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
-              <div className="flex flex-col gap-3">
-                {/* Upgrade Button - Only show if upgrade is available */}
+              {/* Upgrade Available Banner */}
+              {canUpgrade() && card && (
+                <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg p-3 mb-3 text-center">
+                  <p className="text-yellow-400 font-bold mb-1">UPGRADE AVAILABLE</p>
+                  <p className="text-vintage-ice text-xs">
+                    <span className="text-vintage-burnt-gold">{card.rarity}</span> → <span className="text-yellow-400">{neynarScoreData.rarity}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Score History */}
+              {scoreHistory && scoreHistory.history && scoreHistory.history.length > 0 && (
+                <div className="bg-vintage-black/30 rounded-lg border border-vintage-gold/20 p-3 mb-3">
+                  <p className="text-vintage-burnt-gold text-xs mb-2 font-bold">Score History ({scoreHistory.totalChecks} checks)</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {scoreHistory.history.slice(0, 10).map((entry: any, i: number) => {
+                      const prevScore = i < scoreHistory.history.length - 1 ? scoreHistory.history[i + 1]?.score : null;
+                      const diff = prevScore !== null ? entry.score - prevScore : 0;
+                      return (
+                        <div key={i} className="flex justify-between items-center text-xs">
+                          <span className="text-vintage-ice/60">
+                            {new Date(entry.checkedAt).toLocaleDateString()}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-vintage-ice">{entry.score.toFixed(3)}</span>
+                            {prevScore !== null && diff !== 0 && (
+                              <span className={diff > 0 ? 'text-green-400' : 'text-red-400'}>
+                                {diff > 0 ? '+' : ''}{diff.toFixed(4)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2">
                 {canUpgrade() && (
                   <button
                     onClick={handleUpgrade}
                     disabled={isUpgrading}
-                    className="w-full px-4 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 animate-pulse"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
                   >
-                    {isUpgrading ? '⏳ Upgrading...' : '⬆️ UPGRADE CARD RARITY'}
+                    {isUpgrading ? 'Upgrading...' : 'UPGRADE RARITY'}
                   </button>
                 )}
-
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <button
                     onClick={() => {
                       AudioManager.buttonClick();
                       setShowScoreModal(false);
                     }}
-                    className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors"
+                    className={isOwnCard ? "flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm" : "w-full px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"}
                   >
                     {t.back}
                   </button>
-                  <a
-                    href={(() => {
-                      const shareUrl = 'https://vibefid.xyz/fid';
-                      const castText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}\n${neynarScoreData.rarity} ${t.neynarScoreRarity}\n\n🎴 ${t.neynarScoreCheckMint}`;
+                  {isOwnCard && (
+                    <a
+                      href={(() => {
+                        const shareUrl = 'https://vibefid.xyz/fid';
+                        // Calculate score diff from mint
+                      const scoreDiff = card && card.neynarScore ? neynarScoreData.score - card.neynarScore : 0;
+                      const diffSign = scoreDiff >= 0 ? '+' : '';
+                      const diffText = card && card.neynarScore ? ` (${diffSign}${scoreDiff.toFixed(4)})` : '';
+                      // Check if rarity changed
+                      const rarityChanged = card && card.rarity !== neynarScoreData.rarity;
+                      const rarityText = rarityChanged ? `\n${card.rarity} → ${neynarScoreData.rarity}` : `\n${neynarScoreData.rarity}`;
+                      const castText = `${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}${diffText}${rarityText}\n\n${t.neynarScoreCheckMint}`;
                       return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                     })()}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => AudioManager.buttonClick()}
-                    className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center"
+                    className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
                   >
-                    {t.shareToFarcaster}
-                  </a>
+                      Share
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
+
 
         {/* Evolution Animation Modal */}
         {showEvolutionModal && card && (
@@ -907,7 +931,9 @@ export default function FidCardPage() {
                       <a
                         href={(() => {
                           const shareUrl = `https://vibefid.xyz/fid/${fid}`;
-                          const castText = `⚡ My VibeFID just EVOLVED!\n\n🃏 ${evolutionData.oldRarity} → ${evolutionData.newRarity}\n💪 Power: ${evolutionData.oldPower} → ${evolutionData.newPower}\n💰 Bounty: $${evolutionData.newBounty.toLocaleString()}\n\n🎴 @jvhbo`;
+                          const scoreDiff = evolutionData.newScore - evolutionData.oldScore;
+                          const diffSign = scoreDiff >= 0 ? '+' : '';
+                          const castText = `My VibeFID just EVOLVED!\n\n${evolutionData.oldRarity} → ${evolutionData.newRarity}\nPower: ${evolutionData.oldPower} → ${evolutionData.newPower}\nNeynar Score: ${diffSign}${scoreDiff.toFixed(4)}\nBounty: $${evolutionData.newBounty.toLocaleString()}\n\n@jvhbo`;
                           return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                         })()}
                         target="_blank"
@@ -915,7 +941,7 @@ export default function FidCardPage() {
                         onClick={() => AudioManager.buttonClick()}
                         className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-xs sm:text-base"
                       >
-                        📢 Share
+                        Share
                       </a>
                       <button
                         onClick={() => {
@@ -942,7 +968,7 @@ export default function FidCardPage() {
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-6 max-w-sm w-full">
               <h2 className="text-xl font-bold text-vintage-gold mb-4 text-center">
-                📤 {t.shareToFarcaster || 'Share to Farcaster'}
+                {t.shareToFarcaster || 'Share to Farcaster'}
               </h2>
 
               <p className="text-vintage-ice text-xs mb-4 text-center">
@@ -1003,9 +1029,45 @@ export default function FidCardPage() {
           </div>
         )}
 
+        {/* OpenSea Confirmation Modal */}
+        {showOpenSeaModal && card && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+            <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-sm">
+              <h3 className="text-vintage-gold font-bold text-lg mb-3 text-center">
+                {t.openOpenSea || 'Open OpenSea?'}
+              </h3>
+              <p className="text-vintage-ice/80 text-sm text-center mb-4">
+                {t.openOpenSeaDesc || 'You will be redirected to OpenSea to view this NFT.'}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowOpenSeaModal(false);
+                  }}
+                  className="flex-1 py-2 bg-vintage-burnt-gold/30 hover:bg-vintage-burnt-gold/50 text-vintage-gold font-bold rounded-xl transition-all"
+                >
+                  {t.cancel || 'Cancel'}
+                </button>
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    const url = `https://opensea.io/assets/base/${card.contractAddress || '0x60274A138d026E3cB337B40567100FdEC3127565'}/${card.fid}`;
+                    window.open(url, '_blank');
+                    setShowOpenSeaModal(false);
+                  }}
+                  className="flex-1 py-2 bg-vintage-gold hover:bg-yellow-500 text-vintage-black font-bold rounded-xl transition-all"
+                >
+                  {t.open || 'Open'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Criminal Backstory Modal */}
         {showBackstoryModal && backstory && card && (
-          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/80 flex items-start justify-center z-[100] px-4 pt-16 pb-20 overflow-y-auto">
             <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 max-w-md w-full max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-vintage-gold">

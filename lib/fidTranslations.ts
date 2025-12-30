@@ -101,6 +101,9 @@ export const fidTranslations = {
     cardStats: 'Estatísticas da Carta',
     back: '← Voltar',
     cancel: 'Cancelar',
+    openOpenSea: 'Abrir OpenSea?',
+    openOpenSeaDesc: 'Você será redirecionado para o OpenSea para ver este NFT.',
+    open: 'Abrir',
     mintToReveal: 'Mintar para Revelar Carta Completa',
 
     // About Traits Modal

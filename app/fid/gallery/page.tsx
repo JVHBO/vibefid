@@ -83,16 +83,7 @@ export default function GalleryPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header - just back button */}
-        <div className="mb-4">
-          <Link
-            href="/fid"
-            onClick={() => AudioManager.buttonClick()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
-          >
-            {t.back}
-          </Link>
-        </div>
+
 
         {/* Search */}
         <div className="mb-6">
@@ -232,8 +223,8 @@ export default function GalleryPage() {
             onClick={() => AudioManager.buttonClick()}
             className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
           >
-            <span className="text-[10px] font-bold whitespace-nowrap">About</span>
-            <span className="text-xl leading-none">♣</span>
+            <span className="text-[10px] font-bold whitespace-nowrap">Back</span>
+            <span className="text-xl leading-none">←</span>
           </Link>
         </div>
       </div>
