@@ -1009,9 +1009,6 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         </div>
       </div>
 
-      {/* Version marker */}
-      <div className="fixed top-16 left-2 z-50 text-vintage-gold/50 text-xs">A9</div>
-
       {/* Main content container - centered in viewport */}
       <div className="fixed inset-0 flex flex-col items-center justify-center z-10 pointer-events-none" style={{ top: '56px', bottom: '64px' }}>
         {/* Buttons centered in exact middle */}
