@@ -21,6 +21,7 @@ interface MostWantedCard {
   mintScore: number;
   currentScore: number;
   scoreDiff: number;
+  votes: number;
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -144,6 +145,9 @@ export default function MostWantedPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-vintage-gold font-bold truncate">@{card.username}</p>
                     <p className="text-vintage-ice/60 text-xs">{card.rarity}</p>
+                    {card.votes > 0 && (
+                      <p className="text-yellow-400 text-xs font-bold">🗳️ {card.votes} votes</p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className={"font-bold text-sm " + (card.scoreDiff > 0 ? "text-green-400" : card.scoreDiff < 0 ? "text-red-400" : "text-vintage-ice/50")}>
