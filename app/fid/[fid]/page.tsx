@@ -560,9 +560,9 @@ export default function FidCardPage() {
       </div>
 
       {/* Main Content - Fixed viewport */}
-      <div className="fixed inset-0 flex flex-col items-center justify-center z-10 pointer-events-none" style={{ top: '56px', bottom: '64px' }}>
+      <div className="fixed inset-0 overflow-y-auto z-10" style={{ top: '56px', bottom: '64px' }}>
         {card && (
-          <div className="pointer-events-auto flex flex-col items-center gap-3 px-4 w-full max-w-sm">
+          <div className="flex flex-col items-center gap-3 px-4 py-4 w-full max-w-sm mx-auto">
             {/* Card with Refresh Button */}
             <div className="relative w-full">
               {/* Refresh Metadata Button - Top Right Corner */}
