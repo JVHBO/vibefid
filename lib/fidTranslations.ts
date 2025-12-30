@@ -106,6 +106,8 @@ export const fidTranslations = {
     cancel: 'Cancelar',
     openOpenSea: 'Abrir OpenSea?',
     openOpenSeaDesc: 'Você será redirecionado para o OpenSea para ver este NFT.',
+    openVBMS: 'Abrir Vibe Most Wanted?',
+    openVBMSDesc: 'Você será redirecionado para o Vibe Most Wanted para jogar.',
     open: 'Abrir',
     mintToReveal: 'Mintar para Revelar Carta Completa',
 
@@ -386,6 +388,8 @@ export const fidTranslations = {
     cancel: 'Cancel',
     openOpenSea: 'Open OpenSea?',
     openOpenSeaDesc: 'You will be redirected to OpenSea to view this NFT.',
+    openVBMS: 'Open Vibe Most Wanted?',
+    openVBMSDesc: 'You will be redirected to Vibe Most Wanted to play the game.',
     open: 'Open',
     mintToReveal: 'Mint to Reveal Full Card',
 
