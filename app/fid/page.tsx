@@ -1178,7 +1178,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                     const scoreDiff = myCard && myCard.neynarScore ? neynarScoreData.score - myCard.neynarScore : 0;
                     const diffSign = scoreDiff >= 0 ? '+' : '';
                     // Check if rarity changed from ORIGINAL mint rarity (stored in scoreHistory)
-                    const mintRarity = scoreHistory?.firstCheck?.rarity || myCard?.rarity;
+                    const mintRarity = scoreHistory?.mintRarity || myCard?.rarity;
                     const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
                     // Format: "0.950 +0.1000 since mint\nCard leveled up! Epic → Legendary"
                     const scoreLine = myCard && myCard.neynarScore
