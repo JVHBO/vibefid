@@ -820,7 +820,7 @@ export default function FidCardPage() {
                       const rarityLine = rarityChanged
                         ? `${t.cardLeveledUp || 'Card leveled up!'} ${card.rarity} → ${neynarScoreData.rarity}`
                         : neynarScoreData.rarity;
-                      const castText = `${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
+                      const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
                       return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                     })()}
                     target="_blank"
