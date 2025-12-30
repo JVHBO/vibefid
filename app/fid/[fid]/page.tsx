@@ -771,14 +771,25 @@ export default function FidCardPage() {
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom">
         <div className="bg-vintage-charcoal/95 backdrop-blur-lg border-t-2 border-vintage-gold/30 p-1 flex gap-1">
-          <Link
-            href="/fid"
-            onClick={() => AudioManager.buttonClick()}
+          <button
+            onClick={async () => {
+              AudioManager.buttonClick();
+              const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms';
+              if (farcasterContext.isInMiniapp) {
+                try {
+                  await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });
+                } catch (err) {
+                  window.open(VBMS_MINIAPP_URL, '_blank');
+                }
+              } else {
+                window.open(VBMS_MINIAPP_URL, '_blank');
+              }
+            }}
             className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
           >
             <span className="text-[10px] font-bold whitespace-nowrap">Vibe</span>
             <span className="text-xl leading-none">♠</span>
-          </Link>
+          </button>
           <Link
             href="/fid/most-wanted"
             onClick={() => AudioManager.buttonClick()}
