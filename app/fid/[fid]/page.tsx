@@ -632,7 +632,7 @@ export default function FidCardPage() {
                     AudioManager.buttonClick();
                     setShowShareModal(true);
                   }}
-                  className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-xs"
+                  className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs"
                 >
                   Share
                 </button>
@@ -641,7 +641,7 @@ export default function FidCardPage() {
                 href={`https://opensea.io/assets/base/${card.contractAddress || '0x60274A138d026E3cB337B40567100FdEC3127565'}/${card.fid}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 px-3 py-2 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-xs text-center"
+                className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs text-center"
               >
                 OpenSea
               </a>
