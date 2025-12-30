@@ -154,7 +154,7 @@ export default function MostWantedPage() {
                     </p>
                     {(() => {
                       // Check if card can upgrade based on current score
-                      const getRarityFromScore = (score) => {
+                      const getRarityFromScore = (score: number) => {
                         if (score >= 0.90) return 'Mythic';
                         if (score >= 0.80) return 'Legendary';
                         if (score >= 0.70) return 'Epic';
