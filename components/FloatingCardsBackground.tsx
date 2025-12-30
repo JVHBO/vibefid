@@ -38,7 +38,7 @@ export function FloatingCardsBackground() {
 
         // Delay escalonado para não começarem todas juntas
         // Delays mais curtos para aparecer mais rápido
-        const delay = random(0, 8) + (index * 2);
+        const delay = random(0, 1) + (index * 5) + random(0, 2);
 
         return {
           id: card._id || `card-${index}`,
