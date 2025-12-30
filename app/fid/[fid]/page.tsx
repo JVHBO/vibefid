@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { generateCriminalBackstory } from '@/lib/generateCriminalBackstory';
@@ -24,6 +24,8 @@ import { generateShareImage } from '@/lib/generateShareImage';
 import { convertIpfsToDataUrl } from '@/lib/ipfs-url-converter';
 import { useVibeVote } from '@/lib/hooks/useVibeVote';
 import { DailyLeader } from '@/components/DailyLeader';
+import { useAccount } from 'wagmi';
+import { useVBMSBalance, useClaimVBMS } from '@/lib/hooks/useVBMSContracts';
 
 // Helper to calculate rarity from score for display
 const getRarityFromScore = (score: number) => {
@@ -60,7 +62,8 @@ export default function FidCardPage() {
 
   // Vibe Rewards
   const vibeRewards = useQuery(api.vibeRewards.getRewards, { fid });
-  const claimRewardsMutation = useMutation(api.vibeRewards.claimRewards);
+  const prepareVibeRewardsClaim = useAction(api.vibeRewards.prepareVibeRewardsClaim);
+  const restoreClaimOnTxFailure = useMutation(api.vibeRewards.restoreClaimOnTxFailure);
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Get the most recent card (first one)
@@ -121,9 +124,20 @@ export default function FidCardPage() {
   const [shareLanguage, setShareLanguage] = useState(lang);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
 
+  // Wallet connection for VBMS payments
+  const { address: connectedAddress, isConnected: isWalletConnected } = useAccount();
+  const { balance: vbmsBalance } = useVBMSBalance(connectedAddress);
+  const { claimVBMS, isPending: isClaimTxPending } = useClaimVBMS();
+
+  // Debug log
+  console.log("🔌 Wallet:", isWalletConnected ? connectedAddress : "NOT CONNECTED");
+  console.log("💰 VBMS Balance:", vbmsBalance);
+  console.log("🎯 isOwnCard:", isOwnCard, "effectiveUser?.fid:", effectiveUser?.fid, "cardFid:", fid);
+  console.log("🏆 vibeRewards:", vibeRewards);
+
   // Voting system
   const viewerFid = effectiveUser?.fid || 0;
-  const viewerAddress = '0x0000000000000000000000000000000000000000'; // Placeholder, will be set properly later
+  const viewerAddress = connectedAddress || '0x0000000000000000000000000000000000000000' as `0x${string}`;
   const {
     isVoting,
     hasVoted,
@@ -132,7 +146,13 @@ export default function FidCardPage() {
     prizeInfo,
     voteFree,
     votePaid,
+    voteCostVBMS,
+    txHash,
   } = useVibeVote({ cardFid: fid, voterFid: viewerFid, voterAddress: viewerAddress });
+
+  // Paid vote modal state
+  const [showPaidVoteModal, setShowPaidVoteModal] = useState(false);
+  const [paidVoteCount, setPaidVoteCount] = useState(1);
 
   // Handle share with selected language
   const handleShareWithLanguage = async (selectedLang: typeof lang) => {
@@ -625,18 +645,36 @@ export default function FidCardPage() {
                 />
                             </FoilCardEffect>
 
-              {/* Vibe Button - Bottom Center Overlay */}
+              {/* Share Button - Bottom Left Corner (same pattern as Lore) */}
+              <button
+                onClick={() => {
+                  AudioManager.buttonClick();
+                  setShowShareModal(true);
+                }}
+                className="absolute -bottom-2 -left-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20"
+                title="Share Card"
+              >
+                <span className="text-xs">↗</span>
+              </button>
+
+              {/* Vote Button - Bottom Right Corner (same pattern as Refresh) */}
               <button
                 onClick={async () => {
                   AudioManager.buttonClick();
+                  if (isOwnCard) return;
                   if (!viewerFid) {
                     setError('Connect Farcaster to vote');
                     setTimeout(() => setError(null), 3000);
                     return;
                   }
-                  if (hasVoted) {
-                    setError('Already voted today');
-                    setTimeout(() => setError(null), 3000);
+                  // If already voted on this card OR no free votes left, show paid modal
+                  if (hasVoted || freeVotesRemaining <= 0) {
+                    if (isWalletConnected) {
+                      setShowPaidVoteModal(true);
+                    } else {
+                      setError('Connect wallet for more votes');
+                      setTimeout(() => setError(null), 3000);
+                    }
                     return;
                   }
                   const result = await voteFree();
@@ -645,22 +683,87 @@ export default function FidCardPage() {
                     setTimeout(() => setError(null), 3000);
                   }
                 }}
-                disabled={isVoting || hasVoted}
-                className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2 ${
-                  hasVoted
-                    ? 'bg-green-600 text-white cursor-default'
-                    : 'bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white shadow-lg hover:scale-105'
+                disabled={isVoting || isOwnCard}
+                className={`absolute -bottom-2 -right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  isOwnCard
+                    ? 'bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold'
+                    : hasVoted
+                      ? 'bg-vintage-gold/20 border border-vintage-gold text-vintage-gold hover:bg-vintage-gold/30'
+                      : 'bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20'
                 } disabled:opacity-70`}
+                title={isOwnCard ? `${totalVotes} vibes` : hasVoted ? `${totalVotes} vibes • Click for more` : `Vote • ${totalVotes} vibes`}
               >
                 {isVoting ? (
-                  <span className="animate-pulse">...</span>
-                ) : hasVoted ? (
-                  <>✓ Vibed</>
+                  <span className="animate-spin text-xs">⟳</span>
                 ) : (
-                  <>♥ Vibe</>
+                  <span className="text-xs font-bold">{totalVotes > 0 ? totalVotes : '♥'}</span>
                 )}
-                <span className="text-white/80 text-xs">({totalVotes})</span>
               </button>
+
+              {/* Claim Button - Right side of card */}
+              {isOwnCard && vibeRewards && vibeRewards.pendingVbms > 0 && (
+                <button
+                  onClick={async () => {
+                    AudioManager.buttonClick();
+                    if (!isWalletConnected || !connectedAddress) {
+                      setError('Connect wallet to claim');
+                      setTimeout(() => setError(null), 3000);
+                      return;
+                    }
+                    setIsClaiming(true);
+                    setError(null);
+                    let claimResult: { success: boolean; amount?: number; nonce?: string; signature?: string; error?: string } | null = null;
+                    try {
+                      // Call Convex action to prepare claim (gets nonce + signature)
+                      console.log('📝 Preparing claim via Convex action...');
+                      claimResult = await prepareVibeRewardsClaim({
+                        fid,
+                        claimerAddress: connectedAddress,
+                      });
+
+                      if (!claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
+                        throw new Error(claimResult.error || 'Failed to prepare claim');
+                      }
+
+                      const result = claimResult;
+
+                      console.log('✅ Got nonce + signature from Convex');
+                      console.log('🔗 Calling claimVBMS on contract...');
+
+                      // Call blockchain contract
+                      const txHash = await claimVBMS(
+                        result.amount.toString(),
+                        result.nonce as `0x${string}`,
+                        result.signature as `0x${string}`
+                      );
+                      console.log('✅ Claim TX:', txHash);
+
+                      alert(`Claimed ${result.amount} VBMS! TX: ${txHash}`);
+                    } catch (e: any) {
+                      console.error('❌ Claim failed:', e);
+                      // Restore rewards if TX failed/cancelled (only if we got past prepare)
+                      if (claimResult?.amount) {
+                        console.log('🔄 Restoring rewards after TX failure...');
+                        try {
+                          await restoreClaimOnTxFailure({ fid, amount: claimResult.amount });
+                          console.log('✅ Rewards restored');
+                        } catch (restoreErr) {
+                          console.error('Failed to restore rewards:', restoreErr);
+                        }
+                      }
+                      setError(e.message || 'Claim failed');
+                      setTimeout(() => setError(null), 5000);
+                    }
+                    setIsClaiming(false);
+                  }}
+                  disabled={isClaiming || !isWalletConnected}
+                  className="absolute -right-12 top-1/2 -translate-y-1/2 z-20 px-2 py-1 rounded-lg bg-vintage-gold text-black hover:bg-yellow-400 transition-all animate-pulse flex flex-col items-center gap-0 disabled:opacity-50"
+                  title={`Claim ${vibeRewards.pendingVbms} VBMS`}
+                >
+                  <span className="text-xs font-bold leading-tight">{isClaiming || isClaimTxPending ? '...' : vibeRewards.pendingVbms}</span>
+                  <span className="text-[8px] leading-tight">VBMS</span>
+                </button>
+              )}
 </div>
 
             {/* Compact Stats Row */}
@@ -725,39 +828,6 @@ export default function FidCardPage() {
 
 
 
-            {/* Vibe Rewards Section - Only for card owner with pending rewards */}
-            {isOwnCard && vibeRewards && vibeRewards.pendingVbms > 0 && (
-              <div className="w-full bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg border border-yellow-500/30 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-yellow-400 font-bold text-sm">Vibe Rewards</p>
-                    <p className="text-vintage-ice/60 text-xs">{vibeRewards.totalVotes} votes received</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-yellow-400 font-bold">{vibeRewards.pendingVbms} VBMS</p>
-                    <button
-                      onClick={async () => {
-                        AudioManager.buttonClick();
-                        setIsClaiming(true);
-                        try {
-                          const result = await claimRewardsMutation({ fid, claimerAddress: '0x0' });
-                          if (result.success) {
-                            alert('Claimed ' + result.claimAmount + ' VBMS!');
-                          }
-                        } catch (e) {
-                          console.error('Claim failed:', e);
-                        }
-                        setIsClaiming(false);
-                      }}
-                      disabled={isClaiming}
-                      className="mt-1 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded text-xs transition-colors disabled:opacity-50"
-                    >
-                      {isClaiming ? '...' : 'Claim'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Error message */}
             {error && (
@@ -1227,6 +1297,103 @@ export default function FidCardPage() {
                 displayName={card.displayName}
                 lang={lang}
               />
+            </div>
+          </div>
+        )}
+
+        {/* Paid Vote Modal */}
+        {showPaidVoteModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+            <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-sm">
+              <h3 className="text-vintage-gold font-bold text-lg mb-3 text-center">
+                💰 Paid Vote
+              </h3>
+
+              {/* VBMS Balance */}
+              <div className="bg-vintage-black/50 rounded-lg p-3 mb-4">
+                <p className="text-vintage-ice/60 text-xs mb-1">Your VBMS Balance</p>
+                <p className="text-vintage-gold font-bold text-lg">
+                  {parseFloat(vbmsBalance).toLocaleString(undefined, { maximumFractionDigits: 2 })} VBMS
+                </p>
+              </div>
+
+              {/* Vote Count Selector */}
+              <div className="mb-4">
+                <p className="text-vintage-ice/60 text-xs mb-2">Number of votes</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPaidVoteCount(Math.max(1, paidVoteCount - 1))}
+                    className="w-10 h-10 bg-vintage-black border border-vintage-gold/30 text-vintage-gold rounded-lg font-bold hover:bg-vintage-gold/10"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={paidVoteCount}
+                    onChange={(e) => setPaidVoteCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="flex-1 h-10 bg-vintage-black border border-vintage-gold/30 text-vintage-gold text-center rounded-lg font-bold"
+                    min="1"
+                  />
+                  <button
+                    onClick={() => setPaidVoteCount(paidVoteCount + 1)}
+                    className="w-10 h-10 bg-vintage-black border border-vintage-gold/30 text-vintage-gold rounded-lg font-bold hover:bg-vintage-gold/10"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Cost Summary */}
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-vintage-ice text-sm">Cost per vote:</span>
+                  <span className="text-yellow-400 font-bold">{voteCostVBMS} VBMS</span>
+                </div>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-yellow-500/20">
+                  <span className="text-vintage-ice font-bold">Total:</span>
+                  <span className="text-yellow-400 font-bold text-lg">
+                    {(parseInt(voteCostVBMS) * paidVoteCount).toLocaleString()} VBMS
+                  </span>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowPaidVoteModal(false);
+                    setPaidVoteCount(1);
+                  }}
+                  className="flex-1 py-2 bg-vintage-burnt-gold/30 hover:bg-vintage-burnt-gold/50 text-vintage-gold font-bold rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    AudioManager.buttonClick();
+                    const result = await votePaid(paidVoteCount);
+                    if (result.success) {
+                      setShowPaidVoteModal(false);
+                      setPaidVoteCount(1);
+                    } else {
+                      setError(result.error || 'Vote failed');
+                      setTimeout(() => setError(null), 5000);
+                    }
+                  }}
+                  disabled={isVoting || parseFloat(vbmsBalance) < parseInt(voteCostVBMS) * paidVoteCount}
+                  className="flex-1 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVoting ? 'Sending TX...' : 'Vote & Pay'}
+                </button>
+              </div>
+
+              {/* Insufficient Balance Warning */}
+              {parseFloat(vbmsBalance) < parseInt(voteCostVBMS) * paidVoteCount && (
+                <p className="text-red-400 text-xs text-center mt-2">
+                  Insufficient VBMS balance
+                </p>
+              )}
             </div>
           </div>
         )}

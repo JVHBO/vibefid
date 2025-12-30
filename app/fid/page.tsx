@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract, useConnect, useSendTransaction } from "wagmi";
 import { encodeFunctionData } from "viem";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getUserByFid, calculateRarityFromScore, getBasePowerFromRarity, generateRandomSuit, getSuitFromFid, generateRankFromRarity, getSuitSymbol, getSuitColor } from "@/lib/neynar";
 import { getFidTraits } from "@/lib/fidTraits";
@@ -29,6 +29,7 @@ import Link from "next/link";
 import { AudioManager } from "@/lib/audio-manager";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { DailyLeader } from "@/components/DailyLeader";
+import { useClaimVBMS } from "@/lib/hooks/useVBMSContracts";
 import { FloatingCardsBackground } from "@/components/FloatingCardsBackground";
 
 
@@ -669,6 +670,13 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   // Query to get current user's minted card (if exists)
   const userFid = farcasterContext.user?.fid;
+
+  // Vibe Rewards claim
+  const vibeRewards = useQuery(api.vibeRewards.getRewards, userFid ? { fid: userFid } : "skip");
+  const prepareVibeRewardsClaim = useAction(api.vibeRewards.prepareVibeRewardsClaim);
+  const restoreClaimOnTxFailure = useMutation(api.vibeRewards.restoreClaimOnTxFailure);
+  const { claimVBMS, isPending: isClaimTxPending } = useClaimVBMS();
+  const [isClaimingRewards, setIsClaimingRewards] = useState(false);
   const myCard = useQuery(
     api.farcasterCards.getFarcasterCardByFid,
     userFid ? { fid: userFid } : "skip"
@@ -1779,6 +1787,64 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         </div>
       )}
 
+      
+      {/* Floating Claim Button */}
+      {userFid && vibeRewards && vibeRewards.pendingVbms > 0 && address && (
+        <button
+          onClick={async () => {
+            AudioManager.buttonClick();
+            setIsClaimingRewards(true);
+            setError(null);
+            let claimResult: { success: boolean; amount?: number; nonce?: string; signature?: string; error?: string } | null = null;
+            try {
+              console.log('📝 Preparing claim via Convex action...');
+              claimResult = await prepareVibeRewardsClaim({
+                fid: userFid,
+                claimerAddress: address,
+              });
+
+              if (!claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
+                throw new Error(claimResult.error || 'Failed to prepare claim');
+              }
+
+              console.log('✅ Got nonce + signature from Convex');
+              console.log('🔗 Calling claimVBMS on contract...');
+
+              const txHash = await claimVBMS(
+                claimResult.amount.toString(),
+                claimResult.nonce as `0x${string}`,
+                claimResult.signature as `0x${string}`
+              );
+              console.log('✅ Claim TX:', txHash);
+              alert(`Claimed ${claimResult.amount} VBMS! TX: ${txHash}`);
+            } catch (e: any) {
+              console.error('❌ Claim failed:', e);
+              if (claimResult?.amount) {
+                console.log('🔄 Restoring rewards after TX failure...');
+                try {
+                  await restoreClaimOnTxFailure({ fid: userFid, amount: claimResult.amount });
+                  console.log('✅ Rewards restored');
+                } catch (restoreErr) {
+                  console.error('Failed to restore rewards:', restoreErr);
+                }
+              }
+              setError(e.message || 'Claim failed');
+              setTimeout(() => setError(null), 5000);
+            }
+            setIsClaimingRewards(false);
+          }}
+          disabled={isClaimingRewards || isClaimTxPending}
+          className="fixed bottom-20 right-4 z-[9998] px-3 py-2 rounded-xl bg-vintage-gold/40 text-vintage-gold hover:bg-vintage-gold/60 transition-all flex flex-col items-center gap-0 disabled:opacity-50 shadow-lg backdrop-blur-sm border border-vintage-gold/30"
+          style={{
+            animation: 'floatClaim 4s ease-in-out infinite',
+          }}
+          title={`Claim ${vibeRewards.pendingVbms} VBMS`}
+        >
+          <span className="text-sm font-bold leading-tight">{isClaimingRewards || isClaimTxPending ? '...' : vibeRewards.pendingVbms}</span>
+          <span className="text-[10px] leading-tight">VBMS</span>
+        </button>
+      )}
+
       {/* Bottom Navigation Bar - Fixed at bottom (VBMS style) */}
       <div className="fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom">
         <div className="bg-vintage-charcoal/95 backdrop-blur-lg rounded-none border-t-2 border-vintage-gold/30 p-1 flex gap-1">
@@ -1803,6 +1869,17 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
         </div>
       </div>
+
+      {/* Floating Animation CSS */}
+      <style jsx global>{`
+        @keyframes floatClaim {
+          0% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-8px) rotate(2deg); }
+          50% { transform: translateY(-15px) rotate(0deg); }
+          75% { transform: translateY(-8px) rotate(-2deg); }
+          100% { transform: translateY(0px) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 }
