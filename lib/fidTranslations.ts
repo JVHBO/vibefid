@@ -2489,7 +2489,6 @@ export const fidTranslations = {
 
     // Upgrade system
     upgradeAvailable: 'アップグレード可能',
-    scoreHistory: 'スコア履歴',
     checks: '回チェック',
     upgrading: 'アップグレード中...',
     upgradeRarity: 'レアリティアップグレード',
@@ -2500,7 +2499,6 @@ export const fidTranslations = {
     evolved: '進化完了！',
     before: 'ビフォー',
     after: 'アフター',
-    close: '閉じる',
     myVibeFidEvolved: '私のVibeFIDが進化しました！',
 
     // Gallery/Most Wanted page
