@@ -27,6 +27,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AudioManager } from "@/lib/audio-manager";
 import { sdk } from "@farcaster/miniapp-sdk";
+import { DailyLeader } from "@/components/DailyLeader";
+import { FloatingCardsBackground } from "@/components/FloatingCardsBackground";
 
 interface GeneratedTraits {
   rarity: string;
@@ -93,6 +95,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   // Neynar score state
   const [neynarScoreData, setNeynarScoreData] = useState<{ score: number; rarity: string; fid: number; username: string } | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
+
+  // Test Mint state
+  const [testFidInput, setTestFidInput] = useState("");
 
   // Temporary storage for mint data
   // 🔒 FIX: Also persist to localStorage to handle page refresh/close
@@ -937,164 +942,121 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black p-2 sm:p-4 md:p-8 overflow-x-hidden">
-      {/* Language Selector & Mute Button - Fixed Top Right */}
-      <div className="fixed top-2 right-2 z-50 flex items-center gap-2">
-        <button
-          onClick={() => setIsMusicEnabled(!isMusicEnabled)}
-          className="p-1.5 bg-vintage-charcoal/90 border border-vintage-gold/30 rounded text-vintage-ice hover:border-vintage-gold transition-colors shadow-md"
-          title={isMusicEnabled ? "Mute" : "Unmute"}
-        >
-          {isMusicEnabled ? "🔊" : "🔇"}
-        </button>
-        <select
-          value={lang}
-          onChange={(e) => setLang(e.target.value as any)}
-          className="px-2 py-1 bg-vintage-charcoal/90 border border-vintage-gold/30 rounded text-vintage-ice focus:outline-none focus:border-vintage-gold text-xs shadow-md hover:border-vintage-gold transition-colors"
-        >
-          <option value="en">🇺🇸</option>
-          <option value="pt-BR">🇧🇷</option>
-          <option value="es">🇪🇸</option>
-          <option value="hi">🇮🇳</option>
-          <option value="ru">🇷🇺</option>
-          <option value="zh-CN">🇨🇳</option>
-          <option value="id">🇮🇩</option>
-          <option value="fr">🇫🇷</option>
-          <option value="ja">🇯🇵</option>
-        </select>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black p-2 sm:p-4 md:p-8 overflow-x-hidden relative">
+      {/* Floating Cards Background */}
+      <FloatingCardsBackground />
 
-      <div className="max-w-4xl mx-auto w-full">
-        {/* Header */}
-        <div className="text-center mb-4 sm:mb-6 md:mb-8 px-2 relative">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-vintage-gold mb-2 drop-shadow-[0_0_25px_rgba(255,215,0,0.5)]">
-            {t.fidPageTitle}
-          </h1>
-          <p className="text-sm sm:text-base text-vintage-ice/80 mb-4 tracking-wide uppercase">
-            {t.fidPageDesc}
-          </p>
+      {/* Header Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          {/* Left: User Info */}
+          <div className="flex items-center gap-2">
+            {farcasterContext.user ? (
+              <>
+                <img
+                  src={farcasterContext.user.pfpUrl || '/images/default-avatar.png'}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full border-2 border-vintage-gold"
+                />
+                <div className="text-left">
+                  <p className="text-vintage-gold font-bold text-sm leading-tight">
+                    @{farcasterContext.user.username}
+                  </p>
+                  <p className="text-vintage-ice/60 text-xs">
+                    FID #{farcasterContext.user.fid}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <span className="text-vintage-ice/50 text-sm">Not connected</span>
+            )}
+          </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
+          {/* Right: Sound & Language */}
+          <div className="flex items-center gap-1.5">
             <button
-              onClick={async () => {
-                AudioManager.buttonClick();
-                const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms';
-
-                // Check if we're in Farcaster miniapp context
-                if (farcasterContext.isInMiniapp) {
-                  try {
-                    await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });
-                  } catch (err) {
-                    console.error('Failed to open miniapp:', err);
-                    window.open(VBMS_MINIAPP_URL, '_blank');
-                  }
-                } else {
-                  // Not in Farcaster - open in new tab
-                  window.open(VBMS_MINIAPP_URL, '_blank');
-                }
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
+              onClick={() => setIsMusicEnabled(!isMusicEnabled)}
+              className="w-8 h-8 flex items-center justify-center bg-vintage-black/50 border border-vintage-gold/30 rounded-lg text-vintage-gold hover:border-vintage-gold hover:bg-vintage-gold/10 transition-all"
+              title={isMusicEnabled ? "Mute" : "Unmute"}
             >
-              <span>←</span>
-              <span>{t.home}</span>
+              {isMusicEnabled ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+              )}
             </button>
-            <button
-              onClick={() => {
-                AudioManager.buttonClick();
-                setShowAboutModal(true);
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-vintage-gold/10 border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/20 transition-colors text-sm"
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as any)}
+              className="h-8 px-2 bg-[#1a1a1a] border border-vintage-gold/30 rounded-lg text-vintage-gold font-bold focus:outline-none focus:border-vintage-gold text-xs hover:border-vintage-gold hover:bg-vintage-gold/10 transition-all cursor-pointer [&>option]:bg-[#1a1a1a] [&>option]:text-vintage-gold"
             >
-              <span>{t.aboutTraits}</span>
-            </button>
+              <option value="en">EN</option>
+              <option value="pt-BR">PT</option>
+              <option value="es">ES</option>
+              <option value="it">IT</option>
+              <option value="fr">FR</option>
+              <option value="ja">JA</option>
+              <option value="zh-CN">ZH</option>
+              <option value="ru">RU</option>
+              <option value="hi">HI</option>
+              <option value="id">ID</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* Success message when in miniapp */}
-        {farcasterContext.isReady && farcasterContext.isInMiniapp && farcasterContext.user && (
-          <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 text-center">
-            <p className="text-green-300 text-xs sm:text-sm md:text-base break-words">
-              ✅ {t.connectedAs} <span className="font-bold">@{farcasterContext.user.username || `FID ${farcasterContext.user.fid}`}</span>
-              {" "}(FID: {farcasterContext.user.fid})
-            </p>
-          </div>
-        )}
+      {/* Version marker */}
+      <div className="fixed top-16 left-2 z-50 text-vintage-gold/50 text-xs">A9</div>
 
-        {/* My Card Section (if user has minted card) */}
-        {myCard && (
-          <div className="bg-gradient-to-br from-vintage-gold/20 to-vintage-burnt-gold/10 rounded-lg sm:rounded-xl border-2 border-vintage-gold p-4 sm:p-6 mb-4 sm:mb-6 md:mb-8 shadow-[0_0_30px_rgba(255,215,0,0.3)]">
-            <div className="text-center mb-4">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-vintage-gold mb-2">
-                🎴 {t.yourCard || "Your VibeFID Card"}
-              </h2>
-              <p className="text-sm sm:text-base text-vintage-ice/70">
-                {t.alreadyMinted || "You already have a minted card!"}
-              </p>
+      {/* Main content container - centered in viewport */}
+      <div className="fixed inset-0 flex flex-col items-center justify-center z-10 pointer-events-none" style={{ top: '56px', bottom: '64px' }}>
+        {/* Buttons centered in exact middle */}
+        <div className="pointer-events-auto flex flex-col items-center gap-3">
+          {/* Main action button */}
+          {myCard ? (
+            <Link
+              href={`/fid/${myCard.fid}`}
+              onClick={() => AudioManager.buttonClick()}
+              className="px-10 py-4 bg-vintage-gold text-vintage-black font-bold text-xl rounded-xl transition-all hover:scale-105 hover:bg-vintage-burnt-gold shadow-[0_0_30px_rgba(255,215,0,0.3)]"
+            >
+              {t.viewMyCard || "View My Card"}
+            </Link>
+          ) : (
+            <button
+              onClick={handleGenerateCard}
+              disabled={loading}
+              className="px-10 py-4 bg-vintage-gold text-vintage-black font-bold text-xl rounded-xl transition-all hover:scale-105 hover:bg-vintage-burnt-gold disabled:opacity-50 shadow-[0_0_30px_rgba(255,215,0,0.3)]"
+            >
+              {loading ? t.generating : farcasterContext.user ? t.mintMyCard : t.connectFarcasterToMint}
+            </button>
+          )}
+
+          {/* Check score link - subtle */}
+          {farcasterContext.user && (
+            <button
+              onClick={handleCheckNeynarScore}
+              disabled={loading}
+              className="text-vintage-gold/70 text-xs hover:text-vintage-gold transition-colors disabled:opacity-50"
+            >
+              {t.checkNeynarScore}
+            </button>
+          )}
+
+          {/* Error display */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm break-words max-w-md">
+              {error}
             </div>
+          )}
+        </div>
+      </div>
 
-            <div className="flex flex-col items-center gap-4">
-              {/* View Full Card Button */}
-              <Link
-                href={`/fid/${myCard.fid}`}
-                onClick={() => AudioManager.buttonClick()}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-vintage-gold text-vintage-black font-bold text-base sm:text-lg rounded-lg hover:bg-vintage-burnt-gold transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,215,0,0.4)]"
-              >
-                {t.viewMyCard || "View My Card"} →
-              </Link>
 
-              {/* Check Neynar Score */}
-              <button
-                onClick={handleCheckNeynarScore}
-                disabled={loading}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-vintage-charcoal border-2 border-vintage-gold/50 text-vintage-gold font-bold text-sm sm:text-base rounded-lg hover:bg-vintage-gold/10 transition-all hover:scale-105 disabled:opacity-50"
-              >
-                📊 {t.checkNeynarScore}
-              </button>
-
-            </div>
-          </div>
-        )}
-
-        {/* Mint Section (only show if user doesn't have a card) */}
-        {!myCard && (
-          <div className="bg-vintage-black/50 rounded-lg sm:rounded-xl border border-vintage-gold/50 p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 md:mb-8">
-            <div className="text-center">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-vintage-gold mb-4">
-                {t.mintYourCard}
-              </h2>
-              <p className="text-sm sm:text-base text-vintage-ice/70 mb-6">
-                {t.transformProfile}
-              </p>
-
-              {/* Mint Button */}
-              <button
-                onClick={handleGenerateCard}
-                disabled={loading}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-vintage-gold text-vintage-black font-bold text-base sm:text-lg rounded-lg hover:bg-vintage-burnt-gold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-[0_0_20px_rgba(255,215,0,0.4)]"
-              >
-                {loading ? t.generating : farcasterContext.user ? t.mintMyCard : t.connectFarcasterToMint}
-              </button>
-
-              {/* Check Neynar Score Button */}
-              {farcasterContext.user && (
-                <button
-                  onClick={handleCheckNeynarScore}
-                  disabled={loading}
-                  className="mt-3 px-6 sm:px-8 py-3 sm:py-4 bg-vintage-charcoal border-2 border-vintage-gold/50 text-vintage-gold font-bold text-sm sm:text-base rounded-lg hover:bg-vintage-gold/10 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {t.checkNeynarScore}
-                </button>
-              )}
-
-              {error && (
-                <div className="mt-4 p-3 sm:p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm sm:text-base break-words">
-                  {error}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+      <div className="max-w-4xl mx-auto w-full pt-16">
 
         {/* Generation Modal */}
         <FidGenerationModal
@@ -1127,6 +1089,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           }}
         />
 
+
         {/* Neynar Score Modal */}
         {showScoreModal && neynarScoreData && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -1141,7 +1104,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                   <div className="text-5xl font-bold text-vintage-gold mb-2">
                     {neynarScoreData.score.toFixed(3)}
                   </div>
-                  <p className="text-vintage-ice text-sm font-bold">{t.currentScore} ⚡</p>
+                  <p className="text-vintage-ice text-sm font-bold">{t.currentScore}</p>
                   <p className="text-vintage-ice/60 text-xs mt-1">(Real-time from Neynar API)</p>
                 </div>
 
@@ -1164,7 +1127,16 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                 <a
                   href={(() => {
                     const shareUrl = 'https://vibefid.xyz/fid';
-                    const castText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}\n${neynarScoreData.rarity} ${t.neynarScoreRarity}\n\n🎴 ${t.neynarScoreCheckMint}`;
+
+                    // Build score text - show difference if user has a minted VibeFID
+                    let scoreText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}`;
+                    if (myCard && myCard.neynarScore) {
+                      const scoreDiff = neynarScoreData.score - myCard.neynarScore;
+                      const diffSign = scoreDiff >= 0 ? '+' : '';
+                      scoreText = `📊 ${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)} (${diffSign}${scoreDiff.toFixed(3)})`;
+                    }
+
+                    const castText = `${scoreText}\n🎴 ${neynarScoreData.rarity} ${t.neynarScoreRarity}\n\n${t.neynarScoreCheckMint}`;
                     return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                   })()}
                   target="_blank"
@@ -1179,196 +1151,6 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           </div>
         )}
 
-        {/* All Minted Cards with Pagination and Search */}
-        {searchResult && (() => {
-          const { cards: currentCards, totalCount, hasMore } = searchResult;
-          const totalPages = Math.ceil(totalCount / cardsPerPage);
-          const startIndex = (currentPage - 1) * cardsPerPage;
-          const endIndex = Math.min(startIndex + cardsPerPage, totalCount);
-
-          return (
-            <div className="bg-vintage-black/50 rounded-lg sm:rounded-xl border border-vintage-gold/50 p-3 sm:p-4 md:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-vintage-gold">
-                  {t.allMinted}
-                </h2>
-
-                {/* Search Input */}
-                <div className="relative w-full sm:w-auto">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder={t.searchPlaceholder || "Search by name or FID..."}
-                    className="w-full sm:w-64 px-4 py-2 pl-10 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg text-vintage-ice placeholder-vintage-ice/50 focus:outline-none focus:border-vintage-gold text-sm"
-                  />
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-vintage-ice/50">🔍</span>
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-vintage-ice/50 hover:text-vintage-ice text-sm"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Cards Grid */}
-              {currentCards.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {currentCards.map((card: any) => (
-                  <Link
-                    key={card._id}
-                    href={`/fid/${card.fid}`}
-                    onClick={() => AudioManager.buttonClick()}
-                    className="bg-vintage-charcoal rounded-lg border border-vintage-gold/30 p-4 hover:border-vintage-gold transition-all hover:scale-105 cursor-pointer"
-                  >
-                    {/* Card Symbol */}
-                    <div className="text-center mb-2">
-                      <span className={`text-4xl font-bold ${card.color === 'red' ? 'text-red-500' : 'text-black'}`}>
-                        {card.rank}{card.suitSymbol}
-                      </span>
-                    </div>
-
-                    {/* Card Image (use cardImageUrl if available, fallback to pfpUrl) */}
-                    <img
-                      src={card.cardImageUrl || card.pfpUrl}
-                      alt={card.username}
-                      className="w-full aspect-[3/4] object-contain rounded-lg mb-2 bg-vintage-black/50"
-                      onError={(e) => {
-                        // Fallback to pfpUrl if cardImageUrl fails
-                        if (card.cardImageUrl && (e.target as HTMLImageElement).src !== card.pfpUrl) {
-                          (e.target as HTMLImageElement).src = card.pfpUrl;
-                        }
-                      }}
-                    />
-                    <p className="text-vintage-gold font-bold truncate">{card.displayName}</p>
-                    <p className="text-vintage-ice/70 text-sm truncate">
-                      <a
-                        href={`https://farcaster.xyz/${card.username}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-vintage-gold hover:text-vintage-burnt-gold transition-colors underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        @{card.username}
-                      </a>
-                    </p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-vintage-burnt-gold text-sm">{card.rarity}</span>
-                      <span className="text-vintage-ice text-sm">⚡ {card.power}</span>
-                    </div>
-                    <div className="mt-1 text-center text-xs text-vintage-ice/50">
-                      Score: {card.neynarScore.toFixed(2)}
-                    </div>
-
-                    <div className="mt-3 text-center text-xs text-vintage-burnt-gold">
-                      Click to view card →
-                    </div>
-                  </Link>
-                ))}
-              </div>
-              ) : (
-                <div className="text-center py-12 text-vintage-ice/60">
-                  <span className="text-4xl block mb-4">🔍</span>
-                  <p className="text-lg">{t.noCardsFound || "No cards found"}</p>
-                  {searchTerm && (
-                    <button
-                      onClick={() => setSearchTerm("")}
-                      className="mt-4 px-4 py-2 bg-vintage-gold/20 border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/30 transition-colors text-sm"
-                    >
-                      {t.clearSearch || "Clear search"}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 flex-wrap">
-                  {/* Previous Button */}
-                  <button
-                    onClick={() => {
-                      AudioManager.buttonClick();
-                      setCurrentPage(prev => Math.max(1, prev - 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  >
-                    {t.previous}
-                  </button>
-
-                  {/* Page Numbers */}
-                  <div className="flex gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-                      // Show first page, last page, current page, and pages around current
-                      const showPage =
-                        pageNum === 1 ||
-                        pageNum === totalPages ||
-                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
-
-                      // Show ellipsis
-                      const showEllipsisBefore = pageNum === currentPage - 2 && currentPage > 3;
-                      const showEllipsisAfter = pageNum === currentPage + 2 && currentPage < totalPages - 2;
-
-                      if (!showPage && !showEllipsisBefore && !showEllipsisAfter) {
-                        return null;
-                      }
-
-                      if (showEllipsisBefore || showEllipsisAfter) {
-                        return (
-                          <span key={pageNum} className="px-2 py-2 text-vintage-ice/50">
-                            ...
-                          </span>
-                        );
-                      }
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => {
-                            AudioManager.buttonClick();
-                            setCurrentPage(pageNum);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                            currentPage === pageNum
-                              ? 'bg-vintage-gold text-vintage-black font-bold'
-                              : 'bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold hover:bg-vintage-gold/10'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Next Button */}
-                  <button
-                    onClick={() => {
-                      AudioManager.buttonClick();
-                      setCurrentPage(prev => Math.min(totalPages, prev + 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  >
-                    {t.next}
-                  </button>
-                </div>
-              )}
-
-              {/* Page Info */}
-              {totalCount > 0 && (
-              <div className="mt-4 text-center text-sm text-vintage-ice/70">
-                {t.pageOf} {currentPage} {t.of} {totalPages} • {t.showing} {startIndex + 1}-{endIndex} {t.of} {totalCount} {t.cards}
-              </div>
-              )}
-            </div>
-          );
-        })()}
 
         {/* About Traits Modal */}
         <FidAboutTraitsModal
@@ -1525,7 +1307,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                 {/* Power Calculation */}
                 <div className="bg-gradient-to-br from-vintage-gold/20 to-vintage-burnt-gold/20 rounded-lg border-2 border-vintage-gold p-4">
                   <h3 className="text-lg sm:text-xl font-bold text-vintage-gold mb-3 flex items-center gap-2">
-                    <span>⚡</span> Power Calculation
+                    Power Calculation
                   </h3>
                   <div className="text-center">
                     <div className="text-vintage-ice text-sm sm:text-base mb-2">
@@ -1572,6 +1354,52 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             </div>
           </div>
         )}
+
+        {/* Bottom spacer for fixed nav */}
+        <div className="h-20"></div>
+      </div>
+
+      {/* Bottom Navigation Bar - Fixed at bottom (VBMS style) */}
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom">
+        <div className="bg-vintage-charcoal/95 backdrop-blur-lg rounded-none border-t-2 border-vintage-gold/30 p-1 flex gap-1">
+          <button
+            onClick={async () => {
+              AudioManager.buttonClick();
+              const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms';
+              if (farcasterContext.isInMiniapp) {
+                try {
+                  await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });
+                } catch (err) {
+                  window.open(VBMS_MINIAPP_URL, '_blank');
+                }
+              } else {
+                window.open(VBMS_MINIAPP_URL, '_blank');
+              }
+            }}
+            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
+          >
+            <span className="text-[10px] font-bold whitespace-nowrap">Play</span>
+            <span className="text-xl leading-none">♠</span>
+          </button>
+          <Link
+            href="/fid/gallery"
+            onClick={() => AudioManager.buttonClick()}
+            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
+          >
+            <span className="text-[10px] font-bold whitespace-nowrap">Gallery</span>
+            <span className="text-xl leading-none">♦</span>
+          </Link>
+          <button
+            onClick={() => {
+              AudioManager.buttonClick();
+              setShowAboutModal(true);
+            }}
+            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
+          >
+            <span className="text-[10px] font-bold whitespace-nowrap">About</span>
+            <span className="text-xl leading-none">♣</span>
+          </button>
+        </div>
       </div>
     </div>
   );

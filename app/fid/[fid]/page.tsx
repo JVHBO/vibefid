@@ -22,6 +22,8 @@ import { generateFarcasterCardImage } from '@/lib/generateFarcasterCard';
 import { generateCardVideo } from '@/lib/generateCardVideo';
 import { generateShareImage } from '@/lib/generateShareImage';
 import { convertIpfsToDataUrl } from '@/lib/ipfs-url-converter';
+import { useVibeVote } from '@/lib/hooks/useVibeVote';
+import { DailyLeader } from '@/components/DailyLeader';
 
 export default function FidCardPage() {
   const params = useParams();
@@ -99,8 +101,22 @@ export default function FidCardPage() {
 
   // Share with language state
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showBackstoryModal, setShowBackstoryModal] = useState(false);
   const [shareLanguage, setShareLanguage] = useState(lang);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+
+  // Voting system
+  const viewerFid = effectiveUser?.fid || 0;
+  const viewerAddress = '0x0000000000000000000000000000000000000000'; // Placeholder, will be set properly later
+  const {
+    isVoting,
+    hasVoted,
+    totalVotes,
+    freeVotesRemaining,
+    prizeInfo,
+    voteFree,
+    votePaid,
+  } = useVibeVote({ cardFid: fid, voterFid: viewerFid, voterAddress: viewerAddress });
 
   // Handle share with selected language
   const handleShareWithLanguage = async (selectedLang: typeof lang) => {
@@ -144,6 +160,9 @@ export default function FidCardPage() {
         shareImageUrl,
       });
 
+      // Get translations for selected language
+      const shareT = fidTranslations[selectedLang];
+
       // Build cast text
       const rarityEmojiMap: Record<string, string> = {
         'Mythic': '👑', 'Legendary': '⚡', 'Epic': '💎', 'Rare': '🔥', 'Common': '⭐'
@@ -151,7 +170,20 @@ export default function FidCardPage() {
       const rarityEmoji = rarityEmojiMap[card.rarity] || '🎴';
       const foilEmoji = currentTraits?.foil === 'Prize' ? '✨' : currentTraits?.foil === 'Standard' ? '💫' : '';
       const foilText = currentTraits?.foil !== 'None' ? ` ${currentTraits?.foil} Foil` : '';
-      const castText = `🃏 Just minted my VibeFID!\n\n${rarityEmoji} ${card.rarity}${foilText}\n⚡ ${correctPower} Power ${foilEmoji}\n🎯 FID #${card.fid}\n\n🎲 Play Poker Battles\n🗡️ Fight in PvE\n💰 Earn coins\n\n🎮 Mint yours! @jvhbo`;
+
+      // Check if card was upgraded and build score/upgrade text
+      const wasUpgraded = card.upgradedAt && card.previousRarity && card.previousNeynarScore;
+      let scoreText = `📊 Neynar Score: ${card.neynarScore.toFixed(3)}`;
+      let upgradeText = '';
+
+      if (wasUpgraded) {
+        const scoreDiff = card.neynarScore - card.previousNeynarScore!;
+        const diffSign = scoreDiff >= 0 ? '+' : '';
+        scoreText = `📊 Neynar Score: ${card.neynarScore.toFixed(3)} (${diffSign}${scoreDiff.toFixed(3)})`;
+        upgradeText = `\n🆙 ${card.previousRarity} → ${card.rarity}`;
+      }
+
+      const castText = `🃏 ${shareT.yourVibeFidCard}\n\n${rarityEmoji} ${card.rarity}${foilText}\n⚡ ${correctPower} ${shareT.shareTextPower} ${foilEmoji}\n${scoreText}${upgradeText}\n🎯 FID #${card.fid}\n\n🎮 ${shareT.shareTextMintYours} @jvhbo`;
 
       // Share page URL for miniapp button
       const shareUrl = `https://vibefid.xyz/share/fid/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
@@ -477,303 +509,230 @@ export default function FidCardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black p-8">
-      {/* Language Selector - Fixed Top Right */}
-      <div className="fixed top-4 right-4 z-50">
-        <select
-          value={lang}
-          onChange={(e) => setLang(e.target.value as any)}
-          className="px-4 py-2 bg-vintage-charcoal border-2 border-vintage-gold/50 rounded-lg text-vintage-ice focus:outline-none focus:border-vintage-gold text-sm shadow-lg hover:border-vintage-gold transition-colors"
-        >
-          <option value="en">🇺🇸 English</option>
-          <option value="pt-BR">🇧🇷 Português</option>
-          <option value="es">🇪🇸 Español</option>
-          <option value="hi">🇮🇳 हिन्दी</option>
-          <option value="ru">🇷🇺 Русский</option>
-          <option value="zh-CN">🇨🇳 中文</option>
-          <option value="id">🇮🇩 Bahasa</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="ja">🇯🇵 日本語</option>
-          <option value="it">🇮🇹 Italiano</option>
-        </select>
-      </div>
-
-      <div className="max-w-4xl mx-auto">
-        {/* Mint Your Card Button - Top */}
-        <div className="mb-6 text-center">
-          <Link
-            href="/fid"
-            className="px-6 py-3 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors inline-block"
-          >
-            ← Mint Your Card
-          </Link>
-        </div>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-display font-bold text-vintage-gold mb-2">
-            VibeFID #{fid}
-          </h1>
-          <p className="text-vintage-ice">
-            {card?.displayName} (
-            <a
-              href={`https://farcaster.xyz/${card?.username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-vintage-gold hover:text-vintage-burnt-gold transition-colors underline"
-            >
-              @{card?.username}
-            </a>
-            )
-          </p>
-        </div>
-
-        {/* Card Display */}
-        {card && (
-          <div className="bg-vintage-black/50 rounded-xl border border-vintage-gold/50 p-6 mb-8">
-            <div className="flex flex-col items-center">
-              {/* Card Image/Video */}
-              <div className="w-full max-w-md mb-6">
-                <FoilCardEffect
-                  foilType={currentTraits?.foil === 'None' ? null : (currentTraits?.foil as 'Standard' | 'Prize' | null)}
-                  className="w-full rounded-lg shadow-2xl border-4 border-vintage-gold overflow-hidden"
-                >
-                  <CardMedia
-                    src={card.imageUrl || card.pfpUrl}
-                    alt={card.username}
-                    className="w-full"
-                  />
-                </FoilCardEffect>
-              </div>
-
-              {/* Card Stats */}
-              <div className="w-full max-w-md bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-6">
-                <h3 className="text-xl font-bold text-vintage-gold mb-4 text-center">
-                  Card Stats
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-vintage-burnt-gold font-semibold">Card:</span>{" "}
-                    <span className={`font-bold ${card.color === 'red' ? 'text-red-500' : 'text-white'}`}>
-                      {card.rank}{card.suitSymbol}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-vintage-burnt-gold font-semibold">Rarity:</span>{" "}
-                    <span className="text-vintage-ice">{card.rarity}</span>
-                  </div>
-                  <div>
-                    <span className="text-vintage-burnt-gold font-semibold">Foil:</span>{" "}
-                    <span className={`font-bold ${
-                      currentTraits?.foil === 'Prize' ? 'text-purple-400' :
-                      currentTraits?.foil === 'Standard' ? 'text-blue-400' :
-                      'text-vintage-ice'
-                    }`}>
-                      {currentTraits?.foil || 'None'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-vintage-burnt-gold font-semibold">Wear:</span>{" "}
-                    <span className="text-vintage-ice">{currentTraits?.wear || 'Unknown'}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-vintage-burnt-gold font-semibold">Power:</span>{" "}
-                    <span className="text-vintage-gold font-bold text-lg">{correctPower}</span>
-                  </div>
-                  <div className="col-span-2 pt-2 border-t border-vintage-gold/20">
-                    <span className="text-vintage-burnt-gold font-semibold">Neynar Score:</span>{" "}
-                    <span className="text-vintage-ice font-bold">{card.neynarScore.toFixed(3)}</span>
-                    <span className="text-vintage-ice/60 text-xs ml-2">(at mint time)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-6 w-full max-w-md space-y-3">
-                <div className="flex gap-4">
-                  {/* Share with Language Selection - Only for card owner */}
-                  {isOwnCard && (
-                    <button
-                      onClick={() => {
-                        AudioManager.buttonClick();
-                        setShowShareModal(true);
-                      }}
-                      className="flex-1 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <span className="text-xl">🔮</span>
-                      <span className="hidden sm:inline">Share to Farcaster</span>
-                      <span className="sm:hidden">Share</span>
-                    </button>
-                  )}
-
-                  {/* View on OpenSea */}
+    <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black overflow-hidden">
+      {/* Fixed Header Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          {/* Left: User Info */}
+          <div className="flex items-center gap-2">
+            {card && (
+              <>
+                <img
+                  src={card.pfpUrl}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full border-2 border-vintage-gold"
+                />
+                <div className="text-left">
                   <a
-                    href={`https://opensea.io/assets/base/${card.contractAddress || '0x60274A138d026E3cB337B40567100FdEC3127565'}/${card.fid}`}
+                    href={`https://farcaster.xyz/${card.username}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 px-6 py-4 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="text-vintage-gold font-bold text-sm leading-tight hover:text-vintage-burnt-gold"
                   >
-                    <span className="hidden sm:inline">View on OpenSea</span>
-                    <span className="sm:hidden">OpenSea</span>
+                    @{card.username}
                   </a>
+                  <p className="text-vintage-ice/60 text-xs">
+                    FID #{fid}
+                  </p>
                 </div>
+              </>
+            )}
+          </div>
 
-                {/* Refresh OpenSea Metadata Button */}
-                <button
-                  onClick={handleRefreshMetadata}
-                  disabled={isRefreshingMetadata}
-                  className={`w-full px-4 py-3 rounded-lg font-bold transition-all text-sm ${
-                    metadataRefreshed
-                      ? 'bg-green-600 text-white'
-                      : 'bg-vintage-charcoal border border-vintage-gold/30 text-vintage-ice hover:bg-vintage-gold/10'
-                  } disabled:opacity-50`}
-                >
-                  {isRefreshingMetadata ? '🔄 Refreshing...' : metadataRefreshed ? '✅ Metadata Updated!' : '🔄 Refresh OpenSea Metadata'}
-                </button>
+          {/* Right: Language */}
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value as any)}
+            className="h-8 px-2 bg-[#1a1a1a] border border-vintage-gold/30 rounded-lg text-vintage-gold font-bold focus:outline-none focus:border-vintage-gold text-xs hover:border-vintage-gold hover:bg-vintage-gold/10 transition-all cursor-pointer"
+          >
+            <option value="en">EN</option>
+            <option value="pt-BR">PT</option>
+            <option value="es">ES</option>
+            <option value="it">IT</option>
+            <option value="fr">FR</option>
+            <option value="ja">JA</option>
+            <option value="zh-CN">ZH</option>
+            <option value="ru">RU</option>
+            <option value="hi">HI</option>
+            <option value="id">ID</option>
+          </select>
+        </div>
+      </div>
 
-                {/* Check Your Neynar Score Button - Only show for card owner */}
-                {isOwnCard && farcasterContext.user && (
-                  <button
-                    onClick={handleCheckNeynarScore}
-                    disabled={loading}
-                    className="w-full px-6 py-4 bg-vintage-charcoal border-2 border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                  >
-                    {loading ? t.generatingScore : t.checkNeynarScore}
-                  </button>
+      {/* Main Content - Fixed viewport */}
+      <div className="fixed inset-0 flex flex-col items-center justify-center z-10 pointer-events-none" style={{ top: '56px', bottom: '64px' }}>
+        {card && (
+          <div className="pointer-events-auto flex flex-col items-center gap-3 px-4 w-full max-w-sm">
+            {/* Card with Refresh Button */}
+            <div className="relative w-full">
+              {/* Refresh Metadata Button - Top Right Corner */}
+              <button
+                onClick={handleRefreshMetadata}
+                disabled={isRefreshingMetadata}
+                className={`absolute -top-2 -right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  metadataRefreshed
+                    ? 'bg-green-600 text-white'
+                    : 'bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20'
+                } disabled:opacity-50`}
+                title="Refresh OpenSea Metadata"
+              >
+                {isRefreshingMetadata ? (
+                  <span className="animate-spin text-sm">⟳</span>
+                ) : metadataRefreshed ? (
+                  <span className="text-sm">✓</span>
+                ) : (
+                  <span className="text-sm">⟳</span>
                 )}
+              </button>
 
-                {/* Error message */}
-                {error && (
-                  <div className="p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm text-center">
-                    {error}
-                  </div>
-                )}
+              {/* Card Image/Video */}
+              <FoilCardEffect
+                foilType={currentTraits?.foil === 'None' ? null : (currentTraits?.foil as 'Standard' | 'Prize' | null)}
+                className="w-full rounded-xl shadow-2xl border-2 border-vintage-gold overflow-hidden"
+              >
+                <CardMedia
+                  src={card.imageUrl || card.pfpUrl}
+                  alt={card.username}
+                  className="w-full"
+                />
+              </FoilCardEffect>
+            </div>
 
-                {/* Score History Chart */}
-                {scoreHistory && scoreHistory.totalChecks > 0 && (
-                  <div className="mt-4 bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-4">
-                    <h4 className="text-vintage-gold font-bold mb-3 text-center">
-                      📊 Neynar Score Progress
-                    </h4>
-
-                    {/* Progress Summary */}
-                    <div className="grid grid-cols-3 gap-2 mb-4 text-center text-sm">
-                      <div className="bg-vintage-black/50 rounded p-2">
-                        <p className="text-vintage-burnt-gold text-xs">First Check</p>
-                        <p className="text-vintage-ice font-bold">{scoreHistory.firstCheck.score.toFixed(3)}</p>
-                      </div>
-                      <div className="bg-vintage-black/50 rounded p-2">
-                        <p className="text-vintage-burnt-gold text-xs">Current</p>
-                        <p className="text-vintage-gold font-bold">{scoreHistory.latestCheck.score.toFixed(3)}</p>
-                      </div>
-                      <div className="bg-vintage-black/50 rounded p-2">
-                        <p className="text-vintage-burnt-gold text-xs">Change</p>
-                        <p className={`font-bold ${scoreHistory.scoreDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {scoreHistory.scoreDiff >= 0 ? '+' : ''}{scoreHistory.scoreDiff.toFixed(3)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Visual Chart - Simple bar representation */}
-                    {scoreHistory.history && scoreHistory.history.length > 1 && (
-                      <div className="mb-3">
-                        <p className="text-vintage-burnt-gold text-xs mb-2 text-center">Score History (Last {scoreHistory.history.length} checks)</p>
-                        <div className="flex items-end justify-center gap-1 h-16 px-2">
-                          {[...scoreHistory.history].reverse().map((check: any, index: number) => {
-                            // Normalize score to height (0.0-1.0 range, most scores are 0.5-1.0)
-                            const minScore = Math.min(...scoreHistory.history.map((h: any) => h.score));
-                            const maxScore = Math.max(...scoreHistory.history.map((h: any) => h.score));
-                            const range = maxScore - minScore || 0.1;
-                            const normalizedHeight = ((check.score - minScore) / range) * 100;
-                            const heightPercent = Math.max(20, Math.min(100, normalizedHeight));
-
-                            return (
-                              <div
-                                key={check._id || index}
-                                className="flex-1 max-w-4 bg-gradient-to-t from-vintage-gold to-vintage-burnt-gold rounded-t transition-all hover:opacity-80"
-                                style={{ height: `${heightPercent}%` }}
-                                title={`${check.score.toFixed(3)} - ${new Date(check.checkedAt).toLocaleDateString()}`}
-                              />
-                            );
-                          })}
-                        </div>
-                        <div className="flex justify-between text-vintage-ice/50 text-xs mt-1 px-2">
-                          <span>Oldest</span>
-                          <span>Recent</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Stats Footer */}
-                    <div className="flex justify-between items-center text-xs border-t border-vintage-gold/20 pt-2">
-                      <span className="text-vintage-ice/60">
-                        {scoreHistory.totalChecks} total checks
-                      </span>
-                      <span className={`font-bold ${parseFloat(scoreHistory.percentChange) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {parseFloat(scoreHistory.percentChange) >= 0 ? '↑' : '↓'} {Math.abs(parseFloat(scoreHistory.percentChange))}%
-                      </span>
-                    </div>
-                  </div>
-                )}
+            {/* Compact Stats Row */}
+            <div className="w-full bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-3">
+                  <span className={`font-bold text-lg ${card.color === 'red' ? 'text-red-500' : 'text-white'}`}>
+                    {card.rank}{card.suitSymbol}
+                  </span>
+                  <span className="text-vintage-ice">{card.rarity}</span>
+                  <span className={`${
+                    currentTraits?.foil === 'Prize' ? 'text-purple-400' :
+                    currentTraits?.foil === 'Standard' ? 'text-blue-400' :
+                    'text-vintage-ice/50'
+                  }`}>
+                    {currentTraits?.foil !== 'None' ? `${currentTraits?.foil} Foil` : ''}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-vintage-gold font-bold">⚡ {correctPower}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-vintage-gold/20">
+                <span className="text-vintage-burnt-gold">Neynar: {card.neynarScore.toFixed(3)}</span>
+                <span className="text-vintage-ice/50">{currentTraits?.wear}</span>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Criminal Backstory */}
-        {backstory && card && (
-          <div className="mb-8">
-            <CriminalBackstoryCard
-              backstory={backstory}
-              displayName={card.displayName}
-              lang={lang}
-            />
-          </div>
-        )}
-
-        {/* Mint History for this FID */}
-        {fidCards && fidCards.length > 1 && (
-          <div className="bg-vintage-black/50 rounded-xl border border-vintage-gold/50 p-6 mb-8">
-            <h2 className="text-2xl font-bold text-vintage-gold mb-4">
-              All Mints ({fidCards.length} total)
-            </h2>
-            <p className="text-vintage-ice/70 mb-4 text-sm">
-              All mints of FID #{fid}
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {fidCards.slice(1).map((mintedCard: any) => (
-                <Link
-                  key={mintedCard._id}
-                  href={`/fid/${mintedCard.fid}`}
-                  className="bg-vintage-charcoal rounded-lg border border-vintage-gold/30 p-4 hover:border-vintage-gold transition-colors"
+            {/* Action Buttons Row */}
+            <div className="w-full flex gap-2">
+              {isOwnCard && (
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowShareModal(true);
+                  }}
+                  className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-sm"
                 >
-                  <div className="text-center mb-2">
-                    <span className={`text-2xl font-bold ${mintedCard.color === 'red' ? 'text-red-500' : 'text-black'}`}>
-                      {mintedCard.rank}{mintedCard.suitSymbol}
-                    </span>
-                  </div>
-
-                  <div className="aspect-square mb-2 rounded-lg overflow-hidden">
-                    <CardMedia
-                      src={mintedCard.imageUrl || mintedCard.pfpUrl}
-                      alt={mintedCard.username}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-vintage-burnt-gold text-sm">{mintedCard.rarity}</span>
-                    <span className="text-vintage-ice text-sm">⚡ {mintedCard.power}</span>
-                  </div>
-                </Link>
-              ))}
+                  🔮 Share
+                </button>
+              )}
+              <a
+                href={`https://opensea.io/assets/base/${card.contractAddress || '0x60274A138d026E3cB337B40567100FdEC3127565'}/${card.fid}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-4 py-3 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-sm text-center"
+              >
+                OpenSea
+              </a>
+              {backstory && (
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowBackstoryModal(true);
+                  }}
+                  className="flex-1 px-4 py-3 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
+                >
+                  📜
+                </button>
+              )}
+              {isOwnCard && farcasterContext.user && (
+                <button
+                  onClick={handleCheckNeynarScore}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm disabled:opacity-50"
+                >
+                  {loading ? '...' : '📊'}
+                </button>
+              )}
             </div>
+
+            {/* Vote Section - Compact */}
+            {viewerFid > 0 && viewerFid !== fid && (
+              <div className="w-full bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-500/50 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-purple-300 text-sm">🗳️ {totalVotes} votes</span>
+                  {hasVoted ? (
+                    <span className="text-green-400 text-sm">✅ Voted</span>
+                  ) : freeVotesRemaining > 0 ? (
+                    <button
+                      onClick={() => { AudioManager.buttonClick(); voteFree(); }}
+                      disabled={isVoting}
+                      className="px-3 py-1 bg-purple-600 text-white text-sm rounded-lg disabled:opacity-50"
+                    >
+                      Vote Free
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { AudioManager.buttonClick(); votePaid(); }}
+                      disabled={isVoting}
+                      className="px-3 py-1 bg-yellow-500 text-black text-sm rounded-lg disabled:opacity-50"
+                    >
+                      100 coins
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div className="w-full p-2 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-xs text-center">
+                {error}
+              </div>
+            )}
           </div>
         )}
+      </div>
 
-        {/* Neynar Score Modal */}
-        {showScoreModal && neynarScoreData && (
+      {/* Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom">
+        <div className="bg-vintage-charcoal/95 backdrop-blur-lg border-t-2 border-vintage-gold/30 p-1 flex gap-1">
+          <Link
+            href="/fid"
+            onClick={() => AudioManager.buttonClick()}
+            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
+          >
+            <span className="text-[10px] font-bold whitespace-nowrap">Play</span>
+            <span className="text-xl leading-none">♠</span>
+          </Link>
+          <Link
+            href="/fid/gallery"
+            onClick={() => AudioManager.buttonClick()}
+            className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
+          >
+            <span className="text-[10px] font-bold whitespace-nowrap">Gallery</span>
+            <span className="text-xl leading-none">♦</span>
+          </Link>
+          <div className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold text-[10px] leading-tight bg-vintage-gold/20 text-vintage-gold border-2 border-vintage-gold">
+            <span className="text-[10px] font-bold whitespace-nowrap">Card</span>
+            <span className="text-xl leading-none">♣</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Neynar Score Modal */}
+      {showScoreModal && neynarScoreData && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-6 max-w-md w-full">
               <h2 className="text-2xl font-bold text-vintage-gold mb-4 text-center">
@@ -1043,7 +1002,34 @@ export default function FidCardPage() {
             </div>
           </div>
         )}
-      </div>
+
+        {/* Criminal Backstory Modal */}
+        {showBackstoryModal && backstory && card && (
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 max-w-md w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-vintage-gold">
+                  📜 Criminal Record
+                </h2>
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowBackstoryModal(false);
+                  }}
+                  className="text-vintage-gold hover:text-vintage-burnt-gold text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <CriminalBackstoryCard
+                backstory={backstory}
+                displayName={card.displayName}
+                lang={lang}
+              />
+            </div>
+          </div>
+        )}
     </div>
   );
 }

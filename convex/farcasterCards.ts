@@ -135,14 +135,8 @@ export const mintFarcasterCard = mutation({
       console.error("Failed to save initial score:", error);
     }
 
-    // Mark VibeFID minted mission as completed (one-time reward)
-    try {
-      await ctx.scheduler.runAfter(0, internal.missions.markVibeFIDMinted, {
-        playerAddress: normalizedAddress,
-      });
-    } catch (error) {
-      console.error("Failed to mark VibeFID mission:", error);
-    }
+    // Mark VibeFID minted mission - handled by VBMS deployment
+    // VibeFID standalone doesnt have the missions module
 
     return {
       success: true,

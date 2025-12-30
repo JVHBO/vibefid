@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { shareToFarcaster } from '@/lib/share-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FoilCardEffect from './FoilCardEffect';
@@ -45,37 +45,37 @@ export default function FidGenerationModal({
   walletAddress,
   onConnectWallet,
 }: FidGenerationModalProps) {
-  const { lang, setLang } = useLanguage();
+  const { lang } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0); // 0 = backstory, 1 = card
   const [showShareLangModal, setShowShareLangModal] = useState(false);
-  const [showFarcasterShareModal, setShowFarcasterShareModal] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+  const storyScrollRef = useRef<HTMLDivElement>(null);
 
   // Simple share to Farcaster (just text, no image generation)
   const handleShareFarcasterSimple = () => {
     if (!fid || !generatedTraits) return;
 
     const rarityEmojis: Record<string, string> = {
-      'Mythic': '🌟',
-      'Legendary': '💎',
-      'Epic': '💎',
-      'Rare': '💜',
-      'Common': '⚪'
+      'Mythic': '',
+      'Legendary': '',
+      'Epic': '',
+      'Rare': '',
+      'Common': ''
     };
 
-    const emoji = rarityEmojis[generatedTraits.rarity] || '💎';
+    const emoji = rarityEmojis[generatedTraits.rarity] || '';
     const shareUrl = `https://vibefid.xyz/share/fid/${fid}`;
-    const text = `🃏 Just minted my VibeFID!
+    const text = `Just minted my VibeFID!
 
-${emoji} ${generatedTraits.rarity}
-⚡ ${generatedTraits.power} Power
-🎯 FID #${fid}
+${generatedTraits.rarity}
+Power: ${generatedTraits.power}
+FID #${fid}
 
-🎲 Play Poker Battles
-🗡️ Fight in PvE
-💰 Earn coins
+Play Poker Battles
+Fight in PvE
+Earn coins
 
-🎮 Mint yours! @jvhbo`;
+Mint yours! @jvhbo`;
 
     shareToFarcaster(text, shareUrl);
   };
@@ -85,7 +85,7 @@ ${emoji} ${generatedTraits.rarity}
     if (!fid || !generatedTraits || !backstoryData || !onShare) return;
 
     setIsGeneratingShare(true);
-    setShowFarcasterShareModal(false);
+    setShowShareLangModal(false);
 
     try {
       // Call the onShare prop to generate and upload the share image
@@ -95,28 +95,19 @@ ${emoji} ${generatedTraits.rarity}
       const shareT = fidTranslations[selectedLang];
 
       // After image is generated and uploaded, share to Farcaster
-      const rarityEmojis: Record<string, string> = {
-        'Mythic': '👑',
-        'Legendary': '⚡',
-        'Epic': '💎',
-        'Rare': '🔥',
-        'Common': '⭐'
-      };
-      const emoji = rarityEmojis[generatedTraits.rarity] || '🎴';
-      const foilEmoji = generatedTraits.foil === 'Prize' ? '✨' : generatedTraits.foil === 'Standard' ? '💫' : '';
       const foilText = generatedTraits.foil !== 'None' ? ` ${generatedTraits.foil} Foil` : '';
 
-      const text = `🃏 ${shareT.shareTextMinted}
+      const text = `${shareT.shareTextMinted}
 
-${emoji} ${generatedTraits.rarity}${foilText}
-⚡ ${generatedTraits.power} ${shareT.shareTextPower} ${foilEmoji}
-🎯 FID #${fid}
+${generatedTraits.rarity}${foilText}
+Power: ${generatedTraits.power}
+FID #${fid}
 
-🎲 ${shareT.shareTextPlayPoker}
-🗡️ ${shareT.shareTextFightPvE}
-💰 ${shareT.shareTextEarnCoins}
+${shareT.shareTextPlayPoker}
+${shareT.shareTextFightPvE}
+${shareT.shareTextEarnCoins}
 
-🎮 ${shareT.shareTextMintYours}`;
+${shareT.shareTextMintYours}`;
 
       const shareUrl = `https://vibefid.xyz/share/fid/${fid}?lang=${selectedLang}&v=${Date.now()}`;
       shareToFarcaster(text, shareUrl);
@@ -141,102 +132,85 @@ ${emoji} ${generatedTraits.rarity}${foilText}
   if (!isOpen || !backstory) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/95 flex items-center justify-center p-0 sm:p-2 md:p-4 z-50 overflow-hidden">
-      <div className="bg-vintage-charcoal rounded-none sm:rounded-xl border-2 border-vintage-gold w-screen h-screen sm:w-full sm:h-auto sm:max-w-lg md:max-w-2xl lg:max-w-4xl relative sm:max-h-[95vh] overflow-y-auto overflow-x-hidden box-border flex flex-col">
-        {/* Close button */}
+    <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-40 overflow-hidden" style={{ top: '56px', bottom: '64px' }}>
+      <div className="bg-vintage-charcoal w-full h-full relative flex flex-col overflow-hidden">
+        {/* Close button - top right */}
         <button
           onClick={() => {
             AudioManager.buttonClick();
             onClose();
           }}
-          className="sticky top-2 right-2 float-right text-vintage-ice hover:text-vintage-gold text-xl sm:text-2xl md:text-3xl leading-none z-10 bg-vintage-black/70 rounded-full w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center"
+          className="absolute top-2 right-2 text-vintage-ice hover:text-vintage-gold text-2xl leading-none z-10 bg-vintage-black/70 rounded-full w-8 h-8 flex items-center justify-center"
           aria-label="Close"
         >
-          ×
+          x
         </button>
 
-        {/* Language Selector - Top Left (mobile friendly) */}
-        <div className="sticky top-2 left-2 float-left z-10">
-          <select
-            value={lang}
-            onChange={(e) => {
-              AudioManager.toggleOn();
-              setLang(e.target.value as any);
-            }}
-            className="px-2 py-1 sm:px-3 sm:py-2 bg-vintage-charcoal border border-vintage-gold/30 rounded-md sm:rounded-lg text-vintage-ice focus:outline-none focus:border-vintage-gold text-xs sm:text-sm"
-          >
-            <option value="en">🇺🇸</option>
-            <option value="pt-BR">🇧🇷</option>
-            <option value="es">🇪🇸</option>
-            <option value="hi">🇮🇳</option>
-            <option value="ru">🇷🇺</option>
-            <option value="zh-CN">🇨🇳</option>
-            <option value="id">🇮🇩</option>
-            <option value="fr">🇫🇷</option>
-            <option value="ja">🇯🇵</option>
-          </select>
-        </div>
-
-        {/* Content */}
-        <div className="p-2 sm:p-4 md:p-6 lg:p-8 pt-2 sm:pt-4 md:pt-6 clear-both w-full max-w-full box-border overflow-x-hidden flex-1 overflow-y-auto">
+        {/* Content - scrollable */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {currentSlide === 0 ? (
             // Slide 1: Criminal Backstory
-            <div className="space-y-3 sm:space-y-4 w-full max-w-full overflow-x-hidden">
-              <div className="bg-vintage-charcoal/80 rounded-lg sm:rounded-xl border-2 border-vintage-gold/50 p-2 sm:p-4 md:p-6 shadow-2xl w-full max-w-full box-border">
-                <div className="text-center mb-3 sm:mb-6 pb-2 sm:pb-4 border-b-2 border-vintage-gold/30">
-                  <h3 className="text-base sm:text-2xl md:text-3xl font-display font-bold text-vintage-gold mb-1">
+            <div className="space-y-3 w-full max-w-2xl mx-auto">
+              <div className="bg-vintage-charcoal/80 rounded-lg border-2 border-vintage-gold/50 p-3 sm:p-4 shadow-2xl">
+                <div className="text-center mb-3 pb-2 border-b-2 border-vintage-gold/30">
+                  <h3 className="text-lg sm:text-xl font-display font-bold text-vintage-gold mb-1">
                     {t.criminalRecord}
                   </h3>
-                  <p className="text-vintage-ice text-sm sm:text-base md:text-lg break-words px-2">{displayName}</p>
+                  <p className="text-vintage-ice text-sm">{displayName}</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 md:gap-6 mb-3 sm:mb-6 w-full max-w-full overflow-x-hidden">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3">
                   {/* Left column */}
-                  <div className="space-y-2 sm:space-y-3 md:space-y-4">
+                  <div className="space-y-2">
                     <div>
-                      <p className="text-vintage-burnt-gold text-xs sm:text-sm font-bold mb-1">{t.wantedFor}</p>
-                      <p className="text-vintage-gold font-bold text-xs sm:text-base md:text-lg break-words">{backstory.wantedFor}</p>
+                      <p className="text-vintage-burnt-gold text-xs font-bold">{t.wantedFor}</p>
+                      <p className="text-vintage-gold font-bold text-xs sm:text-sm break-words">{backstory.wantedFor}</p>
                     </div>
                     <div>
-                      <p className="text-vintage-burnt-gold text-xs sm:text-sm font-bold mb-1">{t.dangerLevel}</p>
-                      <p className={`font-bold text-xs sm:text-base md:text-lg break-words ${
-                        backstory.dangerLevel.includes('EXTREME') || backstory.dangerLevel.includes('ЭКСТРЕМАЛЬНЫЙ') || backstory.dangerLevel.includes('极端') || backstory.dangerLevel.includes('अत्यधिक') || backstory.dangerLevel.includes('EXTREMO') ? 'text-red-500' :
-                        backstory.dangerLevel.includes('HIGH') || backstory.dangerLevel.includes('ВЫСОКИЙ') || backstory.dangerLevel.includes('高') || backstory.dangerLevel.includes('उच्च') || backstory.dangerLevel.includes('ALTO') ? 'text-orange-500' :
-                        backstory.dangerLevel.includes('MEDIUM') || backstory.dangerLevel.includes('СРЕДНИЙ') || backstory.dangerLevel.includes('中') || backstory.dangerLevel.includes('मध्यम') || backstory.dangerLevel.includes('MEDIO') || backstory.dangerLevel.includes('MÉDIO') ? 'text-yellow-500' :
+                      <p className="text-vintage-burnt-gold text-xs font-bold">{t.dangerLevel}</p>
+                      <p className={`font-bold text-xs sm:text-sm break-words ${
+                        backstory.dangerLevel.includes('EXTREME') || backstory.dangerLevel.includes('EXTREMO') ? 'text-red-500' :
+                        backstory.dangerLevel.includes('HIGH') || backstory.dangerLevel.includes('ALTO') ? 'text-orange-500' :
+                        backstory.dangerLevel.includes('MEDIUM') || backstory.dangerLevel.includes('MEDIO') ? 'text-yellow-500' :
                         'text-green-500'
                       }`}>
                         {backstory.dangerLevel}
                       </p>
                     </div>
                     <div>
-                      <p className="text-vintage-burnt-gold text-xs sm:text-sm font-bold mb-1">{t.dateOfCrime}</p>
-                      <p className="text-vintage-ice text-xs sm:text-sm break-words">{backstory.dateOfCrime}</p>
+                      <p className="text-vintage-burnt-gold text-xs font-bold">{t.dateOfCrime}</p>
+                      <p className="text-vintage-ice text-xs break-words">{backstory.dateOfCrime}</p>
                     </div>
                   </div>
 
                   {/* Right column */}
-                  <div className="space-y-2 sm:space-y-3 md:space-y-4">
+                  <div className="space-y-2">
                     <div>
-                      <p className="text-vintage-burnt-gold text-xs sm:text-sm font-bold mb-1">{t.knownAssociates}</p>
-                      <p className="text-vintage-ice text-xs sm:text-sm break-words">{backstory.associates}</p>
+                      <p className="text-vintage-burnt-gold text-xs font-bold">{t.knownAssociates}</p>
+                      <p className="text-vintage-ice text-xs break-words">{backstory.associates}</p>
                     </div>
                     <div>
-                      <p className="text-vintage-burnt-gold text-xs sm:text-sm font-bold mb-1">{t.lastSeen}</p>
-                      <p className="text-vintage-ice text-xs sm:text-sm break-words">{backstory.lastSeen}</p>
+                      <p className="text-vintage-burnt-gold text-xs font-bold">{t.lastSeen}</p>
+                      <p className="text-vintage-ice text-xs break-words">{backstory.lastSeen}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-vintage-black/40 rounded-lg p-3 sm:p-4 border border-vintage-gold/20">
+                {/* Story text with scroll area */}
+                <div
+                  ref={storyScrollRef}
+                  className="bg-vintage-black/40 rounded-lg p-3 border border-vintage-gold/20 h-32 sm:h-40 overflow-y-auto"
+                >
                   <TypewriterText
                     text={backstory.story}
                     speed={35}
-                    className="text-vintage-ice text-xs sm:text-base leading-relaxed text-justify block"
+                    className="text-vintage-ice text-xs sm:text-sm leading-relaxed block"
+                    scrollContainerRef={storyScrollRef}
                   />
                 </div>
 
-                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-red-900/20 border border-red-600/50 rounded-lg">
-                  <p className="text-red-300 text-xs sm:text-sm text-center font-bold">
+                <div className="mt-3 p-2 bg-red-900/20 border border-red-600/50 rounded-lg">
+                  <p className="text-red-300 text-xs text-center font-bold">
                     {t.warningCaution}
                   </p>
                 </div>
@@ -248,26 +222,26 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                   AudioManager.buttonClick();
                   setCurrentSlide(1);
                 }}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors text-sm sm:text-base"
+                className="w-full px-4 py-3 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors text-sm"
               >
                 {t.viewCard}
               </button>
             </div>
           ) : (
-            // Slide 2: Card Preview - Stacked layout, compact to avoid scroll
-            <div className="space-y-2 sm:space-y-3 w-full max-w-full overflow-x-hidden pb-32 sm:pb-0">
-              <h2 className="text-base sm:text-xl md:text-2xl font-display font-bold text-vintage-gold text-center px-1 break-words">
+            // Slide 2: Card Preview
+            <div className="space-y-3 w-full max-w-md mx-auto">
+              <h2 className="text-lg sm:text-xl font-display font-bold text-vintage-gold text-center">
                 {t.yourVibeFidCard}
               </h2>
 
-              {/* Card + Stats stacked */}
-              <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
-                {/* Card Image with Foil Effect - Compact size */}
+              {/* Card + Stats */}
+              <div className="flex flex-col items-center gap-3 w-full">
+                {/* Card Image with Foil Effect */}
                 {previewImage && generatedTraits && (
-                  <div className="relative w-full max-w-[180px] sm:max-w-[280px] md:max-w-sm">
+                  <div className="relative w-full max-w-[200px] sm:max-w-[250px]">
                     <FoilCardEffect
                       foilType={generatedTraits.foil === 'None' ? null : (generatedTraits.foil as 'Standard' | 'Prize')}
-                      className="w-full rounded-lg shadow-2xl border-2 sm:border-4 border-vintage-gold overflow-hidden box-border"
+                      className="w-full rounded-lg shadow-2xl border-2 border-vintage-gold overflow-hidden box-border"
                       style={{ filter: 'blur(8px)' }}
                     >
                       <CardMedia
@@ -279,8 +253,8 @@ ${emoji} ${generatedTraits.rarity}${foilText}
 
                     {/* Overlay text */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="bg-vintage-black/80 border border-vintage-gold rounded px-3 py-1.5 sm:px-6 sm:py-3 backdrop-blur-sm">
-                        <p className="text-vintage-gold font-bold text-xs sm:text-base text-center">
+                      <div className="bg-vintage-black/80 border border-vintage-gold rounded px-4 py-2 backdrop-blur-sm">
+                        <p className="text-vintage-gold font-bold text-sm text-center">
                           {t.mintToReveal || 'Mint to Reveal'}
                         </p>
                       </div>
@@ -288,10 +262,10 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                   </div>
                 )}
 
-                {/* Generated Traits - Compact */}
+                {/* Generated Traits */}
                 {generatedTraits && (
-                  <div className="w-full max-w-[180px] sm:max-w-[280px] bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-2 sm:p-3 box-border" style={{ filter: 'blur(4px)' }}>
-                    <div className="grid grid-cols-2 gap-1 sm:gap-2 text-[11px] sm:text-sm">
+                  <div className="w-full max-w-[200px] sm:max-w-[250px] bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-2" style={{ filter: 'blur(4px)' }}>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
                       <div>
                         <span className="text-vintage-burnt-gold font-semibold">{t.card}:</span>{" "}
                         <span className={`font-bold ${generatedTraits.color === 'red' ? 'text-red-500' : 'text-white'}`}>
@@ -321,33 +295,34 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                 )}
               </div>
 
-              {/* Action Buttons - Fixed on mobile with Mint Price inside */}
+              {/* Action Buttons */}
               {!isMintedSuccessfully ? (
-                <div className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto flex flex-col gap-1 sm:gap-3 w-full max-w-full box-border p-2 sm:p-0 bg-vintage-charcoal sm:bg-transparent border-t-2 sm:border-t-0 border-vintage-gold/30">
-                  {/* Mint Price - Inside fixed bar on mobile */}
-                  <div className="text-center py-1 bg-vintage-black/30 rounded border border-vintage-gold/20">
-                    <p className="text-vintage-gold font-bold text-sm sm:text-xl">
+                <div className="flex flex-col gap-2 w-full">
+                  {/* Mint Price */}
+                  <div className="text-center py-2 bg-vintage-black/30 rounded border border-vintage-gold/20">
+                    <p className="text-vintage-gold font-bold text-sm">
                       {t.mintPrice || 'Mint Price'}: 0.0003 ETH <span className="text-vintage-ice/50 text-xs">~$0.90</span>
                     </p>
                   </div>
-                  {/* Show wallet status */}
+
+                  {/* Wallet status */}
                   {walletAddress ? (
                     <p className="text-center text-xs text-green-400">
-                      ✅ Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                     </p>
                   ) : (
                     <p className="text-center text-xs text-yellow-400">
-                      ⚠️ Wallet not connected
+                      Wallet not connected
                     </p>
                   )}
 
-                  <div className="flex gap-2 sm:gap-4">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => {
                         AudioManager.buttonClick();
                         setCurrentSlide(0);
                       }}
-                      className="flex-1 px-3 sm:px-6 py-3 sm:py-4 bg-vintage-charcoal border-2 border-vintage-gold text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/20 transition-colors text-xs sm:text-sm md:text-base"
+                      className="flex-1 px-4 py-3 bg-vintage-charcoal border-2 border-vintage-gold text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/20 transition-colors text-sm"
                     >
                       {t.back}
                     </button>
@@ -359,9 +334,9 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                           AudioManager.buttonClick();
                           onConnectWallet();
                         }}
-                        className="flex-1 px-3 sm:px-6 py-3 sm:py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm md:text-base"
+                        className="flex-1 px-4 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-sm"
                       >
-                        🔗 Connect Wallet
+                        Connect Wallet
                       </button>
                     ) : (
                       <button
@@ -370,7 +345,7 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                           onMint();
                         }}
                         disabled={isMinting || !walletAddress}
-                        className="flex-1 px-3 sm:px-6 py-3 sm:py-4 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors disabled:opacity-50 text-xs sm:text-sm md:text-base"
+                        className="flex-1 px-4 py-3 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors disabled:opacity-50 text-sm"
                       >
                         {isMinting ? t.minting : t.mintCard}
                       </button>
@@ -379,30 +354,30 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                 </div>
               ) : (
                 <div className="space-y-3 w-full">
-                  <div className="bg-green-900/30 border border-green-500 rounded-lg p-3 sm:p-4 text-center">
-                    <p className="text-green-300 font-bold text-sm sm:text-base">✅ Card minted successfully!</p>
-                    {fid && <p className="text-vintage-ice text-xs sm:text-sm">FID: {fid}</p>}
+                  <div className="bg-green-900/30 border border-green-500 rounded-lg p-3 text-center">
+                    <p className="text-green-300 font-bold text-sm">Card minted successfully!</p>
+                    {fid && <p className="text-vintage-ice text-xs">FID: {fid}</p>}
                   </div>
 
-                  <div className="flex gap-2 sm:gap-3 w-full">
+                  <div className="flex gap-2 w-full">
                     <button
                       onClick={() => {
                         AudioManager.buttonClick();
                         setShowShareLangModal(true);
                       }}
                       disabled={isGeneratingShare}
-                      className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors text-xs sm:text-sm disabled:opacity-50"
+                      className="flex-1 px-3 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors text-xs disabled:opacity-50"
                     >
-                      {isGeneratingShare ? '⏳ Generating...' : '🔮 Share to Farcaster'}
+                      {isGeneratingShare ? 'Generating...' : 'Share to Farcaster'}
                     </button>
                   </div>
 
                   {fid && (
                     <a
                       href={`/fid/${fid}`}
-                      className="block w-full px-3 sm:px-6 py-2 sm:py-3 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors text-center text-xs sm:text-sm"
+                      className="block w-full px-4 py-2 bg-vintage-gold text-vintage-black font-bold rounded-lg hover:bg-vintage-burnt-gold transition-colors text-center text-sm"
                     >
-                      View Card Page →
+                      View Card Page
                     </a>
                   )}
                 </div>
@@ -414,27 +389,27 @@ ${emoji} ${generatedTraits.rarity}${foilText}
         {/* Share Language Selection Modal */}
         {showShareLangModal && onShare && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
-            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 sm:p-6 max-w-sm w-full">
-              <h2 className="text-lg sm:text-xl font-bold text-vintage-gold mb-3 text-center">
-                🔮 {t.shareToFarcaster || 'Share to Farcaster'}
+            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-4 max-w-sm w-full">
+              <h2 className="text-lg font-bold text-vintage-gold mb-3 text-center">
+                {t.shareToFarcaster || 'Share to Farcaster'}
               </h2>
 
-              <p className="text-vintage-ice text-xs sm:text-sm mb-4 text-center">
+              <p className="text-vintage-ice text-xs mb-4 text-center">
                 {t.selectLanguageForShare || 'Select language for image:'}
               </p>
 
               {/* Language Options */}
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
-                  { code: 'en', flag: '🇺🇸', name: 'EN' },
-                  { code: 'pt-BR', flag: '🇧🇷', name: 'PT' },
-                  { code: 'es', flag: '🇪🇸', name: 'ES' },
-                  { code: 'ja', flag: '🇯🇵', name: 'JP' },
-                  { code: 'zh-CN', flag: '🇨🇳', name: 'CN' },
-                  { code: 'ru', flag: '🇷🇺', name: 'RU' },
-                  { code: 'hi', flag: '🇮🇳', name: 'HI' },
-                  { code: 'fr', flag: '🇫🇷', name: 'FR' },
-                  { code: 'id', flag: '🇮🇩', name: 'ID' },
+                  { code: 'en', name: 'EN' },
+                  { code: 'pt-BR', name: 'PT' },
+                  { code: 'es', name: 'ES' },
+                  { code: 'ja', name: 'JP' },
+                  { code: 'zh-CN', name: 'CN' },
+                  { code: 'ru', name: 'RU' },
+                  { code: 'hi', name: 'HI' },
+                  { code: 'fr', name: 'FR' },
+                  { code: 'id', name: 'ID' },
                 ].map((langOption) => (
                   <button
                     key={langOption.code}
@@ -443,10 +418,9 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                       setShowShareLangModal(false);
                       handleShareFarcasterWithLang(langOption.code as any);
                     }}
-                    className="p-2 sm:p-3 rounded-lg border-2 transition-all hover:border-vintage-gold hover:bg-vintage-gold/10 border-vintage-gold/30 bg-vintage-black/50"
+                    className="p-2 rounded-lg border-2 transition-all hover:border-vintage-gold hover:bg-vintage-gold/10 border-vintage-gold/30 bg-vintage-black/50"
                   >
-                    <span className="text-xl sm:text-2xl block">{langOption.flag}</span>
-                    <span className="text-vintage-gold font-semibold text-[10px] sm:text-xs">{langOption.name}</span>
+                    <span className="text-vintage-gold font-semibold text-sm">{langOption.name}</span>
                   </button>
                 ))}
               </div>
@@ -457,7 +431,7 @@ ${emoji} ${generatedTraits.rarity}${foilText}
                   AudioManager.buttonClick();
                   setShowShareLangModal(false);
                 }}
-                className="w-full px-4 py-2 sm:py-3 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
+                className="w-full px-4 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors text-sm"
               >
                 {t.back || 'Cancel'}
               </button>

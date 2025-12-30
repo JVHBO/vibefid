@@ -8,8 +8,10 @@
  * @module
  */
 
+import type * as cardVotes from "../cardVotes.js";
 import type * as farcasterCards from "../farcasterCards.js";
 import type * as neynarScore from "../neynarScore.js";
+import type * as notifications from "../notifications.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +20,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  cardVotes: typeof cardVotes;
   farcasterCards: typeof farcasterCards;
   neynarScore: typeof neynarScore;
+  notifications: typeof notifications;
 }>;
 
 /**
