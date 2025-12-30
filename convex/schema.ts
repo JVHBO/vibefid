@@ -861,6 +861,10 @@ export default defineSchema({
     upgradedAt: v.optional(v.number()),
     previousRarity: v.optional(v.string()),
     previousNeynarScore: v.optional(v.number()),
+
+    // Most Wanted tracking (for ranking page)
+    latestNeynarScore: v.optional(v.number()),
+    latestScoreCheckedAt: v.optional(v.number()),
   })
     .index("by_fid", ["fid"])
     .index("by_address", ["address"])
@@ -1577,4 +1581,19 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_date", ["date"]),
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // 🎁 VIBE REWARDS SYSTEM
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // Vibe Rewards - VBMS earned from votes
+  vibeRewards: defineTable({
+    fid: v.number(),
+    pendingVbms: v.number(),
+    claimedVbms: v.number(),
+    totalVotes: v.number(),
+    lastVoteAt: v.number(),
+    lastClaimAt: v.union(v.number(), v.null()),
+  })
+    .index("by_fid", ["fid"]),
 });

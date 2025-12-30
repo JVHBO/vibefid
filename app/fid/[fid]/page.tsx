@@ -25,6 +25,15 @@ import { convertIpfsToDataUrl } from '@/lib/ipfs-url-converter';
 import { useVibeVote } from '@/lib/hooks/useVibeVote';
 import { DailyLeader } from '@/components/DailyLeader';
 
+// Helper to calculate rarity from score for display
+const getRarityFromScore = (score) => {
+  if (score >= 0.99) return 'Mythic';
+  if (score >= 0.90) return 'Legendary';
+  if (score >= 0.79) return 'Epic';
+  if (score >= 0.70) return 'Rare';
+  return 'Common';
+};
+
 export default function FidCardPage() {
   const params = useParams();
   const fid = parseInt(params.fid as string);
@@ -48,6 +57,11 @@ export default function FidCardPage() {
   const saveScoreCheck = useMutation(api.neynarScore.saveScoreCheck);
   const upgradeCardRarity = useMutation(api.farcasterCards.upgradeCardRarity);
   const updateCardImages = useMutation(api.farcasterCards.updateCardImages);
+
+  // Vibe Rewards
+  const vibeRewards = useQuery(api.vibeRewards.getRewards, { fid });
+  const claimRewardsMutation = useMutation(api.vibeRewards.claimRewards);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   // Get the most recent card (first one)
   const card = fidCards?.[0];
@@ -608,8 +622,45 @@ export default function FidCardPage() {
                   alt={card.username}
                   className="w-full"
                 />
-              </FoilCardEffect>
-            </div>
+                            </FoilCardEffect>
+
+              {/* Vibe Button - Bottom Center Overlay */}
+              <button
+                onClick={async () => {
+                  AudioManager.buttonClick();
+                  if (!viewerFid) {
+                    setError('Connect Farcaster to vote');
+                    setTimeout(() => setError(null), 3000);
+                    return;
+                  }
+                  if (hasVoted) {
+                    setError('Already voted today');
+                    setTimeout(() => setError(null), 3000);
+                    return;
+                  }
+                  const result = await voteFree();
+                  if (!result.success) {
+                    setError(result.error || 'Vote failed');
+                    setTimeout(() => setError(null), 3000);
+                  }
+                }}
+                disabled={isVoting || hasVoted}
+                className={`absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full font-bold text-sm transition-all flex items-center gap-2 ${
+                  hasVoted
+                    ? 'bg-green-600 text-white cursor-default'
+                    : 'bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white shadow-lg hover:scale-105'
+                } disabled:opacity-70`}
+              >
+                {isVoting ? (
+                  <span className="animate-pulse">...</span>
+                ) : hasVoted ? (
+                  <>✓ Vibed</>
+                ) : (
+                  <>♥ Vibe</>
+                )}
+                <span className="text-white/80 text-xs">({totalVotes})</span>
+              </button>
+</div>
 
             {/* Compact Stats Row */}
             <div className="w-full bg-vintage-charcoal/80 rounded-lg border border-vintage-gold/30 p-3">
@@ -673,6 +724,40 @@ export default function FidCardPage() {
 
 
 
+            {/* Vibe Rewards Section - Only for card owner with pending rewards */}
+            {isOwnCard && vibeRewards && vibeRewards.pendingVbms > 0 && (
+              <div className="w-full bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg border border-yellow-500/30 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-yellow-400 font-bold text-sm">Vibe Rewards</p>
+                    <p className="text-vintage-ice/60 text-xs">{vibeRewards.totalVotes} votes received</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-yellow-400 font-bold">{vibeRewards.pendingVbms} VBMS</p>
+                    <button
+                      onClick={async () => {
+                        AudioManager.buttonClick();
+                        setIsClaiming(true);
+                        try {
+                          const result = await claimRewardsMutation({ fid, claimerAddress: '0x0' });
+                          if (result.success) {
+                            alert('Claimed ' + result.claimAmount + ' VBMS!');
+                          }
+                        } catch (e) {
+                          console.error('Claim failed:', e);
+                        }
+                        setIsClaiming(false);
+                      }}
+                      disabled={isClaiming}
+                      className="mt-1 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded text-xs transition-colors disabled:opacity-50"
+                    >
+                      {isClaiming ? '...' : 'Claim'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Error message */}
             {error && (
               <div className="w-full p-2 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-xs text-center">
@@ -691,16 +776,16 @@ export default function FidCardPage() {
             onClick={() => AudioManager.buttonClick()}
             className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
           >
-            <span className="text-[10px] font-bold whitespace-nowrap">Play</span>
+            <span className="text-[10px] font-bold whitespace-nowrap">Vibe</span>
             <span className="text-xl leading-none">♠</span>
           </Link>
           <Link
-            href="/fid/gallery"
+            href="/fid/most-wanted"
             onClick={() => AudioManager.buttonClick()}
             className="flex-1 min-w-0 px-1 py-2 flex flex-col items-center justify-center gap-0.5 rounded-lg font-semibold transition-all text-[10px] leading-tight bg-vintage-black text-vintage-gold hover:bg-vintage-gold/10 border border-vintage-gold/30"
           >
-            <span className="text-[10px] font-bold whitespace-nowrap">Gallery</span>
-            <span className="text-xl leading-none">♦</span>
+            <span className="text-[10px] font-bold whitespace-nowrap">Most Wanted</span>
+            <span className="text-xl leading-none">♣</span>
           </Link>
           <Link
             href="/fid"
@@ -740,7 +825,7 @@ export default function FidCardPage() {
                   )}
                 </div>
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-vintage-gold/20">
-                  <span className="text-vintage-burnt-gold text-xs">{t.rarity}</span>
+                  <span className="text-vintage-burnt-gold text-xs">{t.rarityAvailable || "Rarity Available"}</span>
                   <span className="text-vintage-ice font-bold">{neynarScoreData.rarity}</span>
                 </div>
               </div>
@@ -748,7 +833,7 @@ export default function FidCardPage() {
               {/* Upgrade Available Banner */}
               {canUpgrade() && card && (
                 <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg p-3 mb-3 text-center">
-                  <p className="text-yellow-400 font-bold mb-1">UPGRADE AVAILABLE</p>
+                  <p className="text-yellow-400 font-bold mb-1">{t.upgradeAvailable}</p>
                   <p className="text-vintage-ice text-xs">
                     <span className="text-vintage-burnt-gold">{card.rarity}</span> → <span className="text-yellow-400">{neynarScoreData.rarity}</span>
                   </p>
@@ -758,16 +843,16 @@ export default function FidCardPage() {
               {/* Score History */}
               {scoreHistory && scoreHistory.history && scoreHistory.history.length > 0 && (
                 <div className="bg-vintage-black/30 rounded-lg border border-vintage-gold/20 p-3 mb-3">
-                  <p className="text-vintage-burnt-gold text-xs mb-2 font-bold">Score History ({scoreHistory.totalChecks} checks)</p>
+                  <p className="text-vintage-burnt-gold text-xs mb-2 font-bold">{t.scoreHistory} ({scoreHistory.totalChecks} {t.checks})</p>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
                     {scoreHistory.history.slice(0, 10).map((entry: any, i: number) => {
                       const prevScore = i < scoreHistory.history.length - 1 ? scoreHistory.history[i + 1]?.score : null;
                       const diff = prevScore !== null ? entry.score - prevScore : 0;
                       return (
-                        <div key={i} className="flex justify-between items-center text-xs">
-                          <span className="text-vintage-ice/60">
-                            {new Date(entry.checkedAt).toLocaleDateString()}
-                          </span>
+                        <div key={i} className="flex justify-between items-center text-xs py-1 border-b border-vintage-gold/10 last:border-0">
+                          <span className="text-vintage-ice/60 w-14">
+                            {new Date(entry.checkedAt).toLocaleDateString()}</span>
+                          <span className="text-vintage-burnt-gold text-[10px] w-14">{getRarityFromScore(entry.score)}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-vintage-ice">{entry.score.toFixed(3)}</span>
                             {prevScore !== null && diff !== 0 && (
@@ -791,7 +876,7 @@ export default function FidCardPage() {
                     disabled={isUpgrading}
                     className="w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
                   >
-                    {isUpgrading ? 'Upgrading...' : 'UPGRADE RARITY'}
+                    {isUpgrading ? t.upgrading : t.upgradeRarity}
                   </button>
                 )}
                 <div className="flex gap-2">
@@ -889,17 +974,17 @@ export default function FidCardPage() {
               {/* Phase Text */}
               <div className="mb-4 sm:mb-6">
                 {evolutionPhase === 'shaking' && (
-                  <p className="text-lg sm:text-2xl font-bold text-vintage-gold animate-pulse">🔮 Channeling power...</p>
+                  <p className="text-lg sm:text-2xl font-bold text-vintage-gold animate-pulse">🔮 {t.channelingPower}</p>
                 )}
                 {evolutionPhase === 'glowing' && (
-                  <p className="text-lg sm:text-2xl font-bold text-yellow-400 animate-pulse">✨ Energy building...</p>
+                  <p className="text-lg sm:text-2xl font-bold text-yellow-400 animate-pulse">✨ {t.energyBuilding}</p>
                 )}
                 {evolutionPhase === 'transforming' && (
-                  <p className="text-lg sm:text-2xl font-bold text-orange-400 animate-pulse">⚡ EVOLVING!</p>
+                  <p className="text-lg sm:text-2xl font-bold text-orange-400 animate-pulse">⚡ {t.evolving}</p>
                 )}
                 {evolutionPhase === 'regenerating' && (
                   <div className="space-y-2">
-                    <p className="text-lg sm:text-2xl font-bold text-cyan-400 animate-pulse">🎬 Regenerating...</p>
+                    <p className="text-lg sm:text-2xl font-bold text-cyan-400 animate-pulse">🎬 {t.regenerating}</p>
                     {regenerationStatus && (
                       <p className="text-vintage-ice text-xs sm:text-xs">{regenerationStatus}</p>
                     )}
@@ -907,18 +992,18 @@ export default function FidCardPage() {
                 )}
                 {evolutionPhase === 'complete' && evolutionData && (
                   <div className="space-y-3 sm:space-y-4">
-                    <p className="text-xl sm:text-3xl font-bold text-green-400">🎉 EVOLVED!</p>
+                    <p className="text-xl sm:text-3xl font-bold text-green-400">🎉 {t.evolved}</p>
 
                     <div className="bg-vintage-black/50 rounded-lg border border-vintage-gold/30 p-3 sm:p-6">
                       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                         <div className="text-center">
-                          <p className="text-vintage-burnt-gold text-[10px] sm:text-xs">Before</p>
+                          <p className="text-vintage-burnt-gold text-[10px] sm:text-xs">{t.before}</p>
                           <p className="text-vintage-ice text-xs sm:text-lg font-bold">{evolutionData.oldRarity}</p>
                           <p className="text-vintage-ice/60 text-xs sm:text-xs">⚡ {evolutionData.oldPower}</p>
                         </div>
                         <div className="text-xl sm:text-3xl">→</div>
                         <div className="text-center">
-                          <p className="text-yellow-400 text-[10px] sm:text-xs">After</p>
+                          <p className="text-yellow-400 text-[10px] sm:text-xs">{t.after}</p>
                           <p className="text-yellow-400 text-base sm:text-xl font-bold">{evolutionData.newRarity}</p>
                           <p className="text-yellow-400 text-xs sm:text-xs">⚡ {evolutionData.newPower}</p>
                           <p className="text-green-400 text-[10px] sm:text-xs mt-1">💰 ${evolutionData.newBounty.toLocaleString()}</p>
@@ -959,7 +1044,7 @@ export default function FidCardPage() {
                         }}
                         className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-vintage-gold hover:bg-vintage-burnt-gold text-vintage-black font-bold rounded-lg transition-colors text-xs sm:text-base"
                       >
-                        ✓ Close
+                        {t.close}
                       </button>
                     </div>
                   </div>
@@ -1101,3 +1186,4 @@ export default function FidCardPage() {
     </div>
   );
 }
+ 
