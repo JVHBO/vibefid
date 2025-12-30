@@ -38,14 +38,14 @@ export function FloatingCardsBackground() {
 
         // Delay escalonado para não começarem todas juntas
         // Delays mais curtos para aparecer mais rápido
-        const delay = index === 0 ? 0 : (index * 3) + random(0, 1);
+        const delay = index * 0.5 + random(0, 0.3);
 
         return {
           id: card._id || `card-${index}`,
           fid: card.fid,
           imageUrl: card.cardImageUrl || card.pfpUrl,
           x,
-          duration: random(25, 35),
+          duration: random(18, 25),
           delay, // Delay em segundos
         };
       });
