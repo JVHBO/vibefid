@@ -257,6 +257,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Minha Pontuação Neynar',
     neynarScoreRarity: 'Raridade',
     neynarScoreCheckMint: 'Confira sua pontuação e minte sua carta VibeFID!',
+    sinceMint: 'desde o mint',
+    cardLeveledUp: 'A carta upou!',
   },
 
   "en": {
@@ -512,6 +514,8 @@ export const fidTranslations = {
     neynarScoreShare: 'My Neynar Score',
     neynarScoreRarity: 'Rarity',
     neynarScoreCheckMint: 'Check your score and mint your VibeFID card!',
+    sinceMint: 'since mint',
+    cardLeveledUp: 'Card leveled up!',
   },
 
   "es": {
@@ -767,6 +771,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Mi Puntuación Neynar',
     neynarScoreRarity: 'Rareza',
     neynarScoreCheckMint: '¡Consulta tu puntuación y mintea tu carta VibeFID!',
+    sinceMint: 'desde el mint',
+    cardLeveledUp: '¡La carta subió de nivel!',
   },
 
   "hi": {
@@ -1022,6 +1028,8 @@ export const fidTranslations = {
     neynarScoreShare: 'मेरी Neynar स्कोर',
     neynarScoreRarity: 'दुर्लभता',
     neynarScoreCheckMint: 'अपना स्कोर देखें और अपना VibeFID कार्ड मिंट करें!',
+    sinceMint: 'मिंट के बाद से',
+    cardLeveledUp: 'कार्ड अपग्रेड हुआ!',
   },
 
   "ru": {
@@ -1277,6 +1285,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Мой счёт Neynar',
     neynarScoreRarity: 'Редкость',
     neynarScoreCheckMint: 'Проверь свой счёт и сминти свою карту VibeFID!',
+    sinceMint: 'с момента минта',
+    cardLeveledUp: 'Карта прокачалась!',
   },
 
   "zh-CN": {
@@ -1532,6 +1542,8 @@ export const fidTranslations = {
     neynarScoreShare: '我的 Neynar 分数',
     neynarScoreRarity: '稀有度',
     neynarScoreCheckMint: '查看你的分数并铸造你的 VibeFID 卡！',
+    sinceMint: '自铸造以来',
+    cardLeveledUp: '卡牌升级了！',
   },
 
   "id": {
@@ -1756,6 +1768,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Skor Neynar Saya',
     neynarScoreRarity: 'Kelangkaan',
     neynarScoreCheckMint: 'Cek skor kamu dan mint kartu VibeFID kamu!',
+    sinceMint: 'sejak mint',
+    cardLeveledUp: 'Kartu naik level!',
   },
 
   "fr": {
@@ -1980,6 +1994,8 @@ export const fidTranslations = {
     neynarScoreShare: 'Mon Score Neynar',
     neynarScoreRarity: 'Rareté',
     neynarScoreCheckMint: 'Vérifie ton score et mint ta carte VibeFID !',
+    sinceMint: 'depuis le mint',
+    cardLeveledUp: 'La carte a monté de niveau !',
   },
   "ja": {
     // Password screen
@@ -2274,6 +2290,8 @@ export const fidTranslations = {
     neynarScoreShare: '私のNeynarスコア',
     neynarScoreRarity: 'レアリティ',
     neynarScoreCheckMint: 'スコアをチェックしてVibeFIDカードをミントしよう！',
+    sinceMint: 'ミント時から',
+    cardLeveledUp: 'カードがレベルアップ！',
   },
   "it": {
     // Password screen
@@ -2528,5 +2546,7 @@ export const fidTranslations = {
     neynarScoreShare: 'Il Mio Punteggio Neynar',
     neynarScoreRarity: 'Rarità',
     neynarScoreCheckMint: 'Controlla il tuo punteggio e minta la tua carta VibeFID!',
+    sinceMint: 'dal mint',
+    cardLeveledUp: 'La carta è salita di livello!',
   },
 };

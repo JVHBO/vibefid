@@ -811,11 +811,16 @@ export default function FidCardPage() {
                         // Calculate score diff from mint
                       const scoreDiff = card && card.neynarScore ? neynarScoreData.score - card.neynarScore : 0;
                       const diffSign = scoreDiff >= 0 ? '+' : '';
-                      const diffText = card && card.neynarScore ? ` (${diffSign}${scoreDiff.toFixed(4)})` : '';
                       // Check if rarity changed
                       const rarityChanged = card && card.rarity !== neynarScoreData.rarity;
-                      const rarityText = rarityChanged ? `\n${card.rarity} → ${neynarScoreData.rarity}` : `\n${neynarScoreData.rarity}`;
-                      const castText = `${t.neynarScoreShare}: ${neynarScoreData.score.toFixed(3)}${diffText}${rarityText}\n\n${t.neynarScoreCheckMint}`;
+                      // Format: "0.950 +0.1000 since mint\nCard leveled up! Epic → Legendary"
+                      const scoreLine = card && card.neynarScore
+                        ? `${neynarScoreData.score.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${t.sinceMint || 'since mint'}`
+                        : `${neynarScoreData.score.toFixed(3)}`;
+                      const rarityLine = rarityChanged
+                        ? `${t.cardLeveledUp || 'Card leveled up!'} ${card.rarity} → ${neynarScoreData.rarity}`
+                        : neynarScoreData.rarity;
+                      const castText = `${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
                       return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
                     })()}
                     target="_blank"
