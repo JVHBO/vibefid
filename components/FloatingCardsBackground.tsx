@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 
 interface FloatingCard {
   id: string;
+  fid: number;
   imageUrl: string;
   x: number;
   duration: number;
@@ -41,6 +42,7 @@ export function FloatingCardsBackground() {
 
         return {
           id: card._id || `card-${index}`,
+          fid: card.fid,
           imageUrl: card.cardImageUrl || card.pfpUrl,
           x,
           duration: random(25, 35),
@@ -72,7 +74,7 @@ export function FloatingCardsBackground() {
         left: 0,
         right: 0,
         bottom: 0,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         overflow: 'hidden',
         zIndex: 0,
       }}
@@ -80,10 +82,12 @@ export function FloatingCardsBackground() {
       {floatingCards.map((card, index) => (
         <div
           key={card.id}
+          onClick={() => window.location.href = `/fid/${card.fid}`}
           style={{
             position: 'absolute',
             width: '140px',
             height: '196px',
+            cursor: 'pointer',
             left: `${card.x}%`,
             marginLeft: '-70px',
             top: 'calc(100% + 220px)', // Sempre começa abaixo da tela
@@ -105,6 +109,13 @@ export function FloatingCardsBackground() {
               objectFit: 'cover',
               display: 'block',
               filter: 'brightness(0.35)',
+              transition: 'filter 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLImageElement).style.filter = 'brightness(0.6)';
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLImageElement).style.filter = 'brightness(0.35)';
             }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';

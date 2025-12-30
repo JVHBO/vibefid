@@ -94,6 +94,11 @@ export const voteForCard = mutation({
     const now = Date.now();
     const voteCount = args.voteCount || 1;
 
+    // Cannot vote for your own card
+    if (args.voterFid === args.cardFid) {
+      return { success: false, error: "Cannot vote for your own card" };
+    }
+
     // Check if already voted today (for free votes)
     if (!args.isPaid) {
       const existingVote = await ctx.db
@@ -163,6 +168,29 @@ export const voteForCard = mutation({
 
     // Update daily leaderboard
     await updateDailyLeaderboard(ctx, args.cardFid, today, voteCount);
+
+    // Update vibeRewards for card owner (100 VBMS per vote)
+    const vbmsReward = voteCount * 10;
+    const existingReward = await ctx.db
+      .query("vibeRewards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.cardFid))
+      .first();
+
+    if (existingReward) {
+      await ctx.db.patch(existingReward._id, {
+        pendingVbms: existingReward.pendingVbms + vbmsReward,
+        totalVotes: existingReward.totalVotes + voteCount,
+        lastVoteAt: now,
+      });
+    } else {
+      await ctx.db.insert("vibeRewards", {
+        fid: args.cardFid,
+        pendingVbms: vbmsReward,
+        claimedVbms: 0,
+        totalVotes: voteCount,
+        lastVoteAt: now,
+      });
+    }
 
     return { success: true, voteCount };
   },
@@ -279,6 +307,30 @@ function getEndOfDayTimestamp(): number {
   endOfDay.setUTCHours(23, 59, 59, 999);
   return endOfDay.getTime();
 }
+
+// Reset all votes (admin/dev only)
+export const resetAllVotes = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Delete all cardVotes
+    const votes = await ctx.db.query("cardVotes").collect();
+    for (const vote of votes) {
+      await ctx.db.delete(vote._id);
+    }
+
+    // Delete all daily leaderboard entries
+    const leaderboard = await ctx.db.query("dailyVoteLeaderboard").collect();
+    for (const entry of leaderboard) {
+      await ctx.db.delete(entry._id);
+    }
+
+    return {
+      success: true,
+      deletedVotes: votes.length,
+      deletedLeaderboard: leaderboard.length,
+    };
+  },
+});
 
 // Distribute daily prize (called by cron job)
 export const distributeDailyPrize = mutation({

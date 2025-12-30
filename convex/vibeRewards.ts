@@ -1,6 +1,6 @@
 /**
  * Vibe Rewards System
- * Each vote = 10 VBMS for the card owner
+ * Each vote = 100 VBMS for the card owner
  */
 
 import { v } from "convex/values";
