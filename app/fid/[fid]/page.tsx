@@ -732,7 +732,7 @@ export default function FidCardPage() {
 
                       // Call blockchain contract
                       const txHash = await claimVBMS(
-                        result.amount.toString(),
+                        result.amount!.toString(),
                         result.nonce as `0x${string}`,
                         result.signature as `0x${string}`
                       );
