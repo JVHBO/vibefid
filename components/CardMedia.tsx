@@ -17,6 +17,7 @@ interface CardMediaProps {
  * Uses native browser lazy loading - no complex JS
  *
  * FIX: Removed useEffect that caused flash/flicker on re-renders
+ * FIX: Added background color to prevent flash during video load
  */
 export function CardMedia({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
   const [useImage, setUseImage] = useState(false);
@@ -59,14 +60,12 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
         autoPlay
         preload="auto"
         onClick={onClick}
-        style={{ objectFit: 'cover' }}
+        style={{ objectFit: 'cover', background: '#1a1a1a' }}
         onError={(e) => {
           console.error('Video failed to load:', src);
           if (isVibeFID) {
-            // VibeFID: show error, NEVER fallback to image
             setError(true);
           } else {
-            // Other collections: fallback to image
             setUseImage(true);
           }
         }}
@@ -93,6 +92,7 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
       className={className}
       loading={loading}
       onClick={onClick}
+      style={{ background: '#1a1a1a' }}
       onError={(e) => {
         console.error('Image failed to load:', src);
         setError(true);
