@@ -1802,29 +1802,23 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       )}
 
       
-      {/* Floating VibeMail Envelope Button (combines messages + claim) */}
-      {userFid && vibeRewards && vibeRewards.pendingVbms > 0 && address && (
+      {/* Floating VibeMail Envelope Button - shows when has messages or pending VBMS */}
+      {userFid && ((unreadMessageCount && unreadMessageCount > 0) || (vibeRewards?.pendingVbms && vibeRewards.pendingVbms > 0)) && (
         <button
           onClick={() => {
             AudioManager.buttonClick();
             setShowVibeMailInbox(true);
           }}
-          className="z-[9998] w-14 h-14 rounded-full bg-vintage-gold/90 text-vintage-black hover:bg-vintage-gold hover:scale-110 transition-all flex items-center justify-center shadow-lg shadow-vintage-gold/30 relative"
-          style={{
-            position: 'fixed',
-            right: '16px',
-            top: 'calc(100% + 60px)',
-            animation: 'floatClaimUp 25s linear infinite',
-          }}
-          title={`${vibeRewards.pendingVbms} VBMS to claim`}
+          className="fixed bottom-24 right-4 z-[9998] w-16 h-16 rounded-full bg-vintage-gold/70 text-vintage-black hover:bg-vintage-gold hover:scale-110 transition-all flex items-center justify-center shadow-lg shadow-vintage-gold/30 backdrop-blur-sm border-2 border-vintage-gold/50 animate-bounce"
+          title="VibeMail"
         >
           {/* Golden Envelope SVG */}
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="drop-shadow-sm">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="drop-shadow-md">
             <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
           </svg>
-          {/* Badge with VBMS count + unread messages */}
-          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-md">
-            {vibeRewards.pendingVbms + (unreadMessageCount || 0)}
+          {/* Badge */}
+          <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-md animate-pulse">
+            {(vibeRewards?.pendingVbms || 0) + (unreadMessageCount || 0)}
           </span>
         </button>
       )}
@@ -1910,12 +1904,30 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
       {/* Floating Animation CSS */}
       <style jsx global>{`
-        @keyframes floatClaimUp {
-          0% { transform: translateY(0) rotate(0deg); }
-          25% { transform: translateY(-40vh) rotate(3deg); }
-          50% { transform: translateY(-80vh) rotate(-2deg); }
-          75% { transform: translateY(-120vh) rotate(2deg); }
-          100% { transform: translateY(-150vh) rotate(0deg); }
+        @keyframes floatMailUp {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 0.7;
+          }
+          10% {
+            opacity: 1;
+          }
+          25% {
+            transform: translateY(-30vh) rotate(5deg);
+          }
+          50% {
+            transform: translateY(-60vh) rotate(-3deg);
+          }
+          75% {
+            transform: translateY(-90vh) rotate(4deg);
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-120vh) rotate(0deg);
+            opacity: 0.7;
+          }
         }
       `}</style>
     </div>
