@@ -184,11 +184,12 @@ export const fidTranslations = {
     powerMultipliers: 'Multiplicadores de Poder',
     foilMultipliers: 'Multiplicadores de Foil',
     wearMultipliers: 'Multiplicadores de Desgaste',
-    mythic: 'Mythic',
-    legendary: 'Legendary',
-    epic: 'Epic',
-    rare: 'Rare',
-    common: 'Common',
+    mythic: 'Mítico',
+    legendary: 'Lendário',
+    epic: 'Épico',
+    rare: 'Raro',
+    common: 'Comum',
+    votes: 'votos',
 
     // Story templates (multiple variants for randomization)
     criminalStory1: [
@@ -471,6 +472,7 @@ export const fidTranslations = {
     epic: 'Epic',
     rare: 'Rare',
     common: 'Common',
+    votes: 'votes',
 
     // Story templates (multiple variants for randomization)
     criminalStory1: [
@@ -752,6 +754,7 @@ export const fidTranslations = {
     epic: 'Épica',
     rare: 'Rara',
     common: 'Común',
+    votes: 'votos',
 
     // Story templates (multiple variants for randomization)
     criminalStory1: [

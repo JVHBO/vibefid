@@ -144,9 +144,9 @@ export default function MostWantedPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-vintage-gold font-bold truncate">@{card.username}</p>
-                    <p className="text-vintage-ice/60 text-xs">{card.rarity}</p>
+                    <p className="text-vintage-ice/60 text-xs">{(t as any)[card.rarity.toLowerCase()] || card.rarity}</p>
                     {card.votes > 0 && (
-                      <p className="text-yellow-400 text-xs font-bold">🗳️ {card.votes} votes</p>
+                      <p className="text-yellow-400 text-xs font-bold">{card.votes} {(t as any).votes || 'votes'}</p>
                     )}
                   </div>
                   <div className="text-right">
@@ -171,7 +171,7 @@ export default function MostWantedPage() {
                       const canUpgrade = rarityOrder.indexOf(currentRarityLevel) > rarityOrder.indexOf(mintRarityLevel);
                       return canUpgrade ? (
                         <p className="text-yellow-400 text-[10px] font-bold animate-pulse mt-0.5">
-                          ⬆ Upgrade Available
+                          ⬆ {t.upgradeAvailable}
                         </p>
                       ) : null;
                     })()}

@@ -721,8 +721,8 @@ export default function FidCardPage() {
                         claimerAddress: connectedAddress,
                       });
 
-                      if (!claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
-                        throw new Error(claimResult.error || 'Failed to prepare claim');
+                      if (!claimResult || !claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
+                        throw new Error(claimResult?.error || 'Failed to prepare claim');
                       }
 
                       const result = claimResult;
