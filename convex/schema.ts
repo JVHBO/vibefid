@@ -1541,7 +1541,7 @@ export default defineSchema({
   // 🗳️ VIBEFID VOTING SYSTEM
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  // Card Votes - Individual votes on VibeFID cards
+  // Card Votes - Individual votes on VibeFID cards (with VibeMail messages)
   cardVotes: defineTable({
     cardFid: v.number(),
     voterFid: v.number(),
@@ -1550,10 +1550,15 @@ export default defineSchema({
     isPaid: v.boolean(),
     voteCount: v.number(),
     createdAt: v.number(),
+    // VibeMail - Anonymous message with vote
+    message: v.optional(v.string()), // Anonymous text message (max 200 chars)
+    audioId: v.optional(v.string()), // Meme sound ID to play with message
+    isRead: v.optional(v.boolean()), // Has the card owner read this message?
   })
     .index("by_card_date", ["cardFid", "date"])
     .index("by_voter_date", ["voterFid", "date"])
-    .index("by_date", ["date"]),
+    .index("by_date", ["date"])
+    .index("by_card_unread", ["cardFid", "isRead"]),
 
   // Daily Vote Leaderboard
   dailyVoteLeaderboard: defineTable({
