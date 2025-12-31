@@ -1803,7 +1803,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
       
       {/* Floating VibeMail Envelope Button - shows when has messages or pending VBMS */}
-      {userFid && ((unreadMessageCount && unreadMessageCount > 0) || (vibeRewards?.pendingVbms && vibeRewards.pendingVbms > 0)) && (
+      {userFid && ((unreadMessageCount ?? 0) > 0 || (vibeRewards?.pendingVbms ?? 0) > 0) && (
         <button
           onClick={() => {
             AudioManager.buttonClick();
