@@ -26,6 +26,7 @@ import { useVibeVote } from '@/lib/hooks/useVibeVote';
 import { DailyLeader } from '@/components/DailyLeader';
 import { useAccount } from 'wagmi';
 import { useVBMSBalance, useClaimVBMS } from '@/lib/hooks/useVBMSContracts';
+import { VibeMailInbox, VibeMailComposer } from '@/components/VibeMail';
 
 // Helper to calculate rarity from score for display
 const getRarityFromScore = (score: number) => {
@@ -152,7 +153,20 @@ export default function FidCardPage() {
 
   // Paid vote modal state
   const [showPaidVoteModal, setShowPaidVoteModal] = useState(false);
+  const [showFreeVoteModal, setShowFreeVoteModal] = useState(false);
+  const [freeVibeMailMessage, setFreeVibeMailMessage] = useState('');
+  const [freeVibeMailAudioId, setFreeVibeMailAudioId] = useState<string | null>(null);
+  const [showVoteExplainModal, setShowVoteExplainModal] = useState(false);
   const [paidVoteCount, setPaidVoteCount] = useState(1);
+
+  // VibeMail state
+  const [vibeMailMessage, setVibeMailMessage] = useState('');
+  const [vibeMailAudioId, setVibeMailAudioId] = useState<string | null>(null);
+  const [showVibeMailInbox, setShowVibeMailInbox] = useState(false);
+  const unreadMessageCount = useQuery(
+    api.cardVotes.getUnreadMessageCount,
+    isOwnCard ? { cardFid: fid } : 'skip'
+  );
 
   // Handle share with selected language
   const handleShareWithLanguage = async (selectedLang: typeof lang) => {
@@ -657,6 +671,25 @@ export default function FidCardPage() {
                 <span className="text-xs">↗</span>
               </button>
 
+              {/* VibeMail Inbox Button - Bottom Center (for card owners) */}
+              {isOwnCard && (
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowVibeMailInbox(true);
+                  }}
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20"
+                  title={`VibeMail${unreadMessageCount ? ` (${unreadMessageCount} unread)` : ''}`}
+                >
+                  <span className="text-xs">✉</span>
+                  {unreadMessageCount && unreadMessageCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                      {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {/* Vote Button - Bottom Right Corner (same pattern as Refresh) */}
               <button
                 onClick={async () => {
@@ -677,26 +710,25 @@ export default function FidCardPage() {
                     }
                     return;
                   }
-                  const result = await voteFree();
-                  if (!result.success) {
-                    setError(result.error || 'Vote failed');
-                    setTimeout(() => setError(null), 3000);
-                  }
+                  setShowFreeVoteModal(true);
                 }}
                 disabled={isVoting || isOwnCard}
-                className={`absolute -bottom-2 -right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                className={`absolute -bottom-2 -right-2 z-20 w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-vintage-black border-2 ${
                   isOwnCard
-                    ? 'bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold'
+                    ? 'border-vintage-gold/50 text-vintage-gold'
                     : hasVoted
-                      ? 'bg-vintage-gold/20 border border-vintage-gold text-vintage-gold hover:bg-vintage-gold/30'
-                      : 'bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20'
+                      ? 'border-vintage-gold text-vintage-gold hover:bg-vintage-gold/10'
+                      : 'border-vintage-gold/50 text-vintage-gold hover:border-vintage-gold hover:bg-vintage-gold/10'
                 } disabled:opacity-70`}
                 title={isOwnCard ? `${totalVotes} vibes` : hasVoted ? `${totalVotes} vibes • Click for more` : `Vote • ${totalVotes} vibes`}
               >
                 {isVoting ? (
-                  <span className="animate-spin text-xs">⟳</span>
+                  <span className="animate-spin text-sm">⟳</span>
                 ) : (
-                  <span className="text-xs font-bold">{totalVotes > 0 ? totalVotes : '♥'}</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="4" y="2" width="16" height="20" rx="2" ry="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                      <text x="12" y="15" textAnchor="middle" fontSize="10" fill="currentColor">♠</text>
+                    </svg>
                 )}
               </button>
 
@@ -1195,7 +1227,7 @@ export default function FidCardPage() {
 
         {/* OpenSea Confirmation Modal */}
         {showOpenSeaModal && card && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4 pt-16 pb-24">
             <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-sm">
               <h3 className="text-vintage-gold font-bold text-lg mb-3 text-center">
                 {t.openOpenSea || 'Open OpenSea?'}
@@ -1229,9 +1261,9 @@ export default function FidCardPage() {
           </div>
         )}
 
-        {/* VBMS Confirmation Modal */}
+        {/* VBMS Confirmation Modal - Highest z-index to be above all other modals */}
         {showVBMSModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+          <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4">
             <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-sm">
               <h3 className="text-vintage-gold font-bold text-lg mb-3 text-center">
                 {(t as unknown as Record<string, string>).openVBMS || 'Open Vibe Most Wanted?'}
@@ -1303,15 +1335,38 @@ export default function FidCardPage() {
 
         {/* Paid Vote Modal */}
         {showPaidVoteModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4 pt-16 pb-24">
             <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-sm">
-              <h3 className="text-vintage-gold font-bold text-lg mb-3 text-center">
-                💰 Paid Vote
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8" /> {/* Spacer for centering */}
+                <h3 className="text-vintage-gold font-bold text-lg text-center">
+                  VibeMail
+                </h3>
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowVoteExplainModal(true);
+                  }}
+                  className="w-8 h-8 bg-vintage-black/50 border border-vintage-gold/30 rounded-full text-vintage-gold hover:bg-vintage-gold/20 transition-all text-sm font-bold"
+                >
+                  ?
+                </button>
+              </div>
 
               {/* VBMS Balance */}
               <div className="bg-vintage-black/50 rounded-lg p-3 mb-4">
-                <p className="text-vintage-ice/60 text-xs mb-1">Your VBMS Balance</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-vintage-ice/60 text-xs">{(t as any).yourVbmsBalance || 'Your VBMS Balance'}</p>
+                  <a
+                    href="https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
+                    onClick={() => AudioManager.buttonClick()}
+                  >
+                    {(t as any).needMore || 'Need more?'} →
+                  </a>
+                </div>
                 <p className="text-vintage-gold font-bold text-lg">
                   {parseFloat(vbmsBalance).toLocaleString(undefined, { maximumFractionDigits: 2 })} VBMS
                 </p>
@@ -1319,7 +1374,7 @@ export default function FidCardPage() {
 
               {/* Vote Count Selector */}
               <div className="mb-4">
-                <p className="text-vintage-ice/60 text-xs mb-2">Number of votes</p>
+                <p className="text-vintage-ice/60 text-xs mb-2">{(t as any).vibesToSend || 'Vibes to send'}</p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPaidVoteCount(Math.max(1, paidVoteCount - 1))}
@@ -1343,14 +1398,22 @@ export default function FidCardPage() {
                 </div>
               </div>
 
+              {/* VibeMail Composer */}
+              <VibeMailComposer
+                message={vibeMailMessage}
+                setMessage={setVibeMailMessage}
+                audioId={vibeMailAudioId}
+                setAudioId={setVibeMailAudioId}
+              />
+
               {/* Cost Summary */}
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4 mt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-vintage-ice text-sm">Cost per vote:</span>
+                  <span className="text-vintage-ice text-sm">{(t as any).costPerVibe || 'Cost per vibe'}:</span>
                   <span className="text-yellow-400 font-bold">{voteCostVBMS} VBMS</span>
                 </div>
                 <div className="flex justify-between items-center mt-2 pt-2 border-t border-yellow-500/20">
-                  <span className="text-vintage-ice font-bold">Total:</span>
+                  <span className="text-vintage-ice font-bold">{(t as any).total || 'Total'}:</span>
                   <span className="text-yellow-400 font-bold text-lg">
                     {(parseInt(voteCostVBMS) * paidVoteCount).toLocaleString()} VBMS
                   </span>
@@ -1367,15 +1430,17 @@ export default function FidCardPage() {
                   }}
                   className="flex-1 py-2 bg-vintage-burnt-gold/30 hover:bg-vintage-burnt-gold/50 text-vintage-gold font-bold rounded-xl transition-all"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   onClick={async () => {
                     AudioManager.buttonClick();
-                    const result = await votePaid(paidVoteCount);
+                    const result = await votePaid(paidVoteCount, vibeMailMessage, vibeMailAudioId || undefined);
                     if (result.success) {
                       setShowPaidVoteModal(false);
                       setPaidVoteCount(1);
+                      setVibeMailMessage('');
+                      setVibeMailAudioId(null);
                     } else {
                       setError(result.error || 'Vote failed');
                       setTimeout(() => setError(null), 5000);
@@ -1384,16 +1449,142 @@ export default function FidCardPage() {
                   disabled={isVoting || parseFloat(vbmsBalance) < parseInt(voteCostVBMS) * paidVoteCount}
                   className="flex-1 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isVoting ? 'Sending TX...' : 'Vote & Pay'}
+                  {isVoting ? ((t as any).sendingTx || 'Sending TX...') : ((t as any).sendVibe || 'Send Vibe')}
                 </button>
               </div>
 
               {/* Insufficient Balance Warning */}
               {parseFloat(vbmsBalance) < parseInt(voteCostVBMS) * paidVoteCount && (
                 <p className="text-red-400 text-xs text-center mt-2">
-                  Insufficient VBMS balance
+                  {(t as any).insufficientVbms || 'Insufficient VBMS balance'}
                 </p>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Free Vote Modal */}
+        {showFreeVoteModal && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-4 pt-16 pb-24">
+            <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8" />
+                <h3 className="text-vintage-gold font-bold text-lg text-center">
+                  🆓 {(t as any).freeVote || 'Free Vote'}
+                </h3>
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowFreeVoteModal(false);
+                    setFreeVibeMailMessage('');
+                    setFreeVibeMailAudioId(null);
+                  }}
+                  className="w-8 h-8 bg-vintage-black/50 border border-vintage-gold/30 rounded-full text-vintage-gold hover:bg-vintage-gold/20 transition-all text-sm font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-vintage-ice/60 text-xs text-center mb-4">
+                {(t as any).freeVotesRemaining || 'Free votes remaining'}: {freeVotesRemaining}/3
+              </p>
+
+              {/* VibeMail Composer */}
+              <VibeMailComposer
+                message={freeVibeMailMessage}
+                setMessage={setFreeVibeMailMessage}
+                audioId={freeVibeMailAudioId}
+                setAudioId={setFreeVibeMailAudioId}
+              />
+
+              {/* Buttons */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    AudioManager.buttonClick();
+                    setShowFreeVoteModal(false);
+                    setFreeVibeMailMessage('');
+                    setFreeVibeMailAudioId(null);
+                  }}
+                  className="flex-1 py-2 bg-vintage-burnt-gold/30 hover:bg-vintage-burnt-gold/50 text-vintage-gold font-bold rounded-xl transition-all"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={async () => {
+                    AudioManager.buttonClick();
+                    const result = await voteFree(freeVibeMailMessage || undefined, freeVibeMailAudioId || undefined);
+                    if (result.success) {
+                      setShowFreeVoteModal(false);
+                      setFreeVibeMailMessage('');
+                      setFreeVibeMailAudioId(null);
+                    } else {
+                      setError(result.error || 'Vote failed');
+                      setTimeout(() => setError(null), 5000);
+                    }
+                  }}
+                  disabled={isVoting}
+                  className="flex-1 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-black font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVoting ? ((t as any).sendingTx || 'Sending...') : ((t as any).voteNow || 'Vote!')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VibeMail Inbox Modal */}
+        {showVibeMailInbox && isOwnCard && (
+          <VibeMailInbox
+            cardFid={fid}
+            onClose={() => setShowVibeMailInbox(false)}
+          />
+        )}
+
+        {/* Vote Explanation Modal */}
+        {showVoteExplainModal && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 p-4">
+            <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-5 w-full max-w-md max-h-[80vh] overflow-y-auto">
+              <h3 className="text-vintage-gold font-bold text-xl mb-4 text-center">
+                🗳️ {(t as any).whatIsVoting || 'What is Voting?'}
+              </h3>
+
+              <div className="space-y-4 text-vintage-ice text-sm">
+                <div className="bg-vintage-black/50 rounded-lg p-3">
+                  <p className="text-vintage-gold font-bold mb-2">📊 {(t as any).howVotingWorks || 'How Voting Works'}</p>
+                  <p>{(t as any).votingExplain1 || 'Vote for your favorite cards to help them climb the Most Wanted ranking. The more votes a card has, the higher it appears!'}</p>
+                </div>
+
+                <div className="bg-vintage-black/50 rounded-lg p-3">
+                  <p className="text-vintage-gold font-bold mb-2">🆓 {(t as any).freeVotes || 'Free Votes'}</p>
+                  <p>{(t as any).freeVotesExplain || 'You get 3 free votes per day. Use them wisely to support cards you like!'}</p>
+                </div>
+
+                <div className="bg-vintage-black/50 rounded-lg p-3">
+                  <p className="text-vintage-gold font-bold mb-2">💰 {(t as any).paidVotesTitle || 'Paid Votes (VBMS)'}</p>
+                  <p>{(t as any).paidVotesExplain || 'Want more votes? Use VBMS tokens to cast unlimited paid votes! Each paid vote costs VBMS tokens.'}</p>
+                </div>
+
+                <div className="bg-vintage-black/50 rounded-lg p-3">
+                  <p className="text-vintage-gold font-bold mb-2">🎁 {(t as any).vbmsRewards || 'VBMS Rewards'}</p>
+                  <p>{(t as any).vbmsRewardsExplain || 'Every vote you receive on your card earns you 100 VBMS tokens! Build your ranking and earn rewards.'}</p>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                  <p className="text-yellow-400 font-bold mb-2">💡 {(t as any).proTip || 'Pro Tip'}</p>
+                  <p className="text-yellow-200">{(t as any).votingProTip || 'Share your card on Farcaster to get more votes and climb the ranking faster!'}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  AudioManager.buttonClick();
+                  setShowVoteExplainModal(false);
+                }}
+                className="w-full mt-5 py-3 bg-gradient-to-r from-vintage-gold to-vintage-burnt-gold hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-xl transition-all"
+              >
+                {t.gotIt}
+              </button>
             </div>
           </div>
         )}

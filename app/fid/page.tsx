@@ -32,6 +32,7 @@ import { DailyLeader } from "@/components/DailyLeader";
 import { useClaimVBMS } from "@/lib/hooks/useVBMSContracts";
 import { FloatingCardsBackground } from "@/components/FloatingCardsBackground";
 import { LanguageSelectionModal } from "@/components/LanguageSelectionModal";
+import { VibeMailInboxWithClaim } from "@/components/VibeMail";
 
 
 
@@ -116,6 +117,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   // VBMS modal
   const [showVBMSModal, setShowVBMSModal] = useState(false);
+
+  // VibeMail inbox state
+  const [showVibeMailInbox, setShowVibeMailInbox] = useState(false);
 
   // Upgrade states
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -681,6 +685,12 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   const myCard = useQuery(
     api.farcasterCards.getFarcasterCardByFid,
     userFid ? { fid: userFid } : "skip"
+  );
+
+  // VibeMail unread count (for own card)
+  const unreadMessageCount = useQuery(
+    api.cardVotes.getUnreadMessageCount,
+    userFid ? { cardFid: userFid } : "skip"
   );
 
   // Check if upgrade is available for own card
@@ -1792,11 +1802,43 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       )}
 
       
-      {/* Floating Claim Button */}
+      {/* Floating VibeMail Envelope Button (combines messages + claim) */}
       {userFid && vibeRewards && vibeRewards.pendingVbms > 0 && address && (
         <button
-          onClick={async () => {
+          onClick={() => {
             AudioManager.buttonClick();
+            setShowVibeMailInbox(true);
+          }}
+          className="z-[9998] w-14 h-14 rounded-full bg-vintage-gold/90 text-vintage-black hover:bg-vintage-gold hover:scale-110 transition-all flex items-center justify-center shadow-lg shadow-vintage-gold/30 relative"
+          style={{
+            position: 'fixed',
+            right: '16px',
+            top: 'calc(100% + 60px)',
+            animation: 'floatClaimUp 25s linear infinite',
+          }}
+          title={`${vibeRewards.pendingVbms} VBMS to claim`}
+        >
+          {/* Golden Envelope SVG */}
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="drop-shadow-sm">
+            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+          </svg>
+          {/* Badge with VBMS count + unread messages */}
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-md">
+            {vibeRewards.pendingVbms + (unreadMessageCount || 0)}
+          </span>
+        </button>
+      )}
+
+      {/* VibeMail Inbox Modal with Claim */}
+      {showVibeMailInbox && userFid && (
+        <VibeMailInboxWithClaim
+          cardFid={userFid}
+          onClose={() => setShowVibeMailInbox(false)}
+          pendingVbms={vibeRewards?.pendingVbms || 0}
+          address={address}
+          isClaimingRewards={isClaimingRewards}
+          isClaimTxPending={isClaimTxPending}
+          onClaim={async () => {
             setIsClaimingRewards(true);
             setError(null);
             let claimResult: { success: boolean; amount?: number; nonce?: string; signature?: string; error?: string } | null = null;
@@ -1804,7 +1846,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
               console.log('📝 Preparing claim via Convex action...');
               claimResult = await prepareVibeRewardsClaim({
                 fid: userFid,
-                claimerAddress: address,
+                claimerAddress: address!,
               });
 
               if (!claimResult || !claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
@@ -1821,6 +1863,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
               );
               console.log('✅ Claim TX:', txHash);
               alert(`Claimed ${claimResult.amount} VBMS! TX: ${txHash}`);
+              setShowVibeMailInbox(false);
             } catch (e: any) {
               console.error('❌ Claim failed:', e);
               if (claimResult?.amount) {
@@ -1837,19 +1880,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             }
             setIsClaimingRewards(false);
           }}
-          disabled={isClaimingRewards || isClaimTxPending}
-          className="z-[9998] px-3 py-2 rounded-xl bg-vintage-gold/40 text-vintage-gold hover:bg-vintage-gold/60 hover:brightness-125 transition-all flex flex-col items-center gap-0 disabled:opacity-50 shadow-lg backdrop-blur-sm border border-vintage-gold/30"
-          style={{
-            position: 'fixed',
-            right: '16px',
-            top: 'calc(100% + 60px)',
-            animation: 'floatClaimUp 25s linear infinite',
-          }}
-          title={`Claim ${vibeRewards.pendingVbms} VBMS`}
-        >
-          <span className="text-sm font-bold leading-tight">{isClaimingRewards || isClaimTxPending ? '...' : vibeRewards.pendingVbms}</span>
-          <span className="text-[10px] leading-tight">VBMS</span>
-        </button>
+        />
       )}
 
       {/* Bottom Navigation Bar - Fixed at bottom (VBMS style) */}
