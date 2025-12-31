@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 interface CardMediaProps {
   src: string | undefined;
@@ -15,16 +15,21 @@ interface CardMediaProps {
  *
  * Renders video or image based on src URL
  * Uses native browser lazy loading - no complex JS
+ *
+ * FIX: Removed useEffect that caused flash/flicker on re-renders
  */
 export function CardMedia({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
   const [useImage, setUseImage] = useState(false);
   const [error, setError] = useState(false);
+  const prevSrcRef = useRef(src);
 
-  // Reset state when src changes - fixes issue where error state persists across different cards
-  useEffect(() => {
-    setUseImage(false);
-    setError(false);
-  }, [src]);
+  // Reset state when src ACTUALLY changes - using ref comparison avoids flash
+  // This is synchronous and happens during render, not in useEffect
+  if (src !== prevSrcRef.current) {
+    prevSrcRef.current = src;
+    if (useImage) setUseImage(false);
+    if (error) setError(false);
+  }
 
   if (!src) {
     return null;
@@ -37,16 +42,15 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
   const srcLower = src.toLowerCase();
   const hasVideoExtension = srcLower.includes('.mp4') || srcLower.includes('.webm') || srcLower.includes('.mov');
   const isIpfs = srcLower.includes('ipfs');
-  
+
   // VibeFID specific: filebase.io URLs should NEVER fallback to image
   const isVibeFID = srcLower.includes('filebase.io');
-  
+
   const shouldTryVideo = !isDataUrl && (hasVideoExtension || (isIpfs && !useImage));
 
   if (shouldTryVideo && !error) {
     return (
       <video
-        key={src}
         src={src}
         className={className}
         loop
@@ -65,9 +69,6 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
             // Other collections: fallback to image
             setUseImage(true);
           }
-        }}
-        onLoadedData={() => {
-          console.log('Video loaded:', src);
         }}
       />
     );
