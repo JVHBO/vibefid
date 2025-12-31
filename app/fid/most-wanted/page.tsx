@@ -157,12 +157,12 @@ export default function MostWantedPage() {
                       {card.mintScore.toFixed(3)} {'→'} {card.currentScore.toFixed(3)}
                     </p>
                     {(() => {
-                      // Check if card can upgrade based on current score
+                      // Check if card can upgrade based on current score (using correct thresholds)
                       const getRarityFromScore = (score: number) => {
-                        if (score >= 0.90) return 'Mythic';
-                        if (score >= 0.80) return 'Legendary';
-                        if (score >= 0.70) return 'Epic';
-                        if (score >= 0.60) return 'Rare';
+                        if (score >= 0.99) return 'Mythic';
+                        if (score >= 0.90) return 'Legendary';
+                        if (score >= 0.79) return 'Epic';
+                        if (score >= 0.70) return 'Rare';
                         return 'Common';
                       };
                       const currentRarityLevel = getRarityFromScore(card.currentScore);
