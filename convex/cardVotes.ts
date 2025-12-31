@@ -80,7 +80,7 @@ export const getUserFreeVotesRemaining = query({
   },
 });
 
-// Vote for a card (free or paid)
+// Vote for a card (free or paid) with optional VibeMail message
 export const voteForCard = mutation({
   args: {
     cardFid: v.number(),
@@ -88,6 +88,9 @@ export const voteForCard = mutation({
     voterAddress: v.string(),
     isPaid: v.boolean(),
     voteCount: v.optional(v.number()), // For paid votes, can vote multiple times
+    // VibeMail - Anonymous message with vote
+    message: v.optional(v.string()), // Optional text message (max 200 chars)
+    audioId: v.optional(v.string()), // Optional meme sound ID
   },
   handler: async (ctx, args) => {
     const today = new Date().toISOString().split('T')[0];
@@ -155,7 +158,8 @@ export const voteForCard = mutation({
       });
     }
 
-    // Record the vote
+    // Record the vote with optional VibeMail message
+    const hasMessage = args.message && args.message.trim().length > 0;
     await ctx.db.insert("cardVotes", {
       cardFid: args.cardFid,
       voterFid: args.voterFid,
@@ -164,13 +168,17 @@ export const voteForCard = mutation({
       isPaid: args.isPaid,
       voteCount: voteCount,
       createdAt: now,
+      // VibeMail fields
+      message: hasMessage && args.message ? args.message.slice(0, 200) : undefined, // Max 200 chars
+      audioId: hasMessage ? args.audioId : undefined, // Only save audio if message exists
+      isRead: hasMessage ? false : undefined, // Only track read status if message exists
     });
 
     // Update daily leaderboard
     await updateDailyLeaderboard(ctx, args.cardFid, today, voteCount);
 
     // Update vibeRewards for card owner (100 VBMS per vote)
-    const vbmsReward = voteCount * 10;
+    const vbmsReward = voteCount * 100;
     const existingReward = await ctx.db
       .query("vibeRewards")
       .withIndex("by_fid", (q) => q.eq("fid", args.cardFid))
@@ -412,5 +420,67 @@ export const distributeDailyPrize = mutation({
       prize: prizePool,
       votes: winner.totalVotes,
     };
+  },
+});
+
+// ============================================================================
+// VIBEMAIL - Anonymous messages with votes
+// ============================================================================
+
+// Get all messages for a card (inbox)
+export const getMessagesForCard = query({
+  args: {
+    cardFid: v.number(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 50;
+
+    const messages = await ctx.db
+      .query("cardVotes")
+      .withIndex("by_card_unread", (q) => q.eq("cardFid", args.cardFid))
+      .filter((q) => q.neq(q.field("message"), undefined))
+      .order("desc")
+      .take(limit);
+
+    return messages.map(m => ({
+      _id: m._id,
+      message: m.message,
+      audioId: m.audioId,
+      isRead: m.isRead ?? false,
+      createdAt: m.createdAt,
+      voteCount: m.voteCount,
+      isPaid: m.isPaid,
+    }));
+  },
+});
+
+// Mark a message as read
+export const markMessageAsRead = mutation({
+  args: { messageId: v.id("cardVotes") },
+  handler: async (ctx, args) => {
+    const vote = await ctx.db.get(args.messageId);
+    if (!vote || !vote.message) {
+      return { success: false, error: "Message not found" };
+    }
+
+    await ctx.db.patch(args.messageId, { isRead: true });
+    return { success: true };
+  },
+});
+
+// Get unread message count for a card
+export const getUnreadMessageCount = query({
+  args: { cardFid: v.number() },
+  handler: async (ctx, args) => {
+    const unread = await ctx.db
+      .query("cardVotes")
+      .withIndex("by_card_unread", (q) =>
+        q.eq("cardFid", args.cardFid).eq("isRead", false)
+      )
+      .filter((q) => q.neq(q.field("message"), undefined))
+      .collect();
+
+    return unread.length;
   },
 });
