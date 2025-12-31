@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 
 interface CardMediaProps {
   src: string | undefined;
@@ -18,14 +18,14 @@ interface CardMediaProps {
  *
  * FIX: Removed useEffect that caused flash/flicker on re-renders
  * FIX: Added background color to prevent flash during video load
+ * FIX: Added React.memo to prevent re-renders when props unchanged
  */
-export function CardMedia({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
+function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
   const [useImage, setUseImage] = useState(false);
   const [error, setError] = useState(false);
   const prevSrcRef = useRef(src);
 
   // Reset state when src ACTUALLY changes - using ref comparison avoids flash
-  // This is synchronous and happens during render, not in useEffect
   if (src !== prevSrcRef.current) {
     prevSrcRef.current = src;
     if (useImage) setUseImage(false);
@@ -36,17 +36,11 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
     return null;
   }
 
-  // Check if it's a data URL (base64 image) - these should ALWAYS render as images
   const isDataUrl = src.startsWith('data:');
-
-  // Check if it's a video file
   const srcLower = src.toLowerCase();
   const hasVideoExtension = srcLower.includes('.mp4') || srcLower.includes('.webm') || srcLower.includes('.mov');
   const isIpfs = srcLower.includes('ipfs');
-
-  // VibeFID specific: filebase.io URLs should NEVER fallback to image
   const isVibeFID = srcLower.includes('filebase.io');
-
   const shouldTryVideo = !isDataUrl && (hasVideoExtension || (isIpfs && !useImage));
 
   if (shouldTryVideo && !error) {
@@ -61,8 +55,7 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
         preload="auto"
         onClick={onClick}
         style={{ objectFit: 'cover', background: '#1a1a1a' }}
-        onError={(e) => {
-          console.error('Video failed to load:', src);
+        onError={() => {
           if (isVibeFID) {
             setError(true);
           } else {
@@ -73,7 +66,6 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
     );
   }
 
-  // VibeFID error state - show link instead of image fallback
   if (error && isVibeFID) {
     return (
       <div className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a1a', color: '#fff', fontSize: '10px', padding: '10px', textAlign: 'center', flexDirection: 'column' }}>
@@ -84,7 +76,6 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
     );
   }
 
-  // Regular image rendering (or fallback for non-VibeFID IPFS)
   return (
     <img
       src={src}
@@ -93,10 +84,10 @@ export function CardMedia({ src, alt, className, loading = "lazy", onClick }: Ca
       loading={loading}
       onClick={onClick}
       style={{ background: '#1a1a1a' }}
-      onError={(e) => {
-        console.error('Image failed to load:', src);
-        setError(true);
-      }}
+      onError={() => setError(true)}
     />
   );
 }
+
+// Memoize to prevent re-renders when props haven't changed
+export const CardMedia = memo(CardMediaComponent);
