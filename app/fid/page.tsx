@@ -31,6 +31,7 @@ import { sdk } from "@farcaster/miniapp-sdk";
 import { DailyLeader } from "@/components/DailyLeader";
 import { useClaimVBMS } from "@/lib/hooks/useVBMSContracts";
 import { FloatingCardsBackground } from "@/components/FloatingCardsBackground";
+import { LanguageSelectionModal } from "@/components/LanguageSelectionModal";
 
 
 
@@ -1133,6 +1134,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black p-2 sm:p-4 md:p-8 overflow-x-hidden relative">
+      {/* Language Selection Modal - shows once per player */}
+      <LanguageSelectionModal />
+
       {/* Floating Cards Background */}
       <FloatingCardsBackground />
 
@@ -1803,8 +1807,8 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                 claimerAddress: address,
               });
 
-              if (!claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
-                throw new Error(claimResult.error || 'Failed to prepare claim');
+              if (!claimResult || !claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
+                throw new Error(claimResult?.error || 'Failed to prepare claim');
               }
 
               console.log('✅ Got nonce + signature from Convex');
