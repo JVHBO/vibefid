@@ -483,12 +483,16 @@ export function VibeMailInboxWithClaim({
           </div>
         )}
 
-        {/* Claim Button at bottom (always visible when not viewing message) */}
-        {!selectedMessage && pendingVbms > 0 && address && (
+        {/* Claim Button at bottom (always visible when not viewing message and has pending VBMS) */}
+        {!selectedMessage && pendingVbms > 0 && (
           <div className="border-t border-vintage-gold/30 pt-4 mt-auto">
             <button
               onClick={() => {
                 AudioManager.buttonClick();
+                if (!address) {
+                  alert('Connect wallet to claim VBMS');
+                  return;
+                }
                 onClaim();
               }}
               disabled={isClaimingRewards || isClaimTxPending}

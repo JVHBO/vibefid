@@ -77,11 +77,11 @@ export function verifyTimestamp(message: string): boolean {
     }
 
     const now = Date.now();
-    const fiveMinutes = 5 * 60 * 1000;
+    const twoMinutes = 2 * 60 * 1000; // Security: Reduced from 5 to 2 minutes to minimize replay window
 
-    // Check if timestamp is within 5 minutes
-    if (Math.abs(now - timestamp) > fiveMinutes) {
-      console.error("❌ Message expired (older than 5 minutes)");
+    // Check if timestamp is within 2 minutes
+    if (Math.abs(now - timestamp) > twoMinutes) {
+      console.error("❌ Message expired (older than 2 minutes)");
       return false;
     }
 

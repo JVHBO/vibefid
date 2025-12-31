@@ -50,6 +50,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Security: Validate FID is a positive integer
+    const fidNum = typeof fid === 'number' ? fid : parseInt(fid);
+    if (isNaN(fidNum) || fidNum <= 0 || !Number.isInteger(fidNum)) {
+      return NextResponse.json(
+        { error: 'Invalid FID: must be a positive integer' },
+        { status: 400 }
+      );
+    }
+
     // SECURITY: Rate limiting
     if (!checkRateLimit(address)) {
       console.warn('⚠️ Rate limited:', address);

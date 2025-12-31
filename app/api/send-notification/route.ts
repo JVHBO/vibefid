@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || "REDACTED";
+// Security: Only use environment variable, no fallback
+const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
+
+// Security: Whitelist of allowed notification endpoints to prevent SSRF
+const ALLOWED_NOTIFICATION_URLS = [
+  "https://api.farcaster.xyz",
+  "https://api.neynar.com",
+] as const;
+
+function isAllowedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Only allow HTTPS
+    if (parsed.protocol !== "https:") {
+      return false;
+    }
+    // Check if URL starts with any allowed domain
+    return ALLOWED_NOTIFICATION_URLS.some(allowed => url.startsWith(allowed));
+  } catch {
+    return false;
+  }
+}
 
 interface NotificationPayload {
   fid: string;
@@ -13,9 +34,19 @@ interface NotificationPayload {
 
 export async function POST(request: NextRequest) {
   try {
+    // Security: Validate API key is configured
+    if (!NEYNAR_API_KEY) {
+      console.error("[send-notification] NEYNAR_API_KEY not configured");
+      return NextResponse.json(
+        { error: "Service not configured" },
+        { status: 503 }
+      );
+    }
+
     const payload: NotificationPayload = await request.json();
     const { fid, title, body, targetUrl, token, url } = payload;
 
+    // Input validation
     if (!fid || !title || !body) {
       return NextResponse.json(
         { error: "Missing required fields: fid, title, body" },
@@ -23,8 +54,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Security: Validate FID is a positive number
+    const fidNum = parseInt(fid);
+    if (isNaN(fidNum) || fidNum <= 0) {
+      return NextResponse.json(
+        { error: "Invalid FID" },
+        { status: 400 }
+      );
+    }
+
+    // Security: Sanitize title and body to prevent injection
+    const sanitizedTitle = title.slice(0, 100); // Max 100 chars
+    const sanitizedBody = body.slice(0, 500); // Max 500 chars
+
     // If token and url provided, send directly to Farcaster/Warpcast API
     if (token && url) {
+      // Security: Validate URL is in whitelist to prevent SSRF
+      if (!isAllowedUrl(url)) {
+        console.warn(`[send-notification] Blocked SSRF attempt to: ${url}`);
+        return NextResponse.json(
+          { error: "Invalid notification URL" },
+          { status: 400 }
+        );
+      }
+
       const isWarpcast = url.includes("api.farcaster.xyz");
 
       if (isWarpcast) {
@@ -36,8 +89,8 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             notificationId: `vibefid-${Date.now()}`,
-            title,
-            body,
+            title: sanitizedTitle,
+            body: sanitizedBody,
             targetUrl: targetUrl || "https://vibefid.xyz",
             tokens: [token],
           }),
@@ -60,8 +113,8 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             notification_id: `vibefid-${Date.now()}`,
-            title,
-            body,
+            title: sanitizedTitle,
+            body: sanitizedBody,
             target_url: targetUrl || "https://vibefid.xyz",
             tokens: [token],
           }),
@@ -87,10 +140,10 @@ export async function POST(request: NextRequest) {
           "x-api-key": NEYNAR_API_KEY,
         },
         body: JSON.stringify({
-          target_fids: [parseInt(fid)],
+          target_fids: [fidNum],
           notification: {
-            title,
-            body,
+            title: sanitizedTitle,
+            body: sanitizedBody,
             target_url: targetUrl || "https://vibefid.xyz",
           },
         }),
@@ -103,10 +156,11 @@ export async function POST(request: NextRequest) {
       success: response.ok,
       result,
     });
-  } catch (error: any) {
-    console.error("Error sending notification:", error);
+  } catch (error: unknown) {
+    // Security: Don't expose internal error details
+    console.error("[send-notification] Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to send notification" },
+      { error: "Failed to send notification" },
       { status: 500 }
     );
   }
