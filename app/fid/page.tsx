@@ -831,6 +831,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       console.error('Upgrade error:', err);
       setError(err.message || "Failed to upgrade card");
       setShowEvolutionModal(false);
+                          router.refresh();
       setEvolutionPhase('idle');
       setRegenerationStatus('');
     }
@@ -1535,6 +1536,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                         onClick={() => {
                           AudioManager.buttonClick();
                           setShowEvolutionModal(false);
+                          router.refresh();
                           setEvolutionPhase('idle');
                           setEvolutionData(null);
                           setNeynarScoreData(null);
