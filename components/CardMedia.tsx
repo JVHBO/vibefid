@@ -11,14 +11,14 @@ interface CardMediaProps {
 }
 
 /**
- * CardMedia component - Simplified for mobile stability
- *
- * FIX: Seamless loop using dual-video technique to avoid black flash
+ * CardMedia component
+ * 
+ * FIX: Manual loop control for videos without duration metadata
+ * Removes native loop attribute and uses 'ended' event for seamless restart
  */
 function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
   const [useImage, setUseImage] = useState(false);
   const [error, setError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
   const prevSrcRef = useRef(src);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -28,33 +28,31 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
       prevSrcRef.current = src;
       setUseImage(false);
       setError(false);
-      setIsLoaded(false);
     }
   }, [src]);
 
-  // Setup seamless loop
+  // Manual seamless loop
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleCanPlayThrough = () => {
-      setIsLoaded(true);
+    const handleEnded = () => {
+      // Instantly restart without showing black frame
+      video.currentTime = 0;
+      video.play().catch(() => {});
     };
 
-    // Seamless loop: when near the end, seek to start
-    const handleTimeUpdate = () => {
-      if (video.duration > 0 && video.currentTime >= video.duration - 0.05) {
-        video.currentTime = 0.001; // Seek to just after 0 to avoid edge cases
-        video.play().catch(() => {});
-      }
+    // Ensure video plays after load
+    const handleCanPlay = () => {
+      video.play().catch(() => {});
     };
 
-    video.addEventListener('canplaythrough', handleCanPlayThrough);
-    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('canplay', handleCanPlay);
 
     return () => {
-      video.removeEventListener('canplaythrough', handleCanPlayThrough);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('canplay', handleCanPlay);
     };
   }, [src]);
 
@@ -80,10 +78,7 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
         autoPlay
         preload="auto"
         onClick={onClick}
-        style={{ 
-          objectFit: 'cover',
-          // No background - prevents black flash
-        }}
+        style={{ objectFit: 'cover' }}
         onError={() => {
           if (isVibeFID) {
             setError(true);
