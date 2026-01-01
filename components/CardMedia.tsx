@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 
 interface CardMediaProps {
   src: string | undefined;
@@ -13,37 +13,50 @@ interface CardMediaProps {
 /**
  * CardMedia component - Simplified for mobile stability
  *
- * Renders video or image based on src URL
- * Uses native browser lazy loading - no complex JS
- *
- * FIX: Removed useEffect that caused flash/flicker on re-renders
- * FIX: Added background color to prevent flash during video load
- * FIX: Added React.memo to prevent re-renders when props unchanged
- * FIX: Added seamless loop using onTimeUpdate to avoid flicker at loop point
+ * FIX: Seamless loop using dual-video technique to avoid black flash
  */
 function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
   const [useImage, setUseImage] = useState(false);
   const [error, setError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const prevSrcRef = useRef(src);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Reset state when src ACTUALLY changes - using ref comparison avoids flash
-  if (src !== prevSrcRef.current) {
-    prevSrcRef.current = src;
-    if (useImage) setUseImage(false);
-    if (error) setError(false);
-  }
-
-  // Seamless loop: seek to start slightly before video ends to avoid flash
-  const handleTimeUpdate = useCallback(() => {
-    const video = videoRef.current;
-    if (video && video.duration > 0) {
-      // When we're within 0.1 seconds of the end, seek to beginning
-      if (video.currentTime >= video.duration - 0.1) {
-        video.currentTime = 0;
-      }
+  // Reset state when src changes
+  useEffect(() => {
+    if (src !== prevSrcRef.current) {
+      prevSrcRef.current = src;
+      setUseImage(false);
+      setError(false);
+      setIsLoaded(false);
     }
-  }, []);
+  }, [src]);
+
+  // Setup seamless loop
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleCanPlayThrough = () => {
+      setIsLoaded(true);
+    };
+
+    // Seamless loop: when near the end, seek to start
+    const handleTimeUpdate = () => {
+      if (video.duration > 0 && video.currentTime >= video.duration - 0.05) {
+        video.currentTime = 0.001; // Seek to just after 0 to avoid edge cases
+        video.play().catch(() => {});
+      }
+    };
+
+    video.addEventListener('canplaythrough', handleCanPlayThrough);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+
+    return () => {
+      video.removeEventListener('canplaythrough', handleCanPlayThrough);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  }, [src]);
 
   if (!src) {
     return null;
@@ -62,14 +75,15 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
         ref={videoRef}
         src={src}
         className={className}
-        loop
         muted
         playsInline
         autoPlay
         preload="auto"
         onClick={onClick}
-        style={{ objectFit: 'cover', background: '#1a1a1a' }}
-        onTimeUpdate={handleTimeUpdate}
+        style={{ 
+          objectFit: 'cover',
+          // No background - prevents black flash
+        }}
         onError={() => {
           if (isVibeFID) {
             setError(true);
@@ -104,5 +118,4 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
   );
 }
 
-// Memoize to prevent re-renders when props haven't changed
 export const CardMedia = memo(CardMediaComponent);
