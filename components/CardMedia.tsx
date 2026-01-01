@@ -23,9 +23,7 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
     }
   }, [src]);
 
-  if (!src) {
-    return null;
-  }
+  if (!src) return null;
 
   const isDataUrl = src.startsWith('data:');
   const srcLower = src.toLowerCase();
@@ -45,17 +43,10 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
         autoPlay
         preload="auto"
         onClick={onClick}
-        style={{ 
-          objectFit: 'cover',
-          // Hide black flash with blend mode - black becomes transparent
-          mixBlendMode: 'lighten',
-        }}
+        style={{ objectFit: 'cover' }}
         onError={() => {
-          if (isVibeFID) {
-            setError(true);
-          } else {
-            setUseImage(true);
-          }
+          if (isVibeFID) setError(true);
+          else setUseImage(true);
         }}
       />
     );
@@ -64,9 +55,7 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
   if (error && isVibeFID) {
     return (
       <div className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a1a', color: '#fff', fontSize: '10px', padding: '10px', textAlign: 'center', flexDirection: 'column' }}>
-        <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: '#ffd700' }}>
-          Open
-        </a>
+        <a href={src} target="_blank" rel="noopener noreferrer" style={{ color: '#ffd700' }}>Open</a>
       </div>
     );
   }
