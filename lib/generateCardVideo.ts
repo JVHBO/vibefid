@@ -7,6 +7,7 @@
  * STANDARD: All VibeFID videos are 3 seconds, 30 FPS
  */
 
+import fixWebmDuration from 'fix-webm-duration';
 import { extractGifFrames, imageDataToCanvas, type ExtractedGif } from './gifExtractor';
 
 // Standard video parameters for all VibeFID cards
@@ -98,9 +99,11 @@ export async function generateCardVideo({
       mediaRecorder.onstop = async () => {
         const webmBlob = new Blob(chunks, { type: 'video/webm' });
 
-        // For now, return WebM (most NFT platforms support it)
-        // Can convert to MP4 later if needed
-        resolve(webmBlob);
+        // FIX: Add duration metadata to WebM for seamless looping
+        const durationMs = actualDuration * 1000;
+        const fixedBlob = await fixWebmDuration(webmBlob, durationMs);
+
+        resolve(fixedBlob);
       };
 
       mediaRecorder.onerror = (e) => {

@@ -24,6 +24,7 @@
     "@vercel/og": "^0.8.5",
     "convex": "^1.31.2",
     "ethers": "^6.15.0",
+    "fix-webm-duration": "^1.0.6",
     "framer-motion": "^12.23.26",
     "gifuct-js": "^2.1.2",
     "nanoid": "^5.1.6",
