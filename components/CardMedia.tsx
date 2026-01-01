@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, memo } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 
 interface CardMediaProps {
   src: string | undefined;
@@ -19,11 +19,13 @@ interface CardMediaProps {
  * FIX: Removed useEffect that caused flash/flicker on re-renders
  * FIX: Added background color to prevent flash during video load
  * FIX: Added React.memo to prevent re-renders when props unchanged
+ * FIX: Added seamless loop using onTimeUpdate to avoid flicker at loop point
  */
 function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: CardMediaProps) {
   const [useImage, setUseImage] = useState(false);
   const [error, setError] = useState(false);
   const prevSrcRef = useRef(src);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Reset state when src ACTUALLY changes - using ref comparison avoids flash
   if (src !== prevSrcRef.current) {
@@ -31,6 +33,17 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
     if (useImage) setUseImage(false);
     if (error) setError(false);
   }
+
+  // Seamless loop: seek to start slightly before video ends to avoid flash
+  const handleTimeUpdate = useCallback(() => {
+    const video = videoRef.current;
+    if (video && video.duration > 0) {
+      // When we're within 0.1 seconds of the end, seek to beginning
+      if (video.currentTime >= video.duration - 0.1) {
+        video.currentTime = 0;
+      }
+    }
+  }, []);
 
   if (!src) {
     return null;
@@ -46,6 +59,7 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
   if (shouldTryVideo && !error) {
     return (
       <video
+        ref={videoRef}
         src={src}
         className={className}
         loop
@@ -55,6 +69,7 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
         preload="auto"
         onClick={onClick}
         style={{ objectFit: 'cover', background: '#1a1a1a' }}
+        onTimeUpdate={handleTimeUpdate}
         onError={() => {
           if (isVibeFID) {
             setError(true);

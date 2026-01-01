@@ -179,7 +179,7 @@ export async function generateCardVideo({
 
         // Apply foil effect overlay
         if (foilType !== 'None') {
-          drawFoilEffect(ctx, width, height, frame, foilType);
+          drawFoilEffect(ctx, width, height, frame, foilType, totalFrames);
         }
 
         frame++;
@@ -209,7 +209,8 @@ function drawFoilEffect(
   width: number,
   height: number,
   frame: number,
-  foilType: 'Standard' | 'Prize'
+  foilType: 'Standard' | 'Prize',
+  totalFrames: number
 ) {
   // Save context
   ctx.save();
@@ -219,8 +220,8 @@ function drawFoilEffect(
   ctx.globalAlpha = foilType === 'Prize' ? 0.8 : 0.6; // INCREASED for visibility
 
   // Calculate animation progress (0 to 1)
-  const speed = 3; // FIX: Both Prize and Standard use 3s cycle for smooth looping
-  const progress = (frame % (30 * speed)) / (30 * speed);
+  // FIX: Use totalFrames to ensure seamless loop - foil cycle matches video duration
+  const progress = frame / totalFrames;
 
   // Create gradient that shifts with animation
   // Both use 45deg direction for consistency
