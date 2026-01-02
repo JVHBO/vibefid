@@ -6,6 +6,30 @@ export type TranslationKey = keyof typeof translations['pt-BR'];
 
 export const translations = {
   "pt-BR": {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **Bem-vindo ao VibeFID, {username}!**
+
+Sua carta **{rarity}** foi criada!
+
+📱 **VibeFID** → Seu perfil Farcaster virou uma carta colecionável! O poder é baseado no seu Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Batalhe com sua carta em Poker e PvP. Aposte VBMS no Mecha Arena e enfrente Raid Bosses!
+
+🃏 **Coleções Parceiras** → Cartas de projetos parceiros também funcionam nas batalhas!
+
+🎯 **Wanted Cast** → Interaja com posts em destaque e ganhe VBMS!
+
+📬 **VibeMail** → Seu inbox para mensagens anônimas.
+
+Boa sorte! 🚀`,
+    // VibeMail Welcome Message
+    vibemailWelcomeTitle: 'Bem-vindo ao VibeFID!',
+    vibemailWelcomeCardReady: 'Sua carta {rarity} foi criada com sucesso!',
+    vibemailWelcomeWhatIsVibeFID: 'O VibeFID transforma seu perfil Farcaster em uma carta colecionavel unica baseada no seu Neynar Score.',
+    vibemailWelcomeWhatIsVBMS: 'Use sua carta no Vibe Most Wanted - um jogo de batalha de cartas onde voce compete contra outros jogadores em Poker, Batalhas PvP, Arena Mecha e Raid Boss!',
+    vibemailWelcomeVoteSystem: 'Voce pode receber votos de outros usuarios e subir no ranking diario.',
+    vibemailWelcomeInbox: 'Este e seu inbox! Aqui voce recebe mensagens anonimas (VibeMail) de quem votou em voce.',
+    vibemailWelcomeGoodLuck: 'Boa sorte na sua jornada!',
     transactionInProgress: 'Transação em andamento',
 
     spectatorModeDesc: 'Assista a batalha e converse com os jogadores',
@@ -989,6 +1013,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ Esta conta será apagada SOMENTE após a outra conta usar o código de merge.'
   },
   en: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **Welcome to VibeFID, {username}!**
+
+Your **{rarity}** card has been created!
+
+📱 **VibeFID** → Your Farcaster profile became a collectible card! Power is based on your Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Battle with your card in Poker and PvP. Bet VBMS in Mecha Arena and fight Raid Bosses!
+
+🃏 **Partner Collections** → Cards from partner projects also work in battles!
+
+🎯 **Wanted Cast** → Interact with featured posts and earn VBMS!
+
+📬 **VibeMail** → Your inbox for anonymous messages.
+
+Good luck! 🚀`,
     transactionInProgress: 'Transaction in progress',
 
     completed: 'Completed',
@@ -1938,6 +1978,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ This account will be deleted ONLY after the other account uses the merge code.',
   },
   es: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **¡Bienvenido a VibeFID, {username}!**
+
+¡Tu carta **{rarity}** ha sido creada!
+
+📱 **VibeFID** → ¡Tu perfil de Farcaster se convirtió en una carta coleccionable! El poder se basa en tu Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → ¡Batalla con tu carta en Poker y PvP. Apuesta VBMS en Mecha Arena y enfrenta Raid Bosses!
+
+🃏 **Colecciones Asociadas** → ¡Las cartas de proyectos asociados también funcionan en las batallas!
+
+🎯 **Wanted Cast** → ¡Interactúa con posts destacados y gana VBMS!
+
+📬 **VibeMail** → Tu buzón para mensajes anónimos.
+
+¡Buena suerte! 🚀`,
     transactionInProgress: 'Transacción en progreso',
 
     completed: 'Completado',
@@ -2890,6 +2946,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ Esta cuenta será eliminada SOLO después de que la otra cuenta use el código de fusión.',
   },
   hi: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **VibeFID mein aapka swagat hai, {username}!**
+
+Aapka **{rarity}** card ban gaya hai!
+
+📱 **VibeFID** → Aapka Farcaster profile ek collectible card ban gaya! Power aapke Neynar Score par based hai.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Apne card se Poker aur PvP mein battle karein. Mecha Arena mein VBMS lagayein aur Raid Bosses se ladein!
+
+🃏 **Partner Collections** → Partner projects ke cards bhi battles mein kaam karte hain!
+
+🎯 **Wanted Cast** → Featured posts se interact karein aur VBMS kamayein!
+
+📬 **VibeMail** → Anonymous messages ke liye aapka inbox.
+
+Good luck! 🚀`,
     // Hindi translations (abbreviated for brevity - keeping it short for file size)
     transactionInProgress: 'लेनदेन प्रगति में',
 
@@ -3843,6 +3915,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ यह अकाउंट तभी हटाया जाएगा जब दूसरा अकाउंट मर्ज कोड का उपयोग करेगा।',
   },
   ru: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **Dobro pozhalovat v VibeFID, {username}!**
+
+Vasha karta **{rarity}** sozdana!
+
+📱 **VibeFID** → Vash profil Farcaster stal kollektsionnoy kartoy! Sila osnovana na vashem Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Srazhaysya kartoy v Poker i PvP. Stavte VBMS v Mecha Arena i srazhaysya s Raid Bossami!
+
+🃏 **Partnerskie Kollektsii** → Karty partnerskih proektov tozhe rabotayut v bitvah!
+
+🎯 **Wanted Cast** → Vzaimodeystvuyte s izbrannymi postami i zarabatyvayte VBMS!
+
+📬 **VibeMail** → Vash pochtovyy yashchik dlya anonimnykh soobshcheniy.
+
+Udachi! 🚀`,
     transactionInProgress: 'Транзакция выполняется',
 
     completed: 'Завершено',
@@ -4792,6 +4880,30 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ Этот аккаунт будет удалён ТОЛЬКО после того, как другой аккаунт использует код объединения.',
   },
   "zh-CN": {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **欢迎来到 VibeFID, {username}!**
+
+你的 **{rarity}** 卡片已创建!
+
+📱 **VibeFID** → 你的 Farcaster 个人资料变成了收藏卡!力量基于你的 Neynar Score。
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → 用你的卡片在 Poker 和 PvP 中战斗。在 Mecha Arena 下注 VBMS 并挑战 Raid Bosses!
+
+🃏 **合作系列** → 合作项目的卡片也可以在战斗中使用!
+
+🎯 **Wanted Cast** → 与精选帖子互动并赚取 VBMS!
+
+📬 **VibeMail** → 你的匿名消息收件箱。
+
+祝你好运! 🚀`,
+    // VibeMail Welcome Message
+    vibemailWelcomeTitle: 'Huanying lai dao VibeFID!',
+    vibemailWelcomeCardReady: 'Ninde {rarity} kapian yijing chenggong chuangjian!',
+    vibemailWelcomeWhatIsVibeFID: 'VibeFID jiang ninde Farcaster geren ziliao zhuanhua wei jiyu ninde Neynar Score de dute shoucangjia kapian.',
+    vibemailWelcomeWhatIsVBMS: 'Zai Vibe Most Wanted zhong shiyong ninde kapian - yi ge kapian zhandou youxi, nin keyi zai Poker, PvP Zhandou, Mecha Jingjichang he Raid Boss zhong yu qita wanjia jingzheng!',
+    vibemailWelcomeVoteSystem: 'Nin keyi cong qita yonghu na li huode toupiao bing zai meiri paihang bang zhong pansheng.',
+    vibemailWelcomeInbox: 'Zhe shi ninde shoujianxiang! Zai zheli nin hui shoudao toupiao gei ninde ren de niming xiaoxi (VibeMail).',
+    vibemailWelcomeGoodLuck: 'Zhu nin lucheng shunli!',
     transactionInProgress: '交易进行中',
 
     completed: '已完成',
@@ -5741,6 +5853,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ 此账户仅在另一账户使用合并代码后才会被删除。',
   },
   id: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **Selamat datang di VibeFID, {username}!**
+
+Kartu **{rarity}** kamu sudah dibuat!
+
+📱 **VibeFID** → Profil Farcaster kamu jadi kartu koleksi! Kekuatan berdasarkan Neynar Score kamu.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Bertarung dengan kartumu di Poker dan PvP. Taruh VBMS di Mecha Arena dan lawan Raid Bosses!
+
+🃏 **Koleksi Partner** → Kartu dari proyek partner juga bisa dipakai di pertempuran!
+
+🎯 **Wanted Cast** → Interaksi dengan post unggulan dan dapatkan VBMS!
+
+📬 **VibeMail** → Inbox kamu untuk pesan anonim.
+
+Semoga beruntung! 🚀`,
     transactionInProgress: 'Transaksi sedang berlangsung',
 
     completed: 'Selesai',
@@ -6664,6 +6792,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ Akun ini akan dihapus HANYA setelah akun lain menggunakan kode gabung.',
   },
   fr: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **Bienvenue sur VibeFID, {username}!**
+
+Votre carte **{rarity}** a été créée!
+
+📱 **VibeFID** → Votre profil Farcaster est devenu une carte de collection! La puissance est basée sur votre Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combattez avec votre carte au Poker et PvP. Pariez des VBMS dans Mecha Arena et affrontez les Raid Bosses!
+
+🃏 **Collections Partenaires** → Les cartes des projets partenaires fonctionnent aussi dans les batailles!
+
+🎯 **Wanted Cast** → Interagissez avec les posts en vedette et gagnez des VBMS!
+
+📬 **VibeMail** → Votre boîte de réception pour les messages anonymes.
+
+Bonne chance! 🚀`,
     transactionInProgress: 'Transaction en cours',
 
     completed: 'Terminé',
@@ -7587,6 +7731,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ Ce compte sera supprimé UNIQUEMENT après que l\'autre compte utilise le code de fusion.',
   },
   ja: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **VibeFID へようこそ, {username}!**
+
+あなたの **{rarity}** カードが作成されました!
+
+📱 **VibeFID** → あなたの Farcaster プロフィールがコレクタブルカードになりました! パワーは Neynar Score に基づいています。
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → カードでポーカーと PvP でバトル。Mecha Arena で VBMS を賭けて Raid Bosses と戦おう!
+
+🃏 **パートナーコレクション** → パートナープロジェクトのカードもバトルで使えます!
+
+🎯 **Wanted Cast** → 注目の投稿とインタラクトして VBMS を獲得!
+
+📬 **VibeMail** → 匿名メッセージ用の受信トレイ。
+
+頑張って! 🚀`,
     transactionInProgress: 'トランザクション処理中',
 
     completed: '完了',
@@ -8509,6 +8669,22 @@ export const translations = {
     mergeAccountDeletedAfter: '⚠️ このアカウントは、他のアカウントが統合コードを使用した後にのみ削除されます。',
   },
   it: {
+    // VibeMail Welcome Message (special formatting: **bold**, [link](url))
+    vibemailWelcomeMessage: `🎉 **Benvenuto in VibeFID, {username}!**
+
+La tua carta **{rarity}** è stata creata!
+
+📱 **VibeFID** → Il tuo profilo Farcaster è diventato una carta collezionabile! Il potere si basa sul tuo Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combatti con la tua carta in Poker e PvP. Scommetti VBMS in Mecha Arena e affronta i Raid Bosses!
+
+🃏 **Collezioni Partner** → Anche le carte dei progetti partner funzionano nelle battaglie!
+
+🎯 **Wanted Cast** → Interagisci con i post in evidenza e guadagna VBMS!
+
+📬 **VibeMail** → La tua casella per messaggi anonimi.
+
+Buona fortuna! 🚀`,
     completed: 'Completato',
 
     all: 'Tutti',

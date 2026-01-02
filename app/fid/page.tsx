@@ -530,6 +530,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           color: String(data.color),
           imageUrl: String(data.imageUrl),
           contractAddress: VIBEFID_CONTRACT_ADDRESS.toLowerCase(),
+          language: lang, // Pass user's language for welcome message
         };
 
         if (data.cardImageUrl) validatedData.cardImageUrl = String(data.cardImageUrl);
@@ -619,6 +620,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
           // Add contractAddress (VibeFID)
           validatedData.contractAddress = VIBEFID_CONTRACT_ADDRESS.toLowerCase();
+
+          // Add user's language for welcome message
+          validatedData.language = lang;
 
           // Add shareImageUrl only if it exists (optional field)
           if (pendingMintData.shareImageUrl) {
@@ -1149,7 +1153,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       <LanguageSelectionModal />
 
       {/* Floating Cards Background */}
-      <FloatingCardsBackground />
+      <FloatingCardsBackground userFid={userFid} onMessageClick={() => setShowVibeMailInbox(true)} />
 
       {/* Header Bar */}
       <div className="fixed top-0 left-0 right-0 z-[9999] bg-vintage-charcoal/95 backdrop-blur-sm border-b border-vintage-gold/30 px-3 py-2">
@@ -1804,24 +1808,26 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       )}
 
       
-      {/* Floating VibeMail Envelope Button - shows when has messages or pending VBMS */}
-      {userFid && ((unreadMessageCount ?? 0) > 0 || (vibeRewards?.pendingVbms ?? 0) > 0) && (
+      {/* Floating VibeMail Envelope Button - hides when modal is open */}
+      {userFid && !showVibeMailInbox && (
         <button
           onClick={() => {
             AudioManager.buttonClick();
             setShowVibeMailInbox(true);
           }}
-          className="fixed bottom-24 right-4 z-[9998] w-16 h-16 rounded-full bg-vintage-gold/70 text-vintage-black hover:bg-vintage-gold hover:scale-110 transition-all flex items-center justify-center shadow-lg shadow-vintage-gold/30 backdrop-blur-sm border-2 border-vintage-gold/50 animate-bounce"
+          className={`fixed bottom-24 right-4 z-[9998] w-16 h-16 rounded-full bg-vintage-gold/70 text-vintage-black hover:bg-vintage-gold hover:scale-110 transition-all flex items-center justify-center shadow-lg shadow-vintage-gold/30 backdrop-blur-sm border-2 border-vintage-gold/50 ${((unreadMessageCount ?? 0) > 0 || (vibeRewards?.pendingVbms ?? 0) > 0) ? "animate-bounce" : ""}`}
           title="VibeMail"
         >
           {/* Golden Envelope SVG */}
           <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="drop-shadow-md">
             <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
           </svg>
-          {/* Badge */}
-          <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-md animate-pulse">
-            {(vibeRewards?.pendingVbms || 0) + (unreadMessageCount || 0)}
-          </span>
+          {/* Badge - only shows when there are notifications */}
+          {((vibeRewards?.pendingVbms || 0) + (unreadMessageCount || 0)) > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center shadow-md animate-pulse">
+              {(vibeRewards?.pendingVbms || 0) + (unreadMessageCount || 0)}
+            </span>
+          )}
         </button>
       )}
 
@@ -1829,6 +1835,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       {showVibeMailInbox && userFid && (
         <VibeMailInboxWithClaim
           cardFid={userFid}
+          username={myCard?.username || userData?.username}
           onClose={() => setShowVibeMailInbox(false)}
           pendingVbms={vibeRewards?.pendingVbms || 0}
           address={address}

@@ -7,7 +7,136 @@ import { Id } from '@/convex/_generated/dataModel';
 import { AudioManager } from '@/lib/audio-manager';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fidTranslations } from '@/lib/fidTranslations';
+import { translations } from '@/lib/translations';
+import { sdk } from '@farcaster/miniapp-sdk';
 
+
+
+// Check if message is a welcome message and return translated version
+function getTranslatedMessage(message: string, lang: string = "en", username?: string): string {
+  if (!message) return message;
+
+  // Detect welcome message by pattern (starts with 🎉 and contains VibeFID)
+  if (message.startsWith('🎉') && message.includes('VibeFID')) {
+    const displayName = username || 'User';
+
+    // Extract rarity from the original message - look for **Word** after carta/card
+    const rarityMatch = message.match(/(?:carta|card)\s*\*\*([A-Za-z]+)\*\*/i);
+    const rarity = rarityMatch ? rarityMatch[1] : 'Rare';
+
+    // Get translated welcome message
+    const t = translations[lang] || translations['en'];
+    if (t.vibemailWelcomeMessage) {
+      return t.vibemailWelcomeMessage
+        .replace('{username}', displayName)
+        .replace('{rarity}', rarity);
+    }
+  }
+
+  return message;
+}
+
+// Check if message is a welcome message
+function isWelcomeMessage(message: string): boolean {
+  return message?.startsWith('🎉') && message?.includes('VibeFID');
+}
+
+// Render formatted message with **bold** and [link](url) support
+function renderFormattedMessage(message: string, lang: string = "en", username?: string): React.ReactNode {
+  if (!message) return null;
+
+  // Translate welcome messages
+  const translatedMessage = getTranslatedMessage(message, lang, username);
+
+  // Handle both real newlines and literal backslash-n (escaped in JSON)
+  const normalizedMessage = translatedMessage.replace(/\\n/g, '\n');
+  const lines = normalizedMessage.split('\n');
+
+  // Check if this is a welcome message - we'll insert image in the middle
+  const isWelcome = isWelcomeMessage(message);
+  const vibefidLineIdx = isWelcome ? lines.findIndex(l => l.includes('📱')) : -1;
+
+  const renderLine = (line: string, lineIdx: number, isLast: boolean) => {
+    const parts: React.ReactNode[] = [];
+    let remaining = line;
+    let keyIdx = 0;
+
+    while (remaining.length > 0) {
+      const linkMatch = remaining.match(/\[([^\]]+)\]\(([^)]+)\)/);
+      const boldMatch = remaining.match(/\*\*([^*]+)\*\*/);
+
+      const linkIdx = linkMatch ? remaining.indexOf(linkMatch[0]) : -1;
+      const boldIdx = boldMatch ? remaining.indexOf(boldMatch[0]) : -1;
+
+      if (linkIdx === -1 && boldIdx === -1) {
+        if (remaining) parts.push(<span key={`${lineIdx}-${keyIdx++}`}>{remaining}</span>);
+        break;
+      }
+
+      if (linkIdx !== -1 && (boldIdx === -1 || linkIdx < boldIdx)) {
+        if (linkIdx > 0) {
+          parts.push(<span key={`${lineIdx}-${keyIdx++}`}>{remaining.slice(0, linkIdx)}</span>);
+        }
+        const [, linkText, linkUrl] = linkMatch!;
+        parts.push(
+          <button
+            key={`${lineIdx}-${keyIdx++}`}
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                if (sdk?.actions?.openMiniApp) {
+                  await sdk.actions.openMiniApp({ url: linkUrl });
+                } else {
+                  window.open(linkUrl, '_blank');
+                }
+              } catch {
+                window.open(linkUrl, '_blank');
+              }
+            }}
+            className="text-vintage-gold underline hover:text-yellow-400 font-bold transition-colors"
+          >
+            {linkText}
+          </button>
+        );
+        remaining = remaining.slice(linkIdx + linkMatch![0].length);
+      } else {
+        if (boldIdx > 0) {
+          parts.push(<span key={`${lineIdx}-${keyIdx++}`}>{remaining.slice(0, boldIdx)}</span>);
+        }
+        const [, boldText] = boldMatch!;
+        parts.push(<strong key={`${lineIdx}-${keyIdx++}`} className="text-vintage-gold">{boldText}</strong>);
+        remaining = remaining.slice(boldIdx + boldMatch![0].length);
+      }
+    }
+
+    return (
+      <span key={`line-${lineIdx}`}>
+        {parts}
+        {!isLast && <br />}
+      </span>
+    );
+  };
+
+  // Build the result with image in the middle for welcome messages
+  const result: React.ReactNode[] = [];
+  lines.forEach((line, lineIdx) => {
+    result.push(renderLine(line, lineIdx, lineIdx === lines.length - 1));
+
+    // Insert image after the VibeFID description line (📱)
+    if (isWelcome && lineIdx === vibefidLineIdx) {
+      result.push(
+        <img
+          key="welcome-image"
+          src="/bom.jpg"
+          alt="Welcome"
+          className="w-full rounded-lg my-4"
+        />
+      );
+    }
+  });
+
+  return <>{result}</>;
+}
 
 // Electronic Secretaries - intercept messages randomly
 export const VIBEMAIL_SECRETARIES = [
@@ -58,7 +187,7 @@ interface VibeMailInboxProps {
 }
 
 // VibeMail Inbox Component - Shows all messages for a card
-export function VibeMailInbox({ cardFid, onClose }: VibeMailInboxProps) {
+export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps) {
   const { lang } = useLanguage();
   const t = fidTranslations[lang];
   const messages = useQuery(api.cardVotes.getMessagesForCard, { cardFid, limit: 50 });
@@ -111,7 +240,7 @@ export function VibeMailInbox({ cardFid, onClose }: VibeMailInboxProps) {
     <div className="fixed inset-0 z-[350] flex items-center justify-center bg-black/90 p-4">
       <audio ref={audioRef} onEnded={() => setPlayingAudio(null)} />
 
-      <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[calc(100vh-120px)] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -156,7 +285,7 @@ export function VibeMailInbox({ cardFid, onClose }: VibeMailInboxProps) {
             {/* Message Content */}
             <div className="bg-gradient-to-b from-vintage-black/80 to-vintage-charcoal rounded-lg p-4 flex-1">
               <p className="text-vintage-ice text-base leading-relaxed mb-4">
-                "{selectedMessage.message}"
+                "{renderFormattedMessage(selectedMessage.message || "", lang, username)}"
               </p>
 
               {/* Audio Player */}
@@ -279,6 +408,7 @@ interface VibeMailInboxWithClaimProps {
 
 export function VibeMailInboxWithClaim({
   cardFid,
+  username,
   onClose,
   pendingVbms,
   address,
@@ -335,7 +465,7 @@ export function VibeMailInboxWithClaim({
     <div className="fixed inset-0 z-[350] flex items-center justify-center bg-black/90 p-4">
       <audio ref={audioRef} onEnded={() => setPlayingAudio(null)} />
 
-      <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[calc(100vh-120px)] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -380,7 +510,7 @@ export function VibeMailInboxWithClaim({
             {/* Message Content */}
             <div className="bg-gradient-to-b from-vintage-black/80 to-vintage-charcoal rounded-lg p-4 flex-1 overflow-y-auto">
               <p className="text-vintage-ice text-base leading-relaxed mb-4">
-                "{selectedMessage.message}"
+                "{renderFormattedMessage(selectedMessage.message || "", lang, username)}"
               </p>
 
               {selectedMessage.audioId && (
