@@ -325,16 +325,16 @@ export default function FidCardPage() {
   };
 
   // Check if upgrade is available (only for card owner)
-  // TEMPORARY: Allow upgrade if score changed (so owners can sync their cards)
+  // Allow: ONE TIME sync (if never upgraded) OR rarity would change
   const canUpgrade = () => {
     if (!isOwnCard || !card || !neynarScoreData) return false;
     const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
     const currentRarityIndex = rarityOrder.indexOf(card.rarity);
     const newRarityIndex = rarityOrder.indexOf(neynarScoreData.rarity);
     const rarityImproved = newRarityIndex > currentRarityIndex;
-    const scoreDifferent = Math.abs(neynarScoreData.score - card.neynarScore) > 0.001;
-    // Allow upgrade if rarity improved OR score changed
-    return rarityImproved || scoreDifferent;
+    const neverUpgraded = !card.upgradedAt;
+    // Allow upgrade if: never synced before OR rarity would improve
+    return neverUpgraded || rarityImproved;
   };
 
   // Check if this is a rarity upgrade or just a score refresh
