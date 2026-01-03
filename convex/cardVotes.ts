@@ -463,37 +463,52 @@ export const getMessagesForCard = query({
   },
 });
 
-// Get all SENT messages for a user
+// Get sent messages by a user (voterFid)
 export const getSentMessages = query({
   args: {
-    senderFid: v.number(),
+    voterFid: v.number(),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
 
-    const messages = await ctx.db
+    // Get all votes sent by this user that have messages
+    const allVotes = await ctx.db
       .query("cardVotes")
-      .withIndex("by_sender_sent", (q) =>
-        q.eq("voterFid", args.senderFid).eq("isSent", true)
-      )
-      .filter((q) => q.neq(q.field("message"), undefined))
-      .order("desc")
-      .take(limit);
+      .withIndex("by_voter_date", (q) => q.eq("voterFid", args.voterFid))
+      .collect();
 
-    return messages.map(m => ({
-      _id: m._id,
-      message: m.message,
-      audioId: m.audioId,
-      imageId: m.imageId,
-      isRead: true, // Sent messages are always "read"
-      createdAt: m.createdAt,
-      voteCount: m.voteCount,
-      isPaid: m.isPaid,
-      recipientFid: m.recipientFid,
-      recipientUsername: m.recipientUsername,
-      isSent: true,
-    }));
+    // Filter to only votes with messages and sort by creation time
+    const messages = allVotes
+      .filter(v => v.message !== undefined && v.isSent !== false)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .slice(0, limit);
+
+    // Get recipient info for each message
+    const messagesWithRecipients = await Promise.all(
+      messages.map(async (m) => {
+        // Get recipient card info
+        const recipientCard = await ctx.db
+          .query("farcasterCards")
+          .withIndex("by_fid", (q) => q.eq("fid", m.cardFid))
+          .first();
+
+        return {
+          _id: m._id,
+          message: m.message,
+          audioId: m.audioId,
+          imageId: m.imageId,
+          recipientFid: m.cardFid,
+          recipientUsername: recipientCard?.username || m.recipientUsername || `FID ${m.cardFid}`,
+          recipientPfpUrl: recipientCard?.pfpUrl || "",
+          createdAt: m.createdAt,
+          voteCount: m.voteCount,
+          isPaid: m.isPaid,
+        };
+      })
+    );
+
+    return messagesWithRecipients;
   },
 });
 
