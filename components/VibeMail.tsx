@@ -12,6 +12,7 @@ import { sdk } from '@farcaster/miniapp-sdk';
 import { useTransferVBMS } from '@/lib/hooks/useVBMSContracts';
 import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
+import { NFTGiftModal } from './NFTGiftModal';
 
 const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
 
@@ -64,13 +65,13 @@ function renderMessageWithMedia(
   // Remove /vibe from the message for display
   const cleanMessage = message?.replace(/\/vibe/gi, '').trim() || '';
 
-  // Render the media element
+  // Render the media element - compact size
   const renderMedia = () => {
     if (!imageData) return null;
     return imageData.isVideo ? (
       <video
         src={imageData.file}
-        className="w-full rounded-lg my-3"
+        className="max-w-[150px] max-h-[150px] rounded-lg my-2 border border-vintage-gold/30"
         autoPlay
         loop
         muted
@@ -80,7 +81,7 @@ function renderMessageWithMedia(
       <img
         src={imageData.file}
         alt="VibeMail"
-        className="w-full rounded-lg my-3"
+        className="max-w-[150px] max-h-[150px] object-cover rounded-lg my-2 border border-vintage-gold/30"
       />
     );
   };
@@ -270,6 +271,10 @@ interface VibeMailMessage {
   recipientFid?: number;
   recipientUsername?: string;
   recipientPfpUrl?: string;
+  // NFT Gift
+  giftNftName?: string;
+  giftNftImageUrl?: string;
+  giftNftCollection?: string;
 }
 
 interface VibeMailInboxProps {
@@ -419,6 +424,27 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
                 </div>
               )}
 
+              {/* NFT Gift Display */}
+              {selectedMessage.giftNftImageUrl && (
+                <div className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={selectedMessage.giftNftImageUrl}
+                      alt={selectedMessage.giftNftName || 'NFT Gift'}
+                      className="w-12 h-12 object-cover rounded-lg border border-vintage-gold/50"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.png';
+                      }}
+                    />
+                    <span className="absolute -top-1 -right-1 text-base">🎁</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-vintage-gold font-bold text-xs truncate">{selectedMessage.giftNftName}</p>
+                    <p className="text-vintage-ice/50 text-[10px]">{selectedMessage.giftNftCollection}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Vote Info */}
               <div className="mt-4 pt-3 border-t border-vintage-gold/20 flex items-center justify-between text-xs">
                 <span className="text-vintage-ice/50">
@@ -545,6 +571,18 @@ export function VibeMailInboxWithClaim({
   const [txHash, setTxHash] = useState<string | null>(null);
   const sendDirectMutation = useMutation(api.cardVotes.sendDirectVibeMail);
   const replyMutation = useMutation(api.cardVotes.replyToMessage);
+
+  // NFT Gift modal state
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [giftRecipientFid, setGiftRecipientFid] = useState<number | null>(null);
+  const [giftRecipientAddress, setGiftRecipientAddress] = useState<string>('');
+  const [giftRecipientUsername, setGiftRecipientUsername] = useState<string>('');
+
+  // Query to get recipient address for NFT gift
+  const recipientCard = useQuery(
+    api.farcasterCards.getFarcasterCardByFid,
+    recipientFid ? { fid: recipientFid } : 'skip'
+  );
 
   // TX hook for VibeMail (free vote = 0 VBMS but requires TX signature)
   const { transfer: transferVBMS, isPending: isTransferPending } = useTransferVBMS();
@@ -866,31 +904,20 @@ export function VibeMailInboxWithClaim({
               )}
             </div>
 
-            {/* Send Button - Requires TX signature */}
+            {/* Next Button - Opens gift modal first, then sends everything */}
             <button
               onClick={async () => {
                 if (isSending || isTransferPending) return;
                 if (!composerMessage.trim() && !composerImageId) return;
                 if (!myAddress) return;
 
-                setIsSending(true);
-                setTxHash(null);
-                try {
-                  // Step 1: Calculate cost - 0 for free, 100 for paid
-                  const isPaid = !hasFreeVotes;
-                  const cost = isPaid ? parseEther(VIBEMAIL_COST_VBMS) : BigInt(0);
-                  console.log(isPaid ? "💰 Paid VibeMail" : "🆓 Free VibeMail", "- transferring", cost.toString(), "VBMS...");
-
-                  // Step 2: Require TX signature
-                  const hash = await transferVBMS(
-                    CONTRACTS.VBMSPoolTroll as `0x${string}`,
-                    cost
-                  );
-                  console.log("✅ VibeMail TX signed:", hash);
-                  setTxHash(hash);
-
-                  // Step 3: Save message to Convex
-                  if (replyToMessageId) {
+                // For replies, send directly (no gift modal)
+                if (replyToMessageId) {
+                  setIsSending(true);
+                  try {
+                    const isPaid = !hasFreeVotes;
+                    const cost = isPaid ? parseEther(VIBEMAIL_COST_VBMS) : BigInt(0);
+                    await transferVBMS(CONTRACTS.VBMSPoolTroll as `0x${string}`, cost);
                     await replyMutation({
                       originalMessageId: replyToMessageId,
                       senderFid: myFid,
@@ -899,38 +926,33 @@ export function VibeMailInboxWithClaim({
                       audioId: composerAudioId || undefined,
                       imageId: composerImageId || undefined,
                     });
-                  } else if (recipientFid) {
-                    await sendDirectMutation({
-                      recipientFid,
-                      senderFid: myFid,
-                      senderAddress: myAddress,
-                      message: composerMessage,
-                      audioId: composerAudioId || undefined,
-                      imageId: composerImageId || undefined,
-                    });
+                    AudioManager.buttonClick();
+                    setShowComposer(false);
+                    setReplyToMessageId(null);
+                    setComposerMessage('');
+                    setComposerAudioId(null);
+                    setComposerImageId(null);
+                  } catch (err) {
+                    console.error('Failed to send reply:', err);
+                  } finally {
+                    setIsSending(false);
                   }
-                  AudioManager.buttonClick();
-                  setShowComposer(false);
-                  setReplyToMessageId(null);
-                  setRecipientFid(null);
-                  setRecipientUsername('');
-                  setSearchQuery('');
-                  setComposerMessage('');
-                  setComposerAudioId(null);
-                  setComposerImageId(null);
-                  setShowSoundPicker(false);
-                  setShowImagePicker(false);
-                } catch (err: any) {
-                  console.error('Failed to send VibeMail:', err);
-                  // Don't save if TX was rejected
-                } finally {
-                  setIsSending(false);
+                  return;
+                }
+
+                // For direct messages, show gift modal first
+                if (recipientFid && recipientCard?.address) {
+                  setGiftRecipientFid(recipientFid);
+                  setGiftRecipientAddress(recipientCard.address);
+                  setGiftRecipientUsername(recipientUsername);
+                  setShowGiftModal(true);
+                  // Don't close composer yet - will close after gift modal
                 }
               }}
               disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && !recipientFid)}
               className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/40 to-yellow-500/40 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/50 hover:to-yellow-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSending || isTransferPending ? '⏳ Confirm TX...' : hasFreeVotes ? '📨 Send Free (TX)' : `📨 Send (${VIBEMAIL_COST_VBMS} VBMS)`}
+              {isSending || isTransferPending ? '⏳ Confirm TX...' : replyToMessageId ? '↩️ Reply' : '➡️ Next: Gift NFT?'}
             </button>
             </div>
           </div>
@@ -991,6 +1013,27 @@ export function VibeMailInboxWithClaim({
                     <p className="text-vintage-ice/50 text-[10px]">
                       {playingAudio === selectedMessage.audioId ? t.playing : t.tapToPlay}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* NFT Gift Display */}
+              {selectedMessage.giftNftImageUrl && (
+                <div className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={selectedMessage.giftNftImageUrl}
+                      alt={selectedMessage.giftNftName || 'NFT Gift'}
+                      className="w-12 h-12 object-cover rounded-lg border border-vintage-gold/50"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.png';
+                      }}
+                    />
+                    <span className="absolute -top-1 -right-1 text-base">🎁</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-vintage-gold font-bold text-xs truncate">{selectedMessage.giftNftName}</p>
+                    <p className="text-vintage-ice/50 text-[10px]">{selectedMessage.giftNftCollection}</p>
                   </div>
                 </div>
               )}
@@ -1109,6 +1152,41 @@ export function VibeMailInboxWithClaim({
           </div>
         )}
       </div>
+
+      {/* NFT Gift Modal - handles everything: gift selection + VibeMail sending */}
+      {showGiftModal && giftRecipientFid && giftRecipientAddress && myFid && myAddress && (
+        <NFTGiftModal
+          onClose={() => {
+            setShowGiftModal(false);
+            setGiftRecipientFid(null);
+            setGiftRecipientAddress('');
+            setGiftRecipientUsername('');
+          }}
+          onComplete={() => {
+            // Reset everything after complete
+            setShowGiftModal(false);
+            setShowComposer(false);
+            setGiftRecipientFid(null);
+            setGiftRecipientAddress('');
+            setGiftRecipientUsername('');
+            setRecipientFid(null);
+            setRecipientUsername('');
+            setComposerMessage('');
+            setComposerAudioId(null);
+            setComposerImageId(null);
+            setSearchQuery('');
+          }}
+          recipientFid={giftRecipientFid}
+          recipientAddress={giftRecipientAddress}
+          recipientUsername={giftRecipientUsername}
+          senderFid={myFid}
+          senderAddress={myAddress}
+          message={composerMessage}
+          audioId={composerAudioId || undefined}
+          imageId={composerImageId || undefined}
+          isPaidVibeMail={!hasFreeVotes}
+        />
+      )}
     </div>
   );
 }
