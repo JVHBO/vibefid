@@ -42,6 +42,9 @@ export const mintFarcasterCard = mutation({
 
     // Contract
     contractAddress: v.optional(v.string()), // NFT contract address
+
+    // User preferences
+    language: v.optional(v.string()), // User's preferred language (en, pt, es, etc.)
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
@@ -137,6 +140,194 @@ export const mintFarcasterCard = mutation({
 
     // Mark VibeFID minted mission - handled by VBMS deployment
     // VibeFID standalone doesnt have the missions module
+
+    // Send welcome VibeMail to new player with translated message
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const lang = args.language || 'en';
+
+      // Welcome messages in different languages (with special formatting)
+      // **bold** and [link](url) are rendered by VibeMail component
+      const welcomeMessages: Record<string, string> = {
+        en: `🎉 **Welcome to VibeFID, ${args.username}!**
+
+Your **${args.rarity}** card has been created!
+
+📱 **VibeFID** → Your Farcaster profile became a collectible card! Power is based on your Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Battle with your card in Poker and PvP. Bet VBMS in Mecha Arena and fight Raid Bosses!
+
+🃏 **Partner Collections** → Cards from partner projects also work in battles!
+
+🎯 **Wanted Cast** → Interact with featured posts and earn VBMS!
+
+📬 **VibeMail** → Your inbox for anonymous messages.
+
+Good luck! 🚀`,
+
+        pt: `🎉 **Bem-vindo ao VibeFID, ${args.username}!**
+
+Sua carta **${args.rarity}** foi criada!
+
+📱 **VibeFID** → Seu perfil Farcaster virou uma carta colecionável! O poder é baseado no seu Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Batalhe com sua carta em Poker e PvP. Aposte VBMS no Mecha Arena e enfrente Raid Bosses!
+
+🃏 **Coleções Parceiras** → Cartas de projetos parceiros também funcionam nas batalhas!
+
+🎯 **Wanted Cast** → Interaja com posts em destaque e ganhe VBMS!
+
+📬 **VibeMail** → Seu inbox para mensagens anônimas.
+
+Boa sorte! 🚀`,
+
+        es: `🎉 **¡Bienvenido a VibeFID, ${args.username}!**
+
+¡Tu carta **${args.rarity}** ha sido creada!
+
+📱 **VibeFID** → ¡Tu perfil de Farcaster se convirtió en una carta coleccionable! El poder se basa en tu Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → ¡Batalla con tu carta en Poker y PvP. Apuesta VBMS en Mecha Arena y enfrenta Raid Bosses!
+
+🃏 **Colecciones Asociadas** → ¡Las cartas de proyectos asociados también funcionan en las batallas!
+
+🎯 **Wanted Cast** → ¡Interactúa con posts destacados y gana VBMS!
+
+📬 **VibeMail** → Tu buzón para mensajes anónimos.
+
+¡Buena suerte! 🚀`,
+
+        fr: `🎉 **Bienvenue sur VibeFID, ${args.username}!**
+
+Votre carte **${args.rarity}** a été créée!
+
+📱 **VibeFID** → Votre profil Farcaster est devenu une carte de collection! La puissance est basée sur votre Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combattez avec votre carte au Poker et PvP. Pariez des VBMS dans Mecha Arena et affrontez les Raid Bosses!
+
+🃏 **Collections Partenaires** → Les cartes des projets partenaires fonctionnent aussi dans les batailles!
+
+🎯 **Wanted Cast** → Interagissez avec les posts en vedette et gagnez des VBMS!
+
+📬 **VibeMail** → Votre boîte de réception pour les messages anonymes.
+
+Bonne chance! 🚀`,
+
+        hi: `🎉 **VibeFID mein aapka swagat hai, ${args.username}!**
+
+Aapka **${args.rarity}** card ban gaya hai!
+
+📱 **VibeFID** → Aapka Farcaster profile ek collectible card ban gaya! Power aapke Neynar Score par based hai.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Apne card se Poker aur PvP mein battle karein. Mecha Arena mein VBMS lagayein aur Raid Bosses se ladein!
+
+🃏 **Partner Collections** → Partner projects ke cards bhi battles mein kaam karte hain!
+
+🎯 **Wanted Cast** → Featured posts se interact karein aur VBMS kamayein!
+
+📬 **VibeMail** → Anonymous messages ke liye aapka inbox.
+
+Good luck! 🚀`,
+
+        ru: `🎉 **Dobro pozhalovat v VibeFID, ${args.username}!**
+
+Vasha karta **${args.rarity}** sozdana!
+
+📱 **VibeFID** → Vash profil Farcaster stal kollektsionnoy kartoy! Sila osnovana na vashem Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Srazhaysya kartoy v Poker i PvP. Stavte VBMS v Mecha Arena i srazhaysya s Raid Bossami!
+
+🃏 **Partnerskie Kollektsii** → Karty partnerskih proektov tozhe rabotayut v bitvah!
+
+🎯 **Wanted Cast** → Vzaimodeystvuyte s izbrannymi postami i zarabatyvayte VBMS!
+
+📬 **VibeMail** → Vash pochtovyy yashchik dlya anonimnykh soobshcheniy.
+
+Udachi! 🚀`,
+
+        zh: `🎉 **欢迎来到 VibeFID, ${args.username}!**
+
+你的 **${args.rarity}** 卡片已创建!
+
+📱 **VibeFID** → 你的 Farcaster 个人资料变成了收藏卡!力量基于你的 Neynar Score。
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → 用你的卡片在 Poker 和 PvP 中战斗。在 Mecha Arena 下注 VBMS 并挑战 Raid Bosses!
+
+🃏 **合作系列** → 合作项目的卡片也可以在战斗中使用!
+
+🎯 **Wanted Cast** → 与精选帖子互动并赚取 VBMS!
+
+📬 **VibeMail** → 你的匿名消息收件箱。
+
+祝你好运! 🚀`,
+
+        id: `🎉 **Selamat datang di VibeFID, ${args.username}!**
+
+Kartu **${args.rarity}** kamu sudah dibuat!
+
+📱 **VibeFID** → Profil Farcaster kamu jadi kartu koleksi! Kekuatan berdasarkan Neynar Score kamu.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Bertarung dengan kartumu di Poker dan PvP. Taruh VBMS di Mecha Arena dan lawan Raid Bosses!
+
+🃏 **Koleksi Partner** → Kartu dari proyek partner juga bisa dipakai di pertempuran!
+
+🎯 **Wanted Cast** → Interaksi dengan post unggulan dan dapatkan VBMS!
+
+📬 **VibeMail** → Inbox kamu untuk pesan anonim.
+
+Semoga beruntung! 🚀`,
+
+        ja: `🎉 **VibeFID へようこそ, ${args.username}!**
+
+あなたの **${args.rarity}** カードが作成されました!
+
+📱 **VibeFID** → あなたの Farcaster プロフィールがコレクタブルカードになりました! パワーは Neynar Score に基づいています。
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → カードでポーカーと PvP でバトル。Mecha Arena で VBMS を賭けて Raid Bosses と戦おう!
+
+🃏 **パートナーコレクション** → パートナープロジェクトのカードもバトルで使えます!
+
+🎯 **Wanted Cast** → 注目の投稿とインタラクトして VBMS を獲得!
+
+📬 **VibeMail** → 匿名メッセージ用の受信トレイ。
+
+頑張って! 🚀`,
+
+        it: `🎉 **Benvenuto in VibeFID, ${args.username}!**
+
+La tua carta **${args.rarity}** è stata creata!
+
+📱 **VibeFID** → Il tuo profilo Farcaster è diventato una carta collezionabile! Il potere si basa sul tuo Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combatti con la tua carta in Poker e PvP. Scommetti VBMS in Mecha Arena e affronta i Raid Bosses!
+
+🃏 **Collezioni Partner** → Anche le carte dei progetti partner funzionano nelle battaglie!
+
+🎯 **Wanted Cast** → Interagisci con i post in evidenza e guadagna VBMS!
+
+📬 **VibeMail** → La tua casella per messaggi anonimi.
+
+Buona fortuna! 🚀`,
+      };
+
+      const welcomeMessage = welcomeMessages[lang] || welcomeMessages['en'];
+
+      await ctx.db.insert("cardVotes", {
+        cardFid: args.fid,
+        voterFid: 0, // System message
+        voterAddress: "0x0000000000000000000000000000000000000000",
+        date: today,
+        createdAt: Date.now(),
+        voteCount: 0,
+        isPaid: false,
+        message: welcomeMessage,
+        isRead: false,
+      });
+
+      console.log(`📬 Welcome VibeMail sent to FID ${args.fid} in ${lang}`);
+    } catch (error) {
+      console.error("Failed to send welcome VibeMail:", error);
+    }
 
     return {
       success: true,

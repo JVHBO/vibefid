@@ -109,6 +109,7 @@ export default defineSchema({
     lastDebtSettlement: v.optional(v.number()), // Last time debt was settled
     pendingConversion: v.optional(v.number()), // TESTVBMS being converted to VBMS (for recovery)
     pendingConversionTimestamp: v.optional(v.number()), // When conversion was initiated
+    lastConversionAttempt: v.optional(v.number()), // Last conversion attempt timestamp
     pendingNonce: v.optional(v.string()), // 🔒 Nonce used for pending conversion (for on-chain verification)
 
     // Daily Limits for Economy
@@ -152,6 +153,8 @@ export default defineSchema({
 
     // Share Incentives
     dailyShares: v.optional(v.number()), // Shares today (resets daily)
+    dailyRecoveryCount: v.optional(v.number()), // Daily recovery attempts
+    lastRecoveryDay: v.optional(v.string()), // Last recovery day (YYYY-MM-DD)
     lastShareDate: v.optional(v.string()), // ISO date YYYY-MM-DD
     hasSharedProfile: v.optional(v.boolean()), // One-time profile share bonus claimed
     hasClaimedSharePack: v.optional(v.boolean()), // One-time FREE pack for sharing profile
@@ -496,7 +499,7 @@ export default defineSchema({
   // Claim Analytics (track player behavior)
   claimAnalytics: defineTable({
     playerAddress: v.string(),
-    choice: v.union(v.literal("immediate"), v.literal("inbox")),
+    choice: v.union(v.literal("immediate"), v.literal("inbox"), v.literal("convert")),
     amount: v.number(), // Amount of VBMS
     inboxTotal: v.number(), // Total in inbox at time of choice
     bonusAvailable: v.optional(v.boolean()), // Whether bonus was available
@@ -1546,19 +1549,24 @@ export default defineSchema({
     cardFid: v.number(),
     voterFid: v.number(),
     voterAddress: v.string(),
-    date: v.string(),
+    date: v.optional(v.string()),
     isPaid: v.boolean(),
     voteCount: v.number(),
     createdAt: v.number(),
     // VibeMail - Anonymous message with vote
     message: v.optional(v.string()), // Anonymous text message (max 200 chars)
     audioId: v.optional(v.string()), // Meme sound ID to play with message
+    imageId: v.optional(v.string()), // Meme image ID to include with message
     isRead: v.optional(v.boolean()), // Has the card owner read this message?
+    isSent: v.optional(v.boolean()), // true = sent by this user (copy), false/undefined = received
+    recipientFid: v.optional(v.number()), // For sent messages: who received it
+    recipientUsername: v.optional(v.string()), // For sent messages: recipient's username
   })
     .index("by_card_date", ["cardFid", "date"])
     .index("by_voter_date", ["voterFid", "date"])
     .index("by_date", ["date"])
-    .index("by_card_unread", ["cardFid", "isRead"]),
+    .index("by_card_unread", ["cardFid", "isRead"])
+    .index("by_sender_sent", ["voterFid", "isSent"]),
 
   // Daily Vote Leaderboard
   dailyVoteLeaderboard: defineTable({

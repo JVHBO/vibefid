@@ -1839,6 +1839,8 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           onClose={() => setShowVibeMailInbox(false)}
           pendingVbms={vibeRewards?.pendingVbms || 0}
           address={address}
+          myFid={userFid}
+          myAddress={address}
           isClaimingRewards={isClaimingRewards}
           isClaimTxPending={isClaimTxPending}
           onClaim={async () => {
