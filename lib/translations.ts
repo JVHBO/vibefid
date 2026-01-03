@@ -30,6 +30,18 @@ Boa sorte! 🚀`,
     vibemailWelcomeVoteSystem: 'Voce pode receber votos de outros usuarios e subir no ranking diario.',
     vibemailWelcomeInbox: 'Este e seu inbox! Aqui voce recebe mensagens anonimas (VibeMail) de quem votou em voce.',
     vibemailWelcomeGoodLuck: 'Boa sorte na sua jornada!',
+    // VibeMail Modes
+    vibemailModeSingle: 'Individual',
+    vibemailModeBroadcast: 'Transmissao',
+    vibemailModeRandom: 'Aleatorio',
+    vibemailShuffle: 'Sortear',
+    vibemailSending: 'Enviando...',
+    vibemailReply: 'Responder',
+    vibemailSendTo: 'Enviar para {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Aleatorio (100 VBMS)',
+    vibemailNextGift: 'Proximo: Presente NFT?',
+    vibemailAddRecipients: 'Adicionar destinatarios...',
+    vibemailSearchPlayers: 'Buscar jogadores...',,
     transactionInProgress: 'Transação em andamento',
 
     spectatorModeDesc: 'Assista a batalha e converse com os jogadores',
@@ -1030,6 +1042,18 @@ Your **{rarity}** card has been created!
 
 Good luck! 🚀`,
     transactionInProgress: 'Transaction in progress',
+    // VibeMail Modes
+    vibemailModeSingle: 'Single',
+    vibemailModeBroadcast: 'Broadcast',
+    vibemailModeRandom: 'Random',
+    vibemailShuffle: 'Shuffle',
+    vibemailSending: 'Sending...',
+    vibemailReply: 'Reply',
+    vibemailSendTo: 'Send to {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Random (100 VBMS)',
+    vibemailNextGift: 'Next: Gift NFT?',
+    vibemailAddRecipients: 'Add recipients...',
+    vibemailSearchPlayers: 'Search players...',
 
     completed: 'Completed',
 
@@ -1995,6 +2019,18 @@ Good luck! 🚀`,
 
 ¡Buena suerte! 🚀`,
     transactionInProgress: 'Transacción en progreso',
+    // VibeMail Modes
+    vibemailModeSingle: 'Individual',
+    vibemailModeBroadcast: 'Difusion',
+    vibemailModeRandom: 'Aleatorio',
+    vibemailShuffle: 'Mezclar',
+    vibemailSending: 'Enviando...',
+    vibemailReply: 'Responder',
+    vibemailSendTo: 'Enviar a {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Aleatorio (100 VBMS)',
+    vibemailNextGift: 'Siguiente: Regalo NFT?',
+    vibemailAddRecipients: 'Agregar destinatarios...',
+    vibemailSearchPlayers: 'Buscar jugadores...',
 
     completed: 'Completado',
 
@@ -2964,6 +3000,18 @@ Aapka **{rarity}** card ban gaya hai!
 Good luck! 🚀`,
     // Hindi translations (abbreviated for brevity - keeping it short for file size)
     transactionInProgress: 'लेनदेन प्रगति में',
+    // VibeMail Modes
+    vibemailModeSingle: 'Single',
+    vibemailModeBroadcast: 'Broadcast',
+    vibemailModeRandom: 'Random',
+    vibemailShuffle: 'Shuffle',
+    vibemailSending: 'Bhej raha hai...',
+    vibemailReply: 'Javab',
+    vibemailSendTo: '{count} ko bhejein ({cost} VBMS)',
+    vibemailRandomCost: 'Random (100 VBMS)',
+    vibemailNextGift: 'Agla: NFT Gift?',
+    vibemailAddRecipients: 'Praaptkarta jodein...',
+    vibemailSearchPlayers: 'Khiladi khojein...',
 
     completed: 'पूर्ण',
 
@@ -3932,6 +3980,18 @@ Vasha karta **{rarity}** sozdana!
 
 Udachi! 🚀`,
     transactionInProgress: 'Транзакция выполняется',
+    // VibeMail Modes
+    vibemailModeSingle: 'Odinochniy',
+    vibemailModeBroadcast: 'Rassylka',
+    vibemailModeRandom: 'Sluchaynyy',
+    vibemailShuffle: 'Peremeshat',
+    vibemailSending: 'Otpravka...',
+    vibemailReply: 'Otvetit',
+    vibemailSendTo: 'Otpravit {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Sluchaynyy (100 VBMS)',
+    vibemailNextGift: 'Dalee: Podarit NFT?',
+    vibemailAddRecipients: 'Dobavit poluchateley...',
+    vibemailSearchPlayers: 'Iskat igrokov...',
 
     completed: 'Завершено',
 
@@ -4905,6 +4965,18 @@ Udachi! 🚀`,
     vibemailWelcomeInbox: 'Zhe shi ninde shoujianxiang! Zai zheli nin hui shoudao toupiao gei ninde ren de niming xiaoxi (VibeMail).',
     vibemailWelcomeGoodLuck: 'Zhu nin lucheng shunli!',
     transactionInProgress: '交易进行中',
+    // VibeMail Modes
+    vibemailModeSingle: 'Danren',
+    vibemailModeBroadcast: 'Guangbo',
+    vibemailModeRandom: 'Suiji',
+    vibemailShuffle: 'Xipai',
+    vibemailSending: 'Fasong zhong...',
+    vibemailReply: 'Huifu',
+    vibemailSendTo: 'Fasong gei {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Suiji (100 VBMS)',
+    vibemailNextGift: 'Xiayibu: Zengsong NFT?',
+    vibemailAddRecipients: 'Tianjia shoujianren...',
+    vibemailSearchPlayers: 'Sousuo wanjia...',
 
     completed: '已完成',
 
@@ -5870,6 +5942,18 @@ Kartu **{rarity}** kamu sudah dibuat!
 
 Semoga beruntung! 🚀`,
     transactionInProgress: 'Transaksi sedang berlangsung',
+    // VibeMail Modes
+    vibemailModeSingle: 'Tunggal',
+    vibemailModeBroadcast: 'Siaran',
+    vibemailModeRandom: 'Acak',
+    vibemailShuffle: 'Kocok',
+    vibemailSending: 'Mengirim...',
+    vibemailReply: 'Balas',
+    vibemailSendTo: 'Kirim ke {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Acak (100 VBMS)',
+    vibemailNextGift: 'Lanjut: Hadiah NFT?',
+    vibemailAddRecipients: 'Tambah penerima...',
+    vibemailSearchPlayers: 'Cari pemain...',
 
     completed: 'Selesai',
 
@@ -6809,6 +6893,18 @@ Votre carte **{rarity}** a été créée!
 
 Bonne chance! 🚀`,
     transactionInProgress: 'Transaction en cours',
+    // VibeMail Modes
+    vibemailModeSingle: 'Individuel',
+    vibemailModeBroadcast: 'Diffusion',
+    vibemailModeRandom: 'Aleatoire',
+    vibemailShuffle: 'Melanger',
+    vibemailSending: 'Envoi...',
+    vibemailReply: 'Repondre',
+    vibemailSendTo: 'Envoyer a {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Aleatoire (100 VBMS)',
+    vibemailNextGift: 'Suivant: Cadeau NFT?',
+    vibemailAddRecipients: 'Ajouter destinataires...',
+    vibemailSearchPlayers: 'Rechercher joueurs...',
 
     completed: 'Terminé',
 
@@ -7748,6 +7844,18 @@ Bonne chance! 🚀`,
 
 頑張って! 🚀`,
     transactionInProgress: 'トランザクション処理中',
+    // VibeMail Modes
+    vibemailModeSingle: 'Tandoku',
+    vibemailModeBroadcast: 'Hoso',
+    vibemailModeRandom: 'Randamu',
+    vibemailShuffle: 'Shaffuru',
+    vibemailSending: 'Soshin-chu...',
+    vibemailReply: 'Henji',
+    vibemailSendTo: '{count} ni okuru ({cost} VBMS)',
+    vibemailRandomCost: 'Randamu (100 VBMS)',
+    vibemailNextGift: 'Tsugi: NFT purezento?',
+    vibemailAddRecipients: 'Jushinsha wo tsuika...',
+    vibemailSearchPlayers: 'Pureiya wo kensaku...',
 
     completed: '完了',
 
@@ -9628,6 +9736,18 @@ Buona fortuna! 🚀`,
     transferVbms: 'Trasferisci VBMS',
     transferring: 'Trasferimento VBMS...',
     transactionInProgress: 'Transazione in corso',
+    // VibeMail Modes
+    vibemailModeSingle: 'Singolo',
+    vibemailModeBroadcast: 'Trasmissione',
+    vibemailModeRandom: 'Casuale',
+    vibemailShuffle: 'Mescola',
+    vibemailSending: 'Invio...',
+    vibemailReply: 'Rispondi',
+    vibemailSendTo: 'Invia a {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Casuale (100 VBMS)',
+    vibemailNextGift: 'Prossimo: Regalo NFT?',
+    vibemailAddRecipients: 'Aggiungi destinatari...',
+    vibemailSearchPlayers: 'Cerca giocatori...',
     transactionComplete: 'Transazione completata!',
     transactionFailed: 'Transazione fallita',
     transactionPending: 'Transazione in attesa',
