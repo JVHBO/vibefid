@@ -42,9 +42,6 @@ export const mintFarcasterCard = mutation({
 
     // Contract
     contractAddress: v.optional(v.string()), // NFT contract address
-
-    // User preferences
-    language: v.optional(v.string()), // User's preferred language (en, pt, es, etc.)
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
@@ -106,6 +103,8 @@ export const mintFarcasterCard = mutation({
 
       // Farcaster Stats
       neynarScore: args.neynarScore,
+      latestNeynarScore: args.neynarScore, // Initialize with mint score for Most Wanted ranking
+      latestScoreCheckedAt: Date.now(),
       followerCount: args.followerCount,
       followingCount: args.followingCount,
       powerBadge: args.powerBadge,
@@ -140,194 +139,6 @@ export const mintFarcasterCard = mutation({
 
     // Mark VibeFID minted mission - handled by VBMS deployment
     // VibeFID standalone doesnt have the missions module
-
-    // Send welcome VibeMail to new player with translated message
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const lang = args.language || 'en';
-
-      // Welcome messages in different languages (with special formatting)
-      // **bold** and [link](url) are rendered by VibeMail component
-      const welcomeMessages: Record<string, string> = {
-        en: `🎉 **Welcome to VibeFID, ${args.username}!**
-
-Your **${args.rarity}** card has been created!
-
-📱 **VibeFID** → Your Farcaster profile became a collectible card! Power is based on your Neynar Score.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Battle with your card in Poker and PvP. Bet VBMS in Mecha Arena and fight Raid Bosses!
-
-🃏 **Partner Collections** → Cards from partner projects also work in battles!
-
-🎯 **Wanted Cast** → Interact with featured posts and earn VBMS!
-
-📬 **VibeMail** → Your inbox for anonymous messages.
-
-Good luck! 🚀`,
-
-        pt: `🎉 **Bem-vindo ao VibeFID, ${args.username}!**
-
-Sua carta **${args.rarity}** foi criada!
-
-📱 **VibeFID** → Seu perfil Farcaster virou uma carta colecionável! O poder é baseado no seu Neynar Score.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Batalhe com sua carta em Poker e PvP. Aposte VBMS no Mecha Arena e enfrente Raid Bosses!
-
-🃏 **Coleções Parceiras** → Cartas de projetos parceiros também funcionam nas batalhas!
-
-🎯 **Wanted Cast** → Interaja com posts em destaque e ganhe VBMS!
-
-📬 **VibeMail** → Seu inbox para mensagens anônimas.
-
-Boa sorte! 🚀`,
-
-        es: `🎉 **¡Bienvenido a VibeFID, ${args.username}!**
-
-¡Tu carta **${args.rarity}** ha sido creada!
-
-📱 **VibeFID** → ¡Tu perfil de Farcaster se convirtió en una carta coleccionable! El poder se basa en tu Neynar Score.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → ¡Batalla con tu carta en Poker y PvP. Apuesta VBMS en Mecha Arena y enfrenta Raid Bosses!
-
-🃏 **Colecciones Asociadas** → ¡Las cartas de proyectos asociados también funcionan en las batallas!
-
-🎯 **Wanted Cast** → ¡Interactúa con posts destacados y gana VBMS!
-
-📬 **VibeMail** → Tu buzón para mensajes anónimos.
-
-¡Buena suerte! 🚀`,
-
-        fr: `🎉 **Bienvenue sur VibeFID, ${args.username}!**
-
-Votre carte **${args.rarity}** a été créée!
-
-📱 **VibeFID** → Votre profil Farcaster est devenu une carte de collection! La puissance est basée sur votre Neynar Score.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combattez avec votre carte au Poker et PvP. Pariez des VBMS dans Mecha Arena et affrontez les Raid Bosses!
-
-🃏 **Collections Partenaires** → Les cartes des projets partenaires fonctionnent aussi dans les batailles!
-
-🎯 **Wanted Cast** → Interagissez avec les posts en vedette et gagnez des VBMS!
-
-📬 **VibeMail** → Votre boîte de réception pour les messages anonymes.
-
-Bonne chance! 🚀`,
-
-        hi: `🎉 **VibeFID mein aapka swagat hai, ${args.username}!**
-
-Aapka **${args.rarity}** card ban gaya hai!
-
-📱 **VibeFID** → Aapka Farcaster profile ek collectible card ban gaya! Power aapke Neynar Score par based hai.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Apne card se Poker aur PvP mein battle karein. Mecha Arena mein VBMS lagayein aur Raid Bosses se ladein!
-
-🃏 **Partner Collections** → Partner projects ke cards bhi battles mein kaam karte hain!
-
-🎯 **Wanted Cast** → Featured posts se interact karein aur VBMS kamayein!
-
-📬 **VibeMail** → Anonymous messages ke liye aapka inbox.
-
-Good luck! 🚀`,
-
-        ru: `🎉 **Dobro pozhalovat v VibeFID, ${args.username}!**
-
-Vasha karta **${args.rarity}** sozdana!
-
-📱 **VibeFID** → Vash profil Farcaster stal kollektsionnoy kartoy! Sila osnovana na vashem Neynar Score.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Srazhaysya kartoy v Poker i PvP. Stavte VBMS v Mecha Arena i srazhaysya s Raid Bossami!
-
-🃏 **Partnerskie Kollektsii** → Karty partnerskih proektov tozhe rabotayut v bitvah!
-
-🎯 **Wanted Cast** → Vzaimodeystvuyte s izbrannymi postami i zarabatyvayte VBMS!
-
-📬 **VibeMail** → Vash pochtovyy yashchik dlya anonimnykh soobshcheniy.
-
-Udachi! 🚀`,
-
-        zh: `🎉 **欢迎来到 VibeFID, ${args.username}!**
-
-你的 **${args.rarity}** 卡片已创建!
-
-📱 **VibeFID** → 你的 Farcaster 个人资料变成了收藏卡!力量基于你的 Neynar Score。
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → 用你的卡片在 Poker 和 PvP 中战斗。在 Mecha Arena 下注 VBMS 并挑战 Raid Bosses!
-
-🃏 **合作系列** → 合作项目的卡片也可以在战斗中使用!
-
-🎯 **Wanted Cast** → 与精选帖子互动并赚取 VBMS!
-
-📬 **VibeMail** → 你的匿名消息收件箱。
-
-祝你好运! 🚀`,
-
-        id: `🎉 **Selamat datang di VibeFID, ${args.username}!**
-
-Kartu **${args.rarity}** kamu sudah dibuat!
-
-📱 **VibeFID** → Profil Farcaster kamu jadi kartu koleksi! Kekuatan berdasarkan Neynar Score kamu.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Bertarung dengan kartumu di Poker dan PvP. Taruh VBMS di Mecha Arena dan lawan Raid Bosses!
-
-🃏 **Koleksi Partner** → Kartu dari proyek partner juga bisa dipakai di pertempuran!
-
-🎯 **Wanted Cast** → Interaksi dengan post unggulan dan dapatkan VBMS!
-
-📬 **VibeMail** → Inbox kamu untuk pesan anonim.
-
-Semoga beruntung! 🚀`,
-
-        ja: `🎉 **VibeFID へようこそ, ${args.username}!**
-
-あなたの **${args.rarity}** カードが作成されました!
-
-📱 **VibeFID** → あなたの Farcaster プロフィールがコレクタブルカードになりました! パワーは Neynar Score に基づいています。
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → カードでポーカーと PvP でバトル。Mecha Arena で VBMS を賭けて Raid Bosses と戦おう!
-
-🃏 **パートナーコレクション** → パートナープロジェクトのカードもバトルで使えます!
-
-🎯 **Wanted Cast** → 注目の投稿とインタラクトして VBMS を獲得!
-
-📬 **VibeMail** → 匿名メッセージ用の受信トレイ。
-
-頑張って! 🚀`,
-
-        it: `🎉 **Benvenuto in VibeFID, ${args.username}!**
-
-La tua carta **${args.rarity}** è stata creata!
-
-📱 **VibeFID** → Il tuo profilo Farcaster è diventato una carta collezionabile! Il potere si basa sul tuo Neynar Score.
-
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combatti con la tua carta in Poker e PvP. Scommetti VBMS in Mecha Arena e affronta i Raid Bosses!
-
-🃏 **Collezioni Partner** → Anche le carte dei progetti partner funzionano nelle battaglie!
-
-🎯 **Wanted Cast** → Interagisci con i post in evidenza e guadagna VBMS!
-
-📬 **VibeMail** → La tua casella per messaggi anonimi.
-
-Buona fortuna! 🚀`,
-      };
-
-      const welcomeMessage = welcomeMessages[lang] || welcomeMessages['en'];
-
-      await ctx.db.insert("cardVotes", {
-        cardFid: args.fid,
-        voterFid: 0, // System message
-        voterAddress: "0x0000000000000000000000000000000000000000",
-        date: today,
-        createdAt: Date.now(),
-        voteCount: 0,
-        isPaid: false,
-        message: welcomeMessage,
-        isRead: false,
-      });
-
-      console.log(`📬 Welcome VibeMail sent to FID ${args.fid} in ${lang}`);
-    } catch (error) {
-      console.error("Failed to send welcome VibeMail:", error);
-    }
 
     return {
       success: true,
@@ -738,10 +549,12 @@ export const upgradeCardRarity = mutation({
     // Update rarity and power (power recalculated based on new rarity)
     await ctx.db.patch(card._id, {
       rarity: args.newRarity,
+      neynarScore: args.newNeynarScore, // Update card score to current score at upgrade time
       power: newPower,
-      // Mark when upgraded
+      // Mark when upgraded - save history for tracking
       upgradedAt: Date.now(),
       previousRarity: card.rarity,
+      previousNeynarScore: card.neynarScore, // Save the score before upgrade
     });
 
     console.log(`✅ Card upgraded: FID ${args.fid} from ${card.rarity} to ${args.newRarity} (Power: ${card.power} → ${newPower})`);
@@ -753,6 +566,45 @@ export const upgradeCardRarity = mutation({
       newRarity: args.newRarity,
       oldPower: card.power,
       newPower: newPower,
+    };
+  },
+});
+
+/**
+ * Refresh card score WITHOUT changing rarity
+ * Used when neynarScore changed but rarity didn't improve
+ * Only updates neynarScore - power and rarity stay the same
+ */
+export const refreshCardScore = mutation({
+  args: {
+    fid: v.number(),
+    newNeynarScore: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`No card found for FID ${args.fid}`);
+    }
+
+    // Only update neynarScore - keep rarity and power unchanged
+    await ctx.db.patch(card._id, {
+      latestNeynarScore: args.newNeynarScore,
+      latestScoreCheckedAt: Date.now(),
+    });
+
+    console.log(`✅ Card refreshed: FID ${args.fid} score ${card.neynarScore} → ${args.newNeynarScore} (rarity unchanged: ${card.rarity})`);
+
+    return {
+      success: true,
+      fid: args.fid,
+      rarity: card.rarity,
+      power: card.power,
+      oldScore: card.neynarScore,
+      newScore: args.newNeynarScore,
     };
   },
 });
@@ -843,16 +695,16 @@ export const getCardImagesOnly = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit || 8, 20);
 
-    // Get more to filter unminted cards
+    // Get cards, skip newest 5 (might be in-progress mints)
     const cards = await ctx.db
       .query("farcasterCards")
       .order("desc")
-      .take(limit * 5);
+      .take(limit + 10);
 
-    // Filter only cards with cardImageUrl (properly minted)
+    // Filter and skip newest
     const validCards = cards
-      .filter(card => card.cardImageUrl && card.cardImageUrl.length > 0)
-      .slice(0, limit);
+      .filter(card => card.cardImageUrl)
+      .slice(5, 5 + limit);
 
     return validCards.map(card => ({
       _id: card._id,
@@ -863,81 +715,110 @@ export const getCardImagesOnly = query({
 });
 
 /**
- * Get cards for gallery (lightweight)
- * Returns only: _id, fid, username, cardImageUrl, pfpUrl
+ * Reimport a Farcaster card from backup/blockchain data
+ * Used to restore accidentally deleted cards
  */
-export const getCardsForGallery = query({
+export const reimportCard = mutation({
   args: {
-    searchTerm: v.optional(v.string()),
-    limit: v.optional(v.number()),
-    offset: v.optional(v.number()),
+    fid: v.number(),
+    username: v.string(),
+    displayName: v.string(),
+    pfpUrl: v.string(),
+    bio: v.string(),
+    neynarScore: v.number(),
+    followerCount: v.number(),
+    followingCount: v.number(),
+    powerBadge: v.boolean(),
+    address: v.string(),
+    rarity: v.string(),
+    foil: v.string(),
+    wear: v.string(),
+    power: v.number(),
+    suit: v.string(),
+    rank: v.string(),
+    suitSymbol: v.string(),
+    color: v.string(),
+    imageUrl: v.string(),
+    cardImageUrl: v.optional(v.string()),
+    shareImageUrl: v.optional(v.string()),
+    contractAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(args.limit || 12, 50);
-    const offset = args.offset || 0;
-    const searchTerm = args.searchTerm?.trim();
+    const normalizedAddress = args.address.toLowerCase();
 
-    let cards;
-    let totalCount = 0;
+    // Check if card already exists
+    const existing = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
 
-    if (!searchTerm || searchTerm.length === 0) {
-      const allRecent = await ctx.db
-        .query("farcasterCards")
-        .order("desc")
-        .take(offset + limit + 1);
-
-      cards = allRecent.slice(offset, offset + limit);
-      totalCount = allRecent.length > offset + limit ? offset + limit + 1 : allRecent.length;
-    } else {
-      const isNumericSearch = /^\d+$/.test(searchTerm);
-
-      if (isNumericSearch) {
-        const fid = parseInt(searchTerm, 10);
-        const exactMatch = await ctx.db
-          .query("farcasterCards")
-          .withIndex("by_fid", (q) => q.eq("fid", fid))
-          .first();
-
-        if (exactMatch) {
-          cards = [exactMatch];
-          totalCount = 1;
-        } else {
-          const recentCards = await ctx.db
-            .query("farcasterCards")
-            .order("desc")
-            .take(500);
-
-          const filtered = recentCards.filter(card =>
-            card.fid.toString().includes(searchTerm)
-          );
-          cards = filtered.slice(offset, offset + limit);
-          totalCount = filtered.length;
-        }
-      } else {
-        const searchResults = await ctx.db
-          .query("farcasterCards")
-          .withSearchIndex("search_username", (q) => q.search("username", searchTerm))
-          .take(offset + limit + 50);
-
-        cards = searchResults.slice(offset, offset + limit);
-        totalCount = searchResults.length;
-      }
+    if (existing) {
+      return { success: false, error: "Card already exists", fid: args.fid };
     }
 
-    const hasMore = totalCount > offset + limit;
+    const timestamp = Date.now();
+    const cardId = `farcaster_${args.fid}_${timestamp}`;
 
-    // Return only essential fields for gallery
-    return {
-      cards: cards.map(card => ({
-        _id: card._id,
-        fid: card.fid,
-        username: card.username,
-        cardImageUrl: card.cardImageUrl,
-      })),
-      totalCount,
-      hasMore,
-      offset,
-      limit,
-    };
+    // Insert with ALL required fields
+    await ctx.db.insert("farcasterCards", {
+      fid: args.fid,
+      username: args.username,
+      displayName: args.displayName,
+      pfpUrl: args.pfpUrl,
+      bio: (args.bio || "").slice(0, 200),
+      address: normalizedAddress,
+      contractAddress: args.contractAddress || "0x60274a138d026e3cb337b40567100fdec3127565",
+      cardId,
+      rarity: args.rarity,
+      foil: args.foil,
+      wear: args.wear,
+      status: "Rarity Assigned",
+      power: args.power,
+      suit: args.suit,
+      rank: args.rank,
+      suitSymbol: args.suitSymbol,
+      color: args.color,
+      neynarScore: args.neynarScore,
+      latestNeynarScore: args.neynarScore,
+      latestScoreCheckedAt: timestamp,
+      followerCount: args.followerCount,
+      followingCount: args.followingCount,
+      powerBadge: args.powerBadge,
+      imageUrl: args.imageUrl,
+      cardImageUrl: args.cardImageUrl,
+      shareImageUrl: args.shareImageUrl,
+      // CRITICAL: These required fields were missing before!
+      equipped: false,
+      mintedAt: timestamp,
+    });
+
+    console.log(`✅ Reimported card: FID ${args.fid} (@${args.username}) - ${args.rarity}`);
+    return { success: true, fid: args.fid };
+  },
+});
+
+// Update neynarScore for card (used when regenerating after upgrade)
+export const updateNeynarScore = mutation({
+  args: {
+    fid: v.number(),
+    neynarScore: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`No card found for FID ${args.fid}`);
+    }
+
+    await ctx.db.patch(card._id, {
+      neynarScore: args.neynarScore,
+    });
+
+    console.log(`✅ Updated neynarScore for FID ${args.fid} to ${args.neynarScore}`);
+
+    return { success: true, fid: args.fid, neynarScore: args.neynarScore };
   },
 });

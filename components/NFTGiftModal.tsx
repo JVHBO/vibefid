@@ -369,7 +369,7 @@ export function NFTGiftModal({
                 : 'bg-vintage-black/50 border-vintage-gold/30 text-vintage-ice/50'
             }`}
           >
-            {showUnopened ? '📦 Showing Unopened' : '📦 Hide Unopened'}
+            {showUnopened ? '📦 Hiding Unopened ✓' : '📦 Show Unopened'}
           </button>
         </div>
 
