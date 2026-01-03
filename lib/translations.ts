@@ -41,7 +41,7 @@ Boa sorte! 🚀`,
     vibemailRandomCost: 'Aleatorio (100 VBMS)',
     vibemailNextGift: 'Proximo: Presente NFT?',
     vibemailAddRecipients: 'Adicionar destinatarios...',
-    vibemailSearchPlayers: 'Buscar jogadores...',,
+    vibemailSearchPlayers: 'Buscar jogadores...',
     transactionInProgress: 'Transação em andamento',
 
     spectatorModeDesc: 'Assista a batalha e converse com os jogadores',
