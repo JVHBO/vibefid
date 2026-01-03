@@ -45,6 +45,22 @@ export const getTokenByFidInternal = internalQuery({
 });
 
 /**
+ * Get ALL notification tokens by FID (internal version)
+ * Returns all tokens (VBMS + VibeFID + Neynar) for a user
+ */
+export const getAllTokensByFidInternal = internalQuery({
+  args: { fid: v.string() },
+  handler: async (ctx, { fid }) => {
+    const tokens = await ctx.db
+      .query("notificationTokens")
+      .withIndex("by_fid", (q) => q.eq("fid", fid))
+      .collect();
+
+    return tokens;
+  },
+});
+
+/**
  * Get all notification tokens (for internal use only)
  * 🚀 BANDWIDTH FIX: Converted to internalQuery to prevent public abuse
  */
@@ -70,74 +86,71 @@ function getPlatformFromUrl(url: string): string {
 
 /**
  * Save or update notification token for a user
- * 🔧 FIX: Now supports multiple tokens per FID (one per platform)
+ * 🔧 FIX: Now supports multiple tokens per FID (one per platform + app)
  * User can receive notifications on BOTH Warpcast and Base App
+ * User can have separate tokens for VBMS and VibeFID apps
  */
 export const saveToken = mutation({
   args: {
     fid: v.string(),
     token: v.string(),
     url: v.string(),
+    app: v.optional(v.string()), // "vbms" or "vibefid"
   },
-  handler: async (ctx, { fid, token, url }) => {
+  handler: async (ctx, { fid, token, url, app }) => {
     const now = Date.now();
     const platform = getPlatformFromUrl(url);
+    const appName = app || "vbms"; // Default to vbms for backward compatibility
 
-    // 🔧 FIX: Check if token exists for this FID + PLATFORM combo
-    // This allows one token per platform (warpcast + neynar can coexist)
-    const existing = await ctx.db
+    // 🔧 FIX: Check if token exists for this FID + PLATFORM + APP combo
+    // This allows separate tokens for each app (vbms + vibefid can coexist)
+    const allTokens = await ctx.db
       .query("notificationTokens")
-      .withIndex("by_fid_platform", (q) => q.eq("fid", fid).eq("platform", platform))
-      .first();
+      .withIndex("by_fid", (q) => q.eq("fid", fid))
+      .collect();
+
+    // Find existing token for this platform + app combo
+    const existing = allTokens.find(t => t.platform === platform && t.app === appName);
 
     if (existing) {
-      // Update existing token for this platform
+      // Update existing token for this platform + app
       await ctx.db.patch(existing._id, {
         token,
         url,
         platform,
+        app: appName,
         lastUpdated: now,
       });
-      console.log(`✅ Updated ${platform} notification token for FID ${fid}`);
+      console.log(`✅ Updated ${platform}/${appName} notification token for FID ${fid}`);
       return existing._id;
     } else {
-      // Check if there's an OLD token without platform field (migration)
-      const legacyToken = await ctx.db
-        .query("notificationTokens")
-        .withIndex("by_fid", (q) => q.eq("fid", fid))
-        .filter((q) => q.eq(q.field("platform"), undefined))
-        .first();
+      // Check if there's an OLD token without app field (migration)
+      const legacyToken = allTokens.find(t => t.platform === platform && !t.app);
 
       if (legacyToken) {
-        // Migrate legacy token: add platform field
-        const legacyPlatform = getPlatformFromUrl(legacyToken.url);
-        await ctx.db.patch(legacyToken._id, { platform: legacyPlatform });
-        console.log(`🔄 Migrated legacy token for FID ${fid} to platform ${legacyPlatform}`);
-
-        // If same platform, update it
-        if (legacyPlatform === platform) {
-          await ctx.db.patch(legacyToken._id, {
-            token,
-            url,
-            platform,
-            lastUpdated: now,
-          });
-          console.log(`✅ Updated ${platform} notification token for FID ${fid}`);
-          return legacyToken._id;
-        }
-        // If different platform, create new entry (fall through)
+        // Migrate legacy token: add app field
+        await ctx.db.patch(legacyToken._id, {
+          app: appName,
+          token,
+          url,
+          platform,
+          lastUpdated: now,
+        });
+        console.log(`🔄 Migrated legacy token for FID ${fid} to ${platform}/${appName}`);
+        return legacyToken._id;
       }
 
-      // Create new token for this platform
+      // Create new token for this platform + app
       const newId = await ctx.db.insert("notificationTokens", {
         fid,
         token,
         url,
         platform,
+        app: appName,
         createdAt: now,
         lastUpdated: now,
       });
-      console.log(`✅ Created ${platform} notification token for FID ${fid}`);
+      console.log(`✅ Created ${platform}/${appName} notification token for FID ${fid}`);
       return newId;
     }
   },
@@ -440,7 +453,6 @@ export const getProfileByAddress = internalQuery({
 /**
  * Send daily login reminder to all users with notification tokens
  * Called by scheduled function (cron job)
- * NOW USING ACTION (not mutation) to allow sleep() delays
  */
 /* @ts-ignore */
 export const sendDailyLoginReminder = internalAction({
@@ -448,76 +460,62 @@ export const sendDailyLoginReminder = internalAction({
   // @ts-ignore
   handler: async (ctx) => {
     try {
-      // Get all notification tokens (use internal since getAllTokens is internalQuery)
       const tokens = await ctx.runQuery(internal.notificationsHelpers.getAllTokens);
 
       if (tokens.length === 0) {
         console.log("⚠️ No notification tokens found");
+        return { sent: 0, failed: 0, total: 0 };
       }
 
       console.log(`📬 Sending daily login reminder to ${tokens.length} users...`);
 
-      // Separate tokens: Neynar (Base App) vs others (Warpcast)
       const neynarTokens = tokens.filter(t => t.url.includes("neynar"));
-      const otherTokens = tokens.filter(t => !t.url.includes("neynar"));
+      const warpcastTokens = tokens.filter(t => !t.url.includes("neynar"));
 
       let sent = 0;
       let failed = 0;
 
-      // 1️⃣ NEYNAR TOKENS → Send via Neynar API (Base App)
+      const title = "💰 Daily Login Bonus!";
+      const body = "Claim your free coins! Don't miss today's reward 🎁";
+      const targetUrl = "https://www.vibemostwanted.xyz";
+
+      // 1️⃣ NEYNAR TOKENS
       if (neynarTokens.length > 0 && process.env.NEYNAR_API_KEY) {
         const neynarFids = neynarTokens.map(t => parseInt(t.fid)).filter(fid => !isNaN(fid));
-        console.log(`📱 Sending to ${neynarFids.length} Base App users via Neynar API...`);
-
         try {
           const neynarPayload = {
             target_fids: neynarFids,
-            notification: {
-              title: "💰 Daily Login Bonus!",
-              body: "Claim your free coins! Don't miss today's reward 🎁",
-              target_url: "https://www.vibemostwanted.xyz"
-            }
+            notification: { title, body, target_url: targetUrl, uuid: crypto.randomUUID() }
           };
 
-          const neynarResponse = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications", {
+          const neynarResponse = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "api_key": process.env.NEYNAR_API_KEY,
-              "x-neynar-api-key": process.env.NEYNAR_API_KEY
+              "x-api-key": process.env.NEYNAR_API_KEY || ""
             },
             body: JSON.stringify(neynarPayload)
           });
 
           if (neynarResponse.ok) {
             const neynarResult = await neynarResponse.json();
-            const neynarSent = neynarResult.notification_deliveries?.filter((d: any) => d.status === "success").length || 0;
-            sent += neynarSent;
-            console.log(`📱 Neynar: ${neynarSent} sent`);
+            sent += neynarResult.success_count || 0;
           } else {
-            console.log(`📱 Neynar failed: ${neynarResponse.status}`);
             failed += neynarFids.length;
           }
-        } catch (neynarError) {
-          console.log(`📱 Neynar error:`, neynarError);
+        } catch (e) {
           failed += neynarTokens.length;
         }
       }
 
-      // 2️⃣ OTHER TOKENS → Send via old method (Warpcast)
-      if (otherTokens.length > 0) {
-        console.log(`📬 Sending to ${otherTokens.length} Warpcast users via token API...`);
-        const DELAY_MS = 100;
-
-        for (let i = 0; i < otherTokens.length; i++) {
-          const tokenData = otherTokens[i];
+      // 2️⃣ WARPCAST TOKENS
+      if (warpcastTokens.length > 0) {
+        for (let i = 0; i < warpcastTokens.length; i++) {
+          const tokenData = warpcastTokens[i];
           try {
             const payload = {
               notificationId: `daily_login_${new Date().toISOString().split('T')[0]}_${tokenData.fid}`.slice(0, 128),
-              title: "💰 Daily Login Bonus!",
-              body: "Claim your free coins! Don't miss today's reward 🎁",
-              tokens: [tokenData.token],
-              targetUrl: "https://www.vibemostwanted.xyz",
+              title, body, tokens: [tokenData.token], targetUrl
             };
 
             const response = await fetch(tokenData.url, {
@@ -529,27 +527,25 @@ export const sendDailyLoginReminder = internalAction({
             if (response.ok) {
               const result = await response.json();
               const data = result.result || result;
-              if (data.successfulTokens?.includes(tokenData.token)) {
+              if (data.successfulTokens?.includes(tokenData.token) || (!data.successfulTokens && !data.invalidTokens)) {
                 sent++;
-              } else if (data.invalidTokens?.includes(tokenData.token) || data.rateLimitedTokens?.includes(tokenData.token)) {
-                failed++;
               } else {
-                sent++;
+                failed++;
               }
             } else {
               failed++;
             }
-          } catch (error) {
+          } catch (e) {
             failed++;
           }
 
-          if (i < otherTokens.length - 1) {
-            await sleep(DELAY_MS);
+          if (i < warpcastTokens.length - 1) {
+            await sleep(100);
           }
         }
       }
 
-      console.log(`📊 Daily login: ${sent} sent, ${failed} failed (${neynarTokens.length} Neynar + ${otherTokens.length} Warpcast)`);
+      console.log(`📊 Daily login: ${sent} sent, ${failed} failed`);
       return { sent, failed, total: tokens.length };
 
     } catch (error: any) {
@@ -576,7 +572,6 @@ export const sendFeaturedCastNotification = internalAction({
   // @ts-ignore
   handler: async (ctx, { castAuthor, warpcastUrl, winnerUsername }) => {
     try {
-      // Use internal query (not api) since getAllTokens is internalQuery
       const tokens = await ctx.runQuery(internal.notificationsHelpers.getAllTokens);
 
       if (tokens.length === 0) {
@@ -586,8 +581,9 @@ export const sendFeaturedCastNotification = internalAction({
 
       console.log(`🎬 Sending featured cast notification to ${tokens.length} users...`);
 
+      // Separate tokens: Neynar (Base App) vs Farcaster/Warpcast
       const neynarTokens = tokens.filter(t => t.url.includes("neynar"));
-      const otherTokens = tokens.filter(t => !t.url.includes("neynar"));
+      const warpcastTokens = tokens.filter(t => !t.url.includes("neynar"));
 
       let sent = 0;
       let failed = 0;
@@ -596,30 +592,19 @@ export const sendFeaturedCastNotification = internalAction({
       const body = winnerUsername
         ? `@${winnerUsername} won the auction! @${castAuthor} is now WANTED! Interact to earn VBMS 💰`
         : `@${castAuthor} is now WANTED! Interact to earn VBMS tokens! 💰`;
-      // 🔧 FIX: MUST use app domain for targetUrl - Warpcast API requires it to match registered domain
-      // The warpcastUrl is the cast URL (farcaster.xyz) which causes "targetUrl does not match domain" error
       const targetUrl = "https://www.vibemostwanted.xyz";
 
-      // 1️⃣ NEYNAR TOKENS → Send via Neynar API (Base App)
+      // 1️⃣ NEYNAR TOKENS → Send via Neynar API (Base App users)
       if (neynarTokens.length > 0 && process.env.NEYNAR_API_KEY) {
         const neynarFids = neynarTokens.map(t => parseInt(t.fid)).filter(fid => !isNaN(fid));
         console.log(`📱 Sending to ${neynarFids.length} Base App users via Neynar API...`);
 
         try {
-          // 🔒 SECURITY FIX: Use crypto.randomUUID() instead of Math.random()
           const uuid = crypto.randomUUID();
-
           const neynarPayload = {
             target_fids: neynarFids,
-            notification: {
-              title,
-              body,
-              target_url: targetUrl,
-              uuid: uuid
-            }
+            notification: { title, body, target_url: targetUrl, uuid }
           };
-
-          console.log(`📱 Neynar payload:`, JSON.stringify(neynarPayload));
 
           const neynarResponse = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
             method: "POST",
@@ -631,37 +616,27 @@ export const sendFeaturedCastNotification = internalAction({
           });
 
           const neynarResult = await neynarResponse.json();
-          console.log(`📱 Neynar response (${neynarResponse.status}):`, JSON.stringify(neynarResult));
-
           if (neynarResponse.ok) {
-            const neynarSent = neynarResult.notification_deliveries?.filter((d: any) => d.status === "success").length || 0;
+            const neynarSent = neynarResult.success_count || 0;
             sent += neynarSent;
-            console.log(`📱 Neynar: ${neynarSent} sent successfully`);
+            console.log(`📱 Neynar: ${neynarSent} sent`);
           } else {
-            console.log(`📱 Neynar failed: ${neynarResponse.status} - ${JSON.stringify(neynarResult)}`);
+            console.log(`📱 Neynar failed: ${neynarResponse.status}`);
             failed += neynarFids.length;
           }
         } catch (neynarError: any) {
-          console.log(`📱 Neynar error:`, neynarError?.message || neynarError);
+          console.log(`📱 Neynar error:`, neynarError?.message);
           failed += neynarTokens.length;
         }
       }
 
-      // 2️⃣ OTHER TOKENS → Send via old method (Warpcast)
-      if (otherTokens.length > 0) {
-        console.log(`📬 Sending to ${otherTokens.length} Warpcast users via token API...`);
-        const DELAY_MS = 50; // Reduced delay for faster processing
+      // 2️⃣ WARPCAST/FARCASTER TOKENS → Send via token API directly
+      if (warpcastTokens.length > 0) {
+        console.log(`📬 Sending to ${warpcastTokens.length} Warpcast users via token API...`);
+        const DELAY_MS = 50;
 
-        // Log first 3 sample tokens for debugging
-        console.log(`📋 Sample Warpcast URLs:`, otherTokens.slice(0, 3).map(t => t.url));
-
-        let warpcastSent = 0;
-        let warpcastFailed = 0;
-        let httpErrors = 0;
-        let exceptions = 0;
-
-        for (let i = 0; i < otherTokens.length; i++) {
-          const tokenData = otherTokens[i];
+        for (let i = 0; i < warpcastTokens.length; i++) {
+          const tokenData = warpcastTokens[i];
           try {
             const payload = {
               notificationId: `featured_cast_${Date.now()}_${tokenData.fid}`.slice(0, 128),
@@ -679,63 +654,31 @@ export const sendFeaturedCastNotification = internalAction({
 
             if (response.ok) {
               const result = await response.json();
-              // Log first few responses for debugging
-              if (i < 5) {
-                console.log(`📨 Response for FID ${tokenData.fid}:`, JSON.stringify(result).slice(0, 200));
-              }
-
-              // API returns { result: { successfulTokens, invalidTokens, rateLimitedTokens } }
               const data = result.result || result;
-
-              // Check if token was successful
-              const isSuccess = data.successfulTokens?.includes(tokenData.token);
-              const isInvalid = data.invalidTokens?.includes(tokenData.token);
-              const isRateLimited = data.rateLimitedTokens?.includes(tokenData.token);
-
-              if (isSuccess) {
+              if (data.successfulTokens?.includes(tokenData.token)) {
                 sent++;
-                warpcastSent++;
-              } else if (isInvalid || isRateLimited) {
+              } else if (data.invalidTokens?.includes(tokenData.token) || data.rateLimitedTokens?.includes(tokenData.token)) {
                 failed++;
-                warpcastFailed++;
+              } else if (!data.successfulTokens && !data.invalidTokens) {
+                sent++; // Old API format - assume success if 200 OK
               } else {
-                // Not in any list - check if arrays exist and are empty
-                if (data.successfulTokens && data.successfulTokens.length === 0) {
-                  // Empty success array = failed
-                  failed++;
-                  warpcastFailed++;
-                } else if (!data.successfulTokens && !data.invalidTokens) {
-                  // Old API format without result wrapper - assume success if 200 OK
-                  sent++;
-                  warpcastSent++;
-                } else {
-                  // Unknown state - count as failed to be safe
-                  failed++;
-                  warpcastFailed++;
-                }
+                failed++;
               }
             } else {
               failed++;
-              httpErrors++;
-              if (httpErrors <= 5) {
+              if (i < 5) {
                 const errorText = await response.text();
-                console.log(`❌ HTTP ${response.status} for FID ${tokenData.fid} (URL: ${tokenData.url}): ${errorText.slice(0, 200)}`);
+                console.log(`❌ HTTP ${response.status} for FID ${tokenData.fid}: ${errorText.slice(0, 100)}`);
               }
             }
           } catch (error: any) {
             failed++;
-            exceptions++;
-            if (exceptions <= 3) {
-              console.log(`❌ Exception for FID ${tokenData.fid}: ${error?.message || error}`);
-            }
           }
 
-          if (i < otherTokens.length - 1) {
+          if (i < warpcastTokens.length - 1) {
             await new Promise(resolve => setTimeout(resolve, DELAY_MS));
           }
         }
-
-        console.log(`📊 Warpcast breakdown: ${warpcastSent} sent, ${warpcastFailed} failed, ${httpErrors} HTTP errors, ${exceptions} exceptions`);
       }
 
       console.log(`📊 Featured cast notification: ${sent} sent, ${failed} failed`);
@@ -750,6 +693,7 @@ export const sendFeaturedCastNotification = internalAction({
 
 /**
  * 🏆 Send notification to the WINNER of a cast auction
+ * Sends via BOTH Neynar (Base App) AND Warpcast (Farcaster)
  */
 export const sendWinnerNotification = internalAction({
   args: {
@@ -759,51 +703,89 @@ export const sendWinnerNotification = internalAction({
     castAuthor: v.string(),
   },
   handler: async (ctx, { winnerFid, winnerUsername, bidAmount, castAuthor }) => {
-    if (!process.env.NEYNAR_API_KEY) {
-      console.error("❌ NEYNAR_API_KEY not set for winner notification");
-      return { sent: false, error: "NEYNAR_API_KEY not set" };
-    }
-
-    // 🔒 SECURITY FIX: Use crypto.randomUUID() instead of Math.random()
-    const uuid = crypto.randomUUID();
-
     const title = "🏆 Your Cast Won!";
     const body = `Congrats @${winnerUsername}! Your bid of ${bidAmount.toLocaleString()} VBMS won! @${castAuthor} is now WANTED!`;
-
-    const payload = {
-      target_fids: [winnerFid],
-      notification: {
-        title,
-        body,
-        target_url: "https://www.vibemostwanted.xyz",
-        uuid
-      }
-    };
+    const targetUrl = "https://www.vibemostwanted.xyz";
 
     console.log(`🏆 Sending winner notification to FID ${winnerFid} (@${winnerUsername})...`);
 
+    let neynarSent = false;
+    let warpcastSent = false;
+
+    // 1️⃣ NEYNAR API (Base App)
+    if (process.env.NEYNAR_API_KEY) {
+      try {
+        const uuid = crypto.randomUUID();
+        const payload = {
+          target_fids: [winnerFid],
+          notification: { title, body, target_url: targetUrl, uuid }
+        };
+
+        const response = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.NEYNAR_API_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          console.log(`📱 Winner notification sent via Neynar (Base App)`);
+          neynarSent = true;
+        } else {
+          const errorText = await response.text();
+          console.log(`📱 Neynar failed: ${errorText}`);
+        }
+      } catch (error: any) {
+        console.log(`📱 Neynar error: ${error.message}`);
+      }
+    }
+
+    // 2️⃣ WARPCAST TOKEN API (Farcaster)
     try {
-      const response = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.NEYNAR_API_KEY
-        },
-        body: JSON.stringify(payload)
+      const tokenData = await ctx.runQuery(internal.notifications.getTokenByFidInternal, {
+        fid: String(winnerFid)
       });
 
-      if (response.ok) {
-        console.log(`✅ Winner notification sent to @${winnerUsername}`);
-        return { sent: true };
+      if (tokenData && !tokenData.url.includes("neynar")) {
+        const payload = {
+          notificationId: `winner_${Date.now()}_${winnerFid}`.slice(0, 128),
+          title,
+          body,
+          tokens: [tokenData.token],
+          targetUrl,
+        };
+
+        const response = await fetch(tokenData.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.result || result;
+          if (data.successfulTokens?.includes(tokenData.token)) {
+            console.log(`📬 Winner notification sent via Warpcast (Farcaster)`);
+            warpcastSent = true;
+          }
+        } else {
+          const errorText = await response.text();
+          console.log(`📬 Warpcast failed: ${errorText}`);
+        }
+      } else if (tokenData) {
+        console.log(`📬 Winner has Neynar token only (already sent above)`);
       } else {
-        const errorText = await response.text();
-        console.error(`❌ Failed to send winner notification: ${errorText}`);
-        return { sent: false, error: errorText };
+        console.log(`📬 No Warpcast token found for FID ${winnerFid}`);
       }
     } catch (error: any) {
-      console.error("❌ Error sending winner notification:", error);
-      return { sent: false, error: error.message };
+      console.log(`📬 Warpcast error: ${error.message}`);
     }
+
+    const sent = neynarSent || warpcastSent;
+    console.log(`🏆 Winner notification result: Neynar=${neynarSent}, Warpcast=${warpcastSent}`);
+    return { sent, neynarSent, warpcastSent };
   },
 });
 
@@ -894,100 +876,79 @@ const GAMING_TIPS = [
 /**
  * Send a periodic gaming tip to all users (called by cron job)
  * Rotates through tips to keep them fresh
- * NOW USING ACTION to support delays and avoid rate limiting
  */
 /* @ts-ignore */
 export const sendPeriodicTip = internalAction({
   args: {},
   // @ts-ignore
   handler: async (ctx) => {
-    // Import api here for public queries/mutations (not for internalQuery)
     // @ts-ignore
     const { api } = await import("./_generated/api");
 
     try {
       console.log("💡 Starting periodic tip notification...");
 
-      // Get all notification tokens (use internal since getAllTokens is internalQuery)
       const tokens = await ctx.runQuery(internal.notificationsHelpers.getAllTokens);
 
       if (tokens.length === 0) {
         console.log("⚠️ No notification tokens found");
+        return { sent: 0, failed: 0, total: 0, tipIndex: 0 };
       }
 
-      // Get or create tip rotation state via query
       let tipState = await ctx.runQuery(internal.notificationsHelpers.getTipState);
-
-      // Initialize if needed
       if (!tipState._id) {
         const newId = await ctx.runMutation(api.notificationsHelpers.initTipState);
         tipState = { currentTipIndex: 0, lastSentAt: Date.now(), _id: newId };
       }
 
-      // Get current tip
       const currentTip = GAMING_TIPS[tipState.currentTipIndex % GAMING_TIPS.length];
 
-      // Separate tokens: Neynar (Base App) vs others (Warpcast)
       const neynarTokens = tokens.filter(t => t.url.includes("neynar"));
-      const otherTokens = tokens.filter(t => !t.url.includes("neynar"));
+      const warpcastTokens = tokens.filter(t => !t.url.includes("neynar"));
 
       let sent = 0;
       let failed = 0;
+      const title = currentTip.title.slice(0, 32);
+      const body = currentTip.body.slice(0, 128);
+      const targetUrl = "https://www.vibemostwanted.xyz";
 
-      // 1️⃣ NEYNAR TOKENS → Send via Neynar API (Base App)
+      // 1️⃣ NEYNAR TOKENS
       if (neynarTokens.length > 0 && process.env.NEYNAR_API_KEY) {
         const neynarFids = neynarTokens.map(t => parseInt(t.fid)).filter(fid => !isNaN(fid));
-        console.log(`📱 Sending to ${neynarFids.length} Base App users via Neynar API...`);
-
         try {
           const neynarPayload = {
             target_fids: neynarFids,
-            notification: {
-              title: currentTip.title.slice(0, 32),
-              body: currentTip.body.slice(0, 128),
-              target_url: "https://www.vibemostwanted.xyz"
-            }
+            notification: { title, body, target_url: targetUrl, uuid: crypto.randomUUID() }
           };
 
-          const neynarResponse = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications", {
+          const neynarResponse = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "api_key": process.env.NEYNAR_API_KEY,
-              "x-neynar-api-key": process.env.NEYNAR_API_KEY
+              "x-api-key": process.env.NEYNAR_API_KEY || ""
             },
             body: JSON.stringify(neynarPayload)
           });
 
           if (neynarResponse.ok) {
             const neynarResult = await neynarResponse.json();
-            const neynarSent = neynarResult.notification_deliveries?.filter((d: any) => d.status === "success").length || 0;
-            sent += neynarSent;
-            console.log(`📱 Neynar: ${neynarSent} sent`);
+            sent += neynarResult.success_count || 0;
           } else {
-            console.log(`📱 Neynar failed: ${neynarResponse.status}`);
             failed += neynarFids.length;
           }
-        } catch (neynarError) {
-          console.log(`📱 Neynar error:`, neynarError);
+        } catch (e) {
           failed += neynarTokens.length;
         }
       }
 
-      // 2️⃣ OTHER TOKENS → Send via old method (Warpcast)
-      if (otherTokens.length > 0) {
-        console.log(`📬 Sending to ${otherTokens.length} Warpcast users via token API...`);
-        const DELAY_MS = 100;
-
-        for (let i = 0; i < otherTokens.length; i++) {
-          const tokenData = otherTokens[i];
+      // 2️⃣ WARPCAST TOKENS
+      if (warpcastTokens.length > 0) {
+        for (let i = 0; i < warpcastTokens.length; i++) {
+          const tokenData = warpcastTokens[i];
           try {
             const payload = {
               notificationId: `tip_${tipState.currentTipIndex}_${tokenData.fid}_${Date.now()}`.slice(0, 128),
-              title: currentTip.title.slice(0, 32),
-              body: currentTip.body.slice(0, 128),
-              tokens: [tokenData.token],
-              targetUrl: "https://www.vibemostwanted.xyz",
+              title, body, tokens: [tokenData.token], targetUrl
             };
 
             const response = await fetch(tokenData.url, {
@@ -1006,12 +967,12 @@ export const sendPeriodicTip = internalAction({
             } else {
               failed++;
             }
-          } catch (error) {
+          } catch (e) {
             failed++;
           }
 
-          if (i < otherTokens.length - 1) {
-            await sleep(DELAY_MS);
+          if (i < warpcastTokens.length - 1) {
+            await sleep(100);
           }
         }
       }
@@ -1023,7 +984,7 @@ export const sendPeriodicTip = internalAction({
         currentTipIndex: nextTipIndex,
       });
 
-      console.log(`📊 Periodic tip: ${sent} sent, ${failed} failed (${neynarTokens.length} Neynar + ${otherTokens.length} Warpcast)`);
+      console.log(`📊 Periodic tip: ${sent} sent, ${failed} failed`);
       console.log(`📝 Sent tip ${tipState.currentTipIndex + 1}/${GAMING_TIPS.length}: "${currentTip.title}"`);
 
       return { sent, failed, total: tokens.length, tipIndex: tipState.currentTipIndex };
@@ -1045,95 +1006,10 @@ export const sendPeriodicTip = internalAction({
 export const triggerPeriodicTip = mutation({
   args: {},
   handler: async (ctx) => {
-    try {
-      console.log("💡 Starting periodic tip notification (manual trigger)...");
-
-      // 🚀 BANDWIDTH FIX: Limit to 200 tokens per run
-      const tokens = await ctx.db.query("notificationTokens").take(200);
-
-      if (tokens.length === 0) {
-        console.log("⚠️ No notification tokens found");
-      }
-
-      // Get or create tip rotation state
-      let tipState = await ctx.db
-        .query("tipRotationState")
-        .first();
-
-      if (!tipState) {
-        // Initialize tip state
-        const tipStateId = await ctx.db.insert("tipRotationState", {
-          currentTipIndex: 0,
-          lastSentAt: Date.now(),
-        });
-        tipState = await ctx.db.get(tipStateId);
-      }
-
-      // Get current tip
-      const currentTip = GAMING_TIPS[tipState!.currentTipIndex % GAMING_TIPS.length];
-
-      // Send to all users
-      let sent = 0;
-      let failed = 0;
-
-      for (const tokenData of tokens) {
-        try {
-          // Validar tamanhos conforme limites do Farcaster (title: 32, body: 128, notificationId: 128)
-          const notificationId = `tip_${tipState!.currentTipIndex}_${tokenData.fid}_${Date.now()}`.slice(0, 128);
-          const validatedTitle = currentTip.title.slice(0, 32);
-          const validatedBody = currentTip.body.slice(0, 128);
-
-          const payload = {
-            notificationId,
-            title: validatedTitle,
-            body: validatedBody,
-            tokens: [tokenData.token],
-            targetUrl: "https://www.vibemostwanted.xyz".slice(0, 1024),
-          };
-
-          const response = await fetch(tokenData.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (!result.invalidTokens?.includes(tokenData.token) &&
-                !result.rateLimitedTokens?.includes(tokenData.token)) {
-              sent++;
-              console.log(`✅ Sent to FID ${tokenData.fid}`);
-            } else {
-              failed++;
-              console.log(`❌ Invalid/rate-limited token for FID ${tokenData.fid}`);
-            }
-          } else {
-            const errorText = await response.text();
-            console.error(`❌ Failed for FID ${tokenData.fid}: ${response.status} - ${errorText}`);
-            failed++;
-          }
-        } catch (error) {
-          console.error(`❌ Exception for FID ${tokenData.fid}:`, error);
-          failed++;
-        }
-      }
-
-      // Update tip rotation state
-      await ctx.db.patch(tipState!._id, {
-        currentTipIndex: (tipState!.currentTipIndex + 1) % GAMING_TIPS.length,
-        lastSentAt: Date.now(),
-      });
-
-      console.log(`📊 Periodic tip sent: ${sent} successful, ${failed} failed out of ${tokens.length} total`);
-      console.log(`📝 Sent tip ${tipState!.currentTipIndex + 1}/${GAMING_TIPS.length}: "${currentTip.title}"`);
-
-      return { sent, failed, total: tokens.length, tipIndex: tipState!.currentTipIndex };
-    } catch (error: any) {
-      console.error("❌ Error in triggerPeriodicTip:", error);
-      throw error;
-    }
+    console.log("💡 Scheduling periodic tip notification...");
+    // Schedule the action (actions can use fetch, mutations cannot)
+    await ctx.scheduler.runAfter(0, internal.notifications.sendPeriodicTip, {});
+    return { scheduled: true };
   },
 });
 
@@ -1143,71 +1019,9 @@ export const triggerPeriodicTip = mutation({
 export const triggerDailyLoginReminder = mutation({
   args: {},
   handler: async (ctx) => {
-    try {
-      console.log("💰 Starting daily login reminder (manual trigger)...");
-
-      // 🚀 BANDWIDTH FIX: Limit to 200 tokens per run
-      const tokens = await ctx.db.query("notificationTokens").take(200);
-
-      if (tokens.length === 0) {
-        console.log("⚠️ No notification tokens found");
-      }
-
-      let sent = 0;
-      let failed = 0;
-
-      // Send to all users
-      for (const tokenData of tokens) {
-        try {
-          // Validar tamanhos conforme limites do Farcaster
-          const notificationId = `daily_login_${tokenData.fid}_${Date.now()}`.slice(0, 128);
-          const validatedTitle = "💰 Daily Login Bonus!".slice(0, 32);
-          const validatedBody = "Don't forget to claim your free coins! Log in to Vibe Most Wanted now! 🎮".slice(0, 128);
-
-          const payload = {
-            notificationId,
-            title: validatedTitle,
-            body: validatedBody,
-            tokens: [tokenData.token],
-            targetUrl: "https://www.vibemostwanted.xyz".slice(0, 1024),
-          };
-
-          const response = await fetch(tokenData.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (!result.invalidTokens?.includes(tokenData.token) &&
-                !result.rateLimitedTokens?.includes(tokenData.token)) {
-              sent++;
-              console.log(`✅ Sent to FID ${tokenData.fid}`);
-            } else {
-              failed++;
-              console.log(`❌ Invalid/rate-limited token for FID ${tokenData.fid}`);
-            }
-          } else {
-            const errorText = await response.text();
-            console.error(`❌ Failed for FID ${tokenData.fid}: ${response.status} - ${errorText}`);
-            failed++;
-          }
-        } catch (error) {
-          console.error(`❌ Exception for FID ${tokenData.fid}:`, error);
-          failed++;
-        }
-      }
-
-      console.log(`📊 Daily login reminder sent: ${sent} successful, ${failed} failed out of ${tokens.length} total`);
-
-      return { sent, failed, total: tokens.length };
-    } catch (error: any) {
-      console.error("❌ Error in triggerDailyLoginReminder:", error);
-      throw error;
-    }
+    console.log("💰 Scheduling daily login reminder...");
+    await ctx.scheduler.runAfter(0, internal.notifications.sendDailyLoginReminder, {});
+    return { scheduled: true };
   },
 });
 
@@ -1411,5 +1225,121 @@ export const sendBossDefeatedNotifications = internalAction({
       console.error("❌ Error in sendBossDefeatedNotifications:", error);
       throw error;
     }
+  },
+});
+
+
+// ============================================================================
+// VIBEMAIL NOTIFICATIONS
+// ============================================================================
+
+/**
+ * Send notification when someone receives a VibeMail (anonymous message with vote)
+ * 🔧 FIX: Sends to ALL tokens for the user (VBMS + VibeFID + Neynar)
+ */
+export const sendVibemailNotification = internalAction({
+  args: {
+    recipientFid: v.number(),
+    hasAudio: v.boolean(),
+  },
+  handler: async (ctx, { recipientFid, hasAudio }) => {
+    const title = "💌 New VibeMail!";
+    const body = hasAudio
+      ? "Someone sent you a message with a sound! Check your inbox"
+      : "Someone sent you an anonymous message! Check your inbox";
+
+    console.log(`💌 Sending VibeMail notification to FID ${recipientFid}...`);
+
+    // Get ALL tokens for this FID (VBMS + VibeFID + Neynar)
+    const allTokens = await ctx.runQuery(internal.notifications.getAllTokensByFidInternal, {
+      fid: String(recipientFid)
+    });
+
+    console.log(`💌 Found ${allTokens.length} tokens for FID ${recipientFid}`);
+
+    let neynarSent = false;
+    let warpcastSent = 0;
+    let vibefidSent = 0;
+
+    // 1️⃣ NEYNAR API (Base App) - sends to all Neynar tokens
+    if (process.env.NEYNAR_API_KEY) {
+      try {
+        const uuid = crypto.randomUUID();
+        // Use VBMS domain for Neynar (Base App users)
+        const payload = {
+          target_fids: [recipientFid],
+          notification: { title, body, target_url: "https://vibefid.xyz", uuid }
+        };
+
+        const response = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.NEYNAR_API_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          console.log(`📱 VibeMail notification sent via Neynar (Base App)`);
+          neynarSent = true;
+        } else {
+          const errorText = await response.text();
+          console.log(`📱 Neynar failed: ${errorText}`);
+        }
+      } catch (error: any) {
+        console.log(`📱 Neynar error: ${error.message}`);
+      }
+    }
+
+    // 2️⃣ WARPCAST TOKEN API - send to ALL non-Neynar tokens
+    const warpcastTokens = allTokens.filter(t => !t.url.includes("neynar"));
+
+    for (const tokenData of warpcastTokens) {
+      try {
+        // Use correct domain based on app
+        const targetUrl = tokenData.app === "vibefid"
+          ? "https://vibefid.xyz"
+          : "https://www.vibemostwanted.xyz";
+
+        const payload = {
+          notificationId: `vibemail_${Date.now()}_${recipientFid}_${tokenData.app || 'vbms'}`.slice(0, 128),
+          title,
+          body,
+          tokens: [tokenData.token],
+          targetUrl,
+        };
+
+        const response = await fetch(tokenData.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.result || result;
+          if (data.successfulTokens?.includes(tokenData.token) ||
+              (!data.invalidTokens && !data.rateLimitedTokens)) {
+            if (tokenData.app === "vibefid") {
+              vibefidSent++;
+              console.log(`📬 VibeMail sent to VibeFID app`);
+            } else {
+              warpcastSent++;
+              console.log(`📬 VibeMail sent to VBMS/Warpcast`);
+            }
+          }
+        } else {
+          const errorText = await response.text();
+          console.log(`📬 Warpcast failed for ${tokenData.app || 'vbms'}: ${errorText}`);
+        }
+      } catch (error: any) {
+        console.log(`📬 Warpcast error for ${tokenData.app || 'vbms'}: ${error.message}`);
+      }
+    }
+
+    const sent = neynarSent || warpcastSent > 0 || vibefidSent > 0;
+    console.log(`💌 VibeMail result: Neynar=${neynarSent}, Warpcast=${warpcastSent}, VibeFID=${vibefidSent}`);
+    return { sent, neynarSent, warpcastSent, vibefidSent };
   },
 });
