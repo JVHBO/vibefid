@@ -677,10 +677,12 @@ export function VibeMailInboxWithClaim({
           </div>
         )}
 
-        {/* VibeMail Composer Modal */}
+        {/* VibeMail Composer Modal - FULL SCREEN OVERLAY */}
         {showComposer && myFid && myAddress && (
-          <div className="absolute inset-0 bg-vintage-charcoal rounded-2xl p-4 flex flex-col z-20 overflow-y-auto">
-            <div className="flex items-center justify-between mb-3 sticky top-0 bg-vintage-charcoal py-2 z-10">
+          <div className="fixed inset-0 z-[500] bg-black/95 flex items-center justify-center p-4">
+            <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col">
+            {/* HEADER - BIG RED CLOSE BUTTON */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-vintage-gold/50">
               <button
                 onClick={() => {
                   setShowComposer(false);
@@ -698,14 +700,14 @@ export function VibeMailInboxWithClaim({
                     composerAudioRef.current.pause();
                   }
                 }}
-                className="text-vintage-gold text-sm hover:text-vintage-gold/80 bg-vintage-black/50 px-3 py-1 rounded-lg border border-vintage-gold/30"
+                className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg"
               >
-                ← {t.back}
+                ✕ VOLTAR
               </button>
-              <h3 className="text-vintage-gold font-bold">
-                {replyToMessageId ? '↩️ Reply' : '✉️ New'}
+              <h3 className="text-vintage-gold font-bold text-lg">
+                {replyToMessageId ? '↩️ Reply' : '✉️ New VibeMail'}
               </h3>
-              <div className="w-12" />
+              <div className="w-24" />
             </div>
 
             {/* Reply indicator */}
@@ -932,6 +934,7 @@ export function VibeMailInboxWithClaim({
             >
               {isSending || isTransferPending ? '⏳ Confirm TX...' : hasFreeVotes ? '📨 Send Free (TX)' : `📨 Send (${VIBEMAIL_COST_VBMS} VBMS)`}
             </button>
+            </div>
           </div>
         )}
 
