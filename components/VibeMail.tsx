@@ -557,6 +557,7 @@ export function VibeMailInboxWithClaim({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showComposer, setShowComposer] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState<Id<'cardVotes'> | null>(null);
+  const [replyToFid, setReplyToFid] = useState<number | null>(null); // FID of user we're replying to
   const [composerMessage, setComposerMessage] = useState('');
   const [composerAudioId, setComposerAudioId] = useState<string | null>(null);
   const [recipientFid, setRecipientFid] = useState<number | null>(null);
@@ -578,10 +579,11 @@ export function VibeMailInboxWithClaim({
   const [giftRecipientAddress, setGiftRecipientAddress] = useState<string>('');
   const [giftRecipientUsername, setGiftRecipientUsername] = useState<string>('');
 
-  // Query to get recipient address for NFT gift
+  // Query to get recipient address for NFT gift (for new message OR reply)
+  const targetFidForGift = recipientFid || replyToFid;
   const recipientCard = useQuery(
     api.farcasterCards.getFarcasterCardByFid,
-    recipientFid ? { fid: recipientFid } : 'skip'
+    targetFidForGift ? { fid: targetFidForGift } : 'skip'
   );
 
   // TX hook for VibeMail (free vote = 0 VBMS but requires TX signature)
@@ -725,6 +727,7 @@ export function VibeMailInboxWithClaim({
                 onClick={() => {
                   setShowComposer(false);
                   setReplyToMessageId(null);
+                  setReplyToFid(null);
                   setRecipientFid(null);
                   setRecipientUsername('');
                   setSearchQuery('');
@@ -911,32 +914,12 @@ export function VibeMailInboxWithClaim({
                 if (!composerMessage.trim() && !composerImageId) return;
                 if (!myAddress) return;
 
-                // For replies, send directly (no gift modal)
-                if (replyToMessageId) {
-                  setIsSending(true);
-                  try {
-                    const isPaid = !hasFreeVotes;
-                    const cost = isPaid ? parseEther(VIBEMAIL_COST_VBMS) : BigInt(0);
-                    await transferVBMS(CONTRACTS.VBMSPoolTroll as `0x${string}`, cost);
-                    await replyMutation({
-                      originalMessageId: replyToMessageId,
-                      senderFid: myFid,
-                      senderAddress: myAddress,
-                      message: composerMessage,
-                      audioId: composerAudioId || undefined,
-                      imageId: composerImageId || undefined,
-                    });
-                    AudioManager.buttonClick();
-                    setShowComposer(false);
-                    setReplyToMessageId(null);
-                    setComposerMessage('');
-                    setComposerAudioId(null);
-                    setComposerImageId(null);
-                  } catch (err) {
-                    console.error('Failed to send reply:', err);
-                  } finally {
-                    setIsSending(false);
-                  }
+                // For replies - also show gift modal if we have the recipient address
+                if (replyToMessageId && replyToFid && recipientCard?.address) {
+                  setGiftRecipientFid(replyToFid);
+                  setGiftRecipientAddress(recipientCard.address);
+                  setGiftRecipientUsername('sender'); // Anonymous reply
+                  setShowGiftModal(true);
                   return;
                 }
 
@@ -1054,8 +1037,10 @@ export function VibeMailInboxWithClaim({
                 onClick={() => {
                   AudioManager.buttonClick();
                   const msgId = selectedMessage._id;
+                  const senderFid = selectedMessage.voterFid;
                   setSelectedMessage(null); // Close message view first
                   setReplyToMessageId(msgId);
+                  setReplyToFid(senderFid || null); // Store sender FID for gift modal
                   setShowComposer(true);
                 }}
                 className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/30 to-yellow-500/30 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/40 hover:to-yellow-500/40 transition-all flex items-center justify-center gap-2"
@@ -1171,6 +1156,8 @@ export function VibeMailInboxWithClaim({
             setGiftRecipientUsername('');
             setRecipientFid(null);
             setRecipientUsername('');
+            setReplyToMessageId(null);
+            setReplyToFid(null);
             setComposerMessage('');
             setComposerAudioId(null);
             setComposerImageId(null);
@@ -1185,6 +1172,7 @@ export function VibeMailInboxWithClaim({
           audioId={composerAudioId || undefined}
           imageId={composerImageId || undefined}
           isPaidVibeMail={!hasFreeVotes}
+          replyToMessageId={replyToMessageId || undefined}
         />
       )}
     </div>

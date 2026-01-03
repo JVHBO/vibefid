@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useTransferVBMS } from '@/lib/hooks/useVBMSContracts';
@@ -53,6 +54,8 @@ interface NFTGiftModalProps {
   audioId?: string;
   imageId?: string;
   isPaidVibeMail: boolean;
+  // Reply support
+  replyToMessageId?: string; // If provided, this is a reply
 }
 
 const VIBEMAIL_COST_VBMS = "100";
@@ -69,6 +72,7 @@ export function NFTGiftModal({
   audioId,
   imageId,
   isPaidVibeMail,
+  replyToMessageId,
 }: NFTGiftModalProps) {
   const { address } = useAccount();
   const [step, setStep] = useState<'loading' | 'collections' | 'nfts' | 'confirm' | 'sending' | 'done'>('loading');
@@ -85,6 +89,7 @@ export function NFTGiftModal({
 
   const recordGift = useMutation(api.nftGifts.recordNFTGift);
   const sendVibeMailMutation = useMutation(api.cardVotes.sendDirectVibeMail);
+  const replyMutation = useMutation(api.cardVotes.replyToMessage);
   const { transfer: transferVBMS, isPending: isTransferPending } = useTransferVBMS();
 
   // Wagmi write contract hook
@@ -223,18 +228,35 @@ export function NFTGiftModal({
       // Step 3: Save VibeMail to Convex (with NFT gift as separate fields)
       setStatusText('Saving message...');
 
-      await sendVibeMailMutation({
-        recipientFid,
-        senderFid,
-        senderAddress,
-        message,
-        audioId: audioId || undefined,
-        imageId: imageId || undefined,
-        // NFT Gift fields (separate from message)
-        giftNftName: selectedNft?.name,
-        giftNftImageUrl: selectedNft?.imageUrl,
-        giftNftCollection: selectedNft?.collectionName,
-      });
+      if (replyToMessageId) {
+        // Reply to existing message
+        await replyMutation({
+          originalMessageId: replyToMessageId as Id<'cardVotes'>,
+          senderFid,
+          senderAddress,
+          message,
+          audioId: audioId || undefined,
+          imageId: imageId || undefined,
+          // NFT Gift fields
+          giftNftName: selectedNft?.name,
+          giftNftImageUrl: selectedNft?.imageUrl,
+          giftNftCollection: selectedNft?.collectionName,
+        });
+      } else {
+        // Direct message
+        await sendVibeMailMutation({
+          recipientFid,
+          senderFid,
+          senderAddress,
+          message,
+          audioId: audioId || undefined,
+          imageId: imageId || undefined,
+          // NFT Gift fields (separate from message)
+          giftNftName: selectedNft?.name,
+          giftNftImageUrl: selectedNft?.imageUrl,
+          giftNftCollection: selectedNft?.collectionName,
+        });
+      }
 
       // Step 4: Record NFT gift if sent
       if (selectedNft && nftTxHash) {

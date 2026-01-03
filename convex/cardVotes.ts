@@ -839,6 +839,10 @@ export const replyToMessage = mutation({
     message: v.string(),
     audioId: v.optional(v.string()),
     imageId: v.optional(v.string()),
+    // NFT Gift fields
+    giftNftName: v.optional(v.string()),
+    giftNftImageUrl: v.optional(v.string()),
+    giftNftCollection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -880,6 +884,10 @@ export const replyToMessage = mutation({
       isSent: true,
       recipientFid: recipientFid,
       recipientUsername: recipientCard?.username || `FID ${recipientFid}`,
+      // NFT Gift fields
+      giftNftName: args.giftNftName,
+      giftNftImageUrl: args.giftNftImageUrl,
+      giftNftCollection: args.giftNftCollection,
     });
 
     // Give 100 VBMS to recipient
@@ -901,6 +909,15 @@ export const replyToMessage = mutation({
         claimedVbms: 0,
         totalVotes: 1,
         lastVoteAt: now,
+      });
+    }
+
+    // Send notification
+    const hasContent = args.message?.trim() || args.imageId;
+    if (hasContent) {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
+        recipientFid: recipientFid,
+        hasAudio: !!args.audioId,
       });
     }
 
