@@ -25,7 +25,7 @@ function getTranslatedMessage(message: string, lang: string = "en", username?: s
     const rarity = rarityMatch ? rarityMatch[1] : 'Rare';
 
     // Get translated welcome message
-    const t = translations[lang] || translations['en'];
+    const t = translations[lang as keyof typeof translations] || translations['en'];
     if (t.vibemailWelcomeMessage) {
       return t.vibemailWelcomeMessage
         .replace('{username}', displayName)

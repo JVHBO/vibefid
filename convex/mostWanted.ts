@@ -295,6 +295,8 @@ export const reimportCard = mutation({
       powerBadge: args.powerBadge,
       imageUrl: args.imageUrl,
       cardImageUrl: args.cardImageUrl || "",
+      equipped: false,
+      mintedAt: timestamp,
     });
 
     return { success: true, fid: args.fid };
