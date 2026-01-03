@@ -943,3 +943,89 @@ export const clearAllVibeMails = mutation({
     return { deleted };
   },
 });
+
+// Get a random card (excluding sender)
+export const getRandomCard = query({
+  args: { excludeFid: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const allCards = await ctx.db
+      .query("farcasterCards")
+      .collect();
+
+    // Filter out the sender's card
+    const eligibleCards = args.excludeFid
+      ? allCards.filter(c => c.fid !== args.excludeFid)
+      : allCards;
+
+    if (eligibleCards.length === 0) return null;
+
+    // Pick a random card
+    const randomIndex = Math.floor(Math.random() * eligibleCards.length);
+    const card = eligibleCards[randomIndex];
+
+    return {
+      fid: card.fid,
+      username: card.username,
+      pfpUrl: card.pfpUrl,
+      displayName: card.displayName,
+    };
+  },
+});
+
+// Get multiple random cards for broadcast
+export const getRandomCards = query({
+  args: {
+    count: v.number(),
+    excludeFid: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const allCards = await ctx.db
+      .query("farcasterCards")
+      .collect();
+
+    // Filter out the sender's card
+    const eligibleCards = args.excludeFid
+      ? allCards.filter(c => c.fid !== args.excludeFid)
+      : allCards;
+
+    if (eligibleCards.length === 0) return [];
+
+    // Shuffle and pick count cards
+    const shuffled = [...eligibleCards].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.min(args.count, eligibleCards.length));
+
+    return selected.map(card => ({
+      fid: card.fid,
+      username: card.username,
+      pfpUrl: card.pfpUrl,
+    }));
+  },
+});
+
+// Get a random card (mutation version for non-cached results)
+export const getRandomCardMutation = mutation({
+  args: { excludeFid: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const allCards = await ctx.db
+      .query("farcasterCards")
+      .collect();
+
+    // Filter out the sender's card
+    const eligibleCards = args.excludeFid
+      ? allCards.filter(c => c.fid !== args.excludeFid)
+      : allCards;
+
+    if (eligibleCards.length === 0) return null;
+
+    // Pick a random card
+    const randomIndex = Math.floor(Math.random() * eligibleCards.length);
+    const card = eligibleCards[randomIndex];
+
+    return {
+      fid: card.fid,
+      username: card.username,
+      pfpUrl: card.pfpUrl,
+      displayName: card.displayName,
+    };
+  },
+});

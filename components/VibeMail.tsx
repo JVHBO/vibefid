@@ -572,6 +572,30 @@ export function VibeMailInboxWithClaim({
   const [txHash, setTxHash] = useState<string | null>(null);
   const sendDirectMutation = useMutation(api.cardVotes.sendDirectVibeMail);
   const replyMutation = useMutation(api.cardVotes.replyToMessage);
+  const broadcastMutation = useMutation(api.cardVotes.broadcastVibeMail);
+
+  // Send mode: 'single' | 'broadcast' | 'random'
+  const [sendMode, setSendMode] = useState<'single' | 'broadcast' | 'random'>('single');
+  const [broadcastRecipients, setBroadcastRecipients] = useState<Array<{ fid: number; username: string }>>([]);
+
+  // Random card state and mutation
+  const [randomCard, setRandomCard] = useState<{ fid: number; username: string; pfpUrl?: string; displayName?: string; address?: string } | null>(null);
+  const getRandomCardMutation = useMutation(api.cardVotes.getRandomCardMutation);
+
+  // Fetch random card when entering random mode
+  useEffect(() => {
+    if (sendMode === 'random' && myFid && !randomCard) {
+      getRandomCardMutation({ excludeFid: myFid }).then(setRandomCard);
+    }
+  }, [sendMode, myFid]);
+
+  // Shuffle function
+  const shuffleRandomCard = async () => {
+    if (myFid) {
+      const newCard = await getRandomCardMutation({ excludeFid: myFid });
+      setRandomCard(newCard);
+    }
+  };
 
   // NFT Gift modal state
   const [showGiftModal, setShowGiftModal] = useState(false);
@@ -758,8 +782,113 @@ export function VibeMailInboxWithClaim({
               </div>
             )}
 
-            {/* Recipient Search (only for new message, not reply) */}
+            {/* Mode Selector (only for new message, not reply) */}
             {!replyToMessageId && (
+              <div className="mb-3 flex gap-2">
+                <button
+                  onClick={() => { setSendMode('single'); setRecipientFid(null); setRecipientUsername(''); setBroadcastRecipients([]); }}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold transition-all ${
+                    sendMode === 'single'
+                      ? 'bg-vintage-gold/30 border-vintage-gold text-vintage-gold'
+                      : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
+                  }`}
+                >
+                  📬 Single
+                </button>
+                <button
+                  onClick={() => { setSendMode('broadcast'); setRecipientFid(null); setRecipientUsername(''); }}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold transition-all ${
+                    sendMode === 'broadcast'
+                      ? 'bg-vintage-gold/30 border-vintage-gold text-vintage-gold'
+                      : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
+                  }`}
+                >
+                  📢 Broadcast
+                </button>
+                <button
+                  onClick={() => { setSendMode('random'); setRecipientFid(null); setRecipientUsername(''); setBroadcastRecipients([]); }}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold transition-all ${
+                    sendMode === 'random'
+                      ? 'bg-vintage-gold/30 border-vintage-gold text-vintage-gold'
+                      : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
+                  }`}
+                >
+                  🎲 Random
+                </button>
+              </div>
+            )}
+
+            {/* Random Recipient Display */}
+            {sendMode === 'random' && !replyToMessageId && (
+              <div className="mb-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg p-3">
+                {randomCard ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🎲</span>
+                      <div>
+                        <p className="text-vintage-gold font-bold text-sm">@{randomCard.username}</p>
+                        <p className="text-vintage-ice/50 text-xs">FID: {randomCard.fid}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={shuffleRandomCard}
+                      className="px-3 py-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg text-vintage-gold text-xs hover:bg-vintage-gold/30"
+                    >
+                      🔄 Shuffle
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-vintage-ice/50 text-sm text-center">Loading random recipient...</p>
+                )}
+              </div>
+            )}
+
+            {/* Broadcast Recipients (multiple selection) */}
+            {sendMode === 'broadcast' && !replyToMessageId && (
+              <div className="mb-3">
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {broadcastRecipients.map(r => (
+                    <span key={r.fid} className="inline-flex items-center gap-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-full px-2 py-1 text-xs text-vintage-gold">
+                      @{r.username}
+                      <button
+                        onClick={() => setBroadcastRecipients(prev => prev.filter(p => p.fid !== r.fid))}
+                        className="text-red-400 hover:text-red-300"
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-vintage-ice/50 text-xs mb-1">📢 {broadcastRecipients.length} recipients selected</p>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search to add recipients..."
+                    className="w-full bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-3 py-2 text-vintage-ice text-sm placeholder:text-vintage-ice/40 focus:outline-none focus:border-vintage-gold"
+                  />
+                  {searchResults && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-vintage-charcoal border border-vintage-gold/50 rounded-lg overflow-hidden z-30 max-h-40 overflow-y-auto">
+                      {searchResults.filter((card: { fid: number }) => !broadcastRecipients.some(r => r.fid === card.fid)).map((card: { fid: number; username: string }) => (
+                        <button
+                          key={card.fid}
+                          onClick={() => {
+                            setBroadcastRecipients(prev => [...prev, { fid: card.fid, username: card.username }]);
+                            setSearchQuery('');
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-vintage-gold/20 text-vintage-ice text-sm border-b border-vintage-gold/20 last:border-0"
+                        >
+                          <strong>{card.username}</strong>
+                          <span className="text-vintage-ice/50 ml-2">FID: {card.fid}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Recipient Search (only for new message, not reply - SINGLE MODE) */}
+            {sendMode === 'single' && !replyToMessageId && (
               <div className="mb-3">
                 {recipientFid ? (
                   <div className="flex items-center justify-between bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg p-2">
@@ -912,7 +1041,7 @@ export function VibeMailInboxWithClaim({
               onClick={async () => {
                 if (isSending || isTransferPending) return;
                 if (!composerMessage.trim() && !composerImageId) return;
-                if (!myAddress) return;
+                if (!myAddress || !myFid) return;
 
                 // For replies - also show gift modal if we have the recipient address
                 if (replyToMessageId && replyToFid && recipientCard?.address) {
@@ -923,8 +1052,56 @@ export function VibeMailInboxWithClaim({
                   return;
                 }
 
-                // For direct messages, show gift modal first
-                if (recipientFid && recipientCard?.address) {
+                // BROADCAST MODE - send to multiple recipients (costs 100 VBMS per recipient)
+                if (sendMode === 'broadcast' && broadcastRecipients.length > 0) {
+                  const totalCost = BigInt(broadcastRecipients.length) * parseEther(VIBEMAIL_COST_VBMS);
+                  setIsSending(true);
+                  try {
+                    // Transfer VBMS to contract (payment for broadcast)
+                    const txHash = await transferVBMS(CONTRACTS.VBMSPoolTroll, totalCost);
+                    if (!txHash) {
+                      console.error('Broadcast payment failed');
+                      setIsSending(false);
+                      return;
+                    }
+                    console.log('Broadcast payment TX:', txHash);
+
+                    // Send broadcast after payment
+                    const result = await broadcastMutation({
+                      recipientFids: broadcastRecipients.map(r => r.fid),
+                      message: composerMessage,
+                      audioId: composerAudioId || undefined,
+                      imageId: composerImageId || undefined,
+                      senderAddress: myAddress,
+                      senderFid: myFid,
+                    });
+                    console.log('Broadcast result:', result);
+                    // Reset and close
+                    setShowComposer(false);
+                    setSendMode('single');
+                    setBroadcastRecipients([]);
+                    setComposerMessage('');
+                    setComposerAudioId(null);
+                    setComposerImageId(null);
+                  } catch (err) {
+                    console.error('Broadcast error:', err);
+                  } finally {
+                    setIsSending(false);
+                  }
+                  return;
+                }
+
+                // RANDOM MODE - show gift modal like single mode
+                if (sendMode === 'random' && randomCard && randomCard.address) {
+                  setGiftRecipientFid(randomCard.fid);
+                  setGiftRecipientAddress(randomCard.address);
+                  setGiftRecipientUsername(randomCard.username);
+                  setShowGiftModal(true);
+                  return;
+                }
+
+                // SINGLE MODE - For direct messages, show gift modal first
+                if (sendMode === 'single' && recipientFid && recipientCard?.address) {
                   setGiftRecipientFid(recipientFid);
                   setGiftRecipientAddress(recipientCard.address);
                   setGiftRecipientUsername(recipientUsername);
@@ -932,10 +1109,10 @@ export function VibeMailInboxWithClaim({
                   // Don't close composer yet - will close after gift modal
                 }
               }}
-              disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && !recipientFid)}
+              disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && sendMode === 'single' && !recipientFid) || (sendMode === 'broadcast' && broadcastRecipients.length === 0) || (sendMode === 'random' && !randomCard)}
               className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/40 to-yellow-500/40 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/50 hover:to-yellow-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSending || isTransferPending ? '⏳ Confirm TX...' : replyToMessageId ? '↩️ Reply' : '➡️ Next: Gift NFT?'}
+              {isSending || isTransferPending ? '⏳ Sending...' : replyToMessageId ? '↩️ Reply' : sendMode === 'broadcast' ? `📢 Send to ${broadcastRecipients.length} (${broadcastRecipients.length * 100} VBMS)` : sendMode === 'random' ? '🎲 Random (100 VBMS)' : '➡️ Next: Gift NFT?'}
             </button>
             </div>
           </div>
