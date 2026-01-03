@@ -517,7 +517,7 @@ export function VibeMailInboxWithClaim({
   const messages = useQuery(api.cardVotes.getMessagesForCard, { cardFid, limit: 50 });
   const sentMessages = useQuery(
     api.cardVotes.getSentMessages,
-    myFid ? { senderFid: myFid, limit: 50 } : 'skip'
+    myFid ? { voterFid: myFid, limit: 50 } : 'skip'
   );
   const markAsRead = useMutation(api.cardVotes.markMessageAsRead);
   const [selectedMessage, setSelectedMessage] = useState<VibeMailMessage | null>(null);
