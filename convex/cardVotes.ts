@@ -482,10 +482,16 @@ export const getMessagesForCard = query({
       _id: m._id,
       message: m.message,
       audioId: m.audioId,
+      imageId: m.imageId,
+      voterFid: m.voterFid,
       isRead: m.isRead ?? false,
       createdAt: m.createdAt,
       voteCount: m.voteCount,
       isPaid: m.isPaid,
+      // NFT Gift fields
+      giftNftName: m.giftNftName,
+      giftNftImageUrl: m.giftNftImageUrl,
+      giftNftCollection: m.giftNftCollection,
     }));
   },
 });
@@ -631,19 +637,25 @@ export const getRecentVibeMails = query({
   },
 });
 
-// Get sent messages by a user (voterFid)
+// Get sent messages by a user (voterFid or senderFid for backwards compatibility)
 export const getSentMessages = query({
   args: {
-    voterFid: v.number(),
+    voterFid: v.optional(v.number()),
+    senderFid: v.optional(v.number()), // backwards compatibility
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
+    const fid = args.voterFid || args.senderFid;
+
+    if (!fid) {
+      return [];
+    }
 
     // Get all votes sent by this user that have messages
     const allVotes = await ctx.db
       .query("cardVotes")
-      .withIndex("by_voter_date", (q) => q.eq("voterFid", args.voterFid))
+      .withIndex("by_voter_date", (q) => q.eq("voterFid", fid))
       .collect();
 
     // Filter to only votes with messages and sort by creation time
@@ -672,6 +684,10 @@ export const getSentMessages = query({
           createdAt: m.createdAt,
           voteCount: m.voteCount,
           isPaid: m.isPaid,
+      // NFT Gift fields
+      giftNftName: m.giftNftName,
+      giftNftImageUrl: m.giftNftImageUrl,
+      giftNftCollection: m.giftNftCollection,
         };
       })
     );
@@ -720,6 +736,10 @@ export const sendDirectVibeMail = mutation({
     message: v.string(),
     audioId: v.optional(v.string()),
     imageId: v.optional(v.string()),
+    // NFT Gift fields
+    giftNftName: v.optional(v.string()),
+    giftNftImageUrl: v.optional(v.string()),
+    giftNftCollection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -729,6 +749,19 @@ export const sendDirectVibeMail = mutation({
     if (args.senderFid === args.recipientFid) {
       throw new Error("Cannot send VibeMail to yourself");
     }
+
+    // Determine if paid based on free votes remaining (same logic as getUserFreeVotesRemaining)
+    const votesToday = await ctx.db
+      .query("cardVotes")
+      .filter((q) => q.and(
+        q.eq(q.field("voterFid"), args.senderFid),
+        q.eq(q.field("date"), today),
+        q.eq(q.field("isPaid"), false)
+      ))
+      .collect();
+    const freeVotesUsed = votesToday.length;
+    const maxFreeVotes = 1;
+    const isPaid = freeVotesUsed >= maxFreeVotes;
 
     // Get recipient card info
     const recipientCard = await ctx.db
@@ -740,13 +773,13 @@ export const sendDirectVibeMail = mutation({
       throw new Error("Recipient card not found");
     }
 
-    // Insert as a vote with message (free vote with VibeMail)
+    // Insert as a vote with message
     await ctx.db.insert("cardVotes", {
       cardFid: args.recipientFid,
       voterFid: args.senderFid,
       voterAddress: args.senderAddress.toLowerCase(),
       date: today,
-      isPaid: false,
+      isPaid,
       voteCount: 1,
       createdAt: now,
       message: args.message.slice(0, 200),
@@ -756,9 +789,13 @@ export const sendDirectVibeMail = mutation({
       isSent: true,
       recipientFid: args.recipientFid,
       recipientUsername: recipientCard.username,
+      // NFT Gift
+      giftNftName: args.giftNftName,
+      giftNftImageUrl: args.giftNftImageUrl,
+      giftNftCollection: args.giftNftCollection,
     });
 
-    // Give 100 VBMS to recipient
+    // Give 100 VBMS to recipient (always, both free and paid give rewards)
     const existingReward = await ctx.db
       .query("vibeRewards")
       .withIndex("by_fid", (q) => q.eq("fid", args.recipientFid))
@@ -777,6 +814,15 @@ export const sendDirectVibeMail = mutation({
         claimedVbms: 0,
         totalVotes: 1,
         lastVoteAt: now,
+      });
+    }
+
+    // Send notification
+    const hasContent = args.message?.trim() || args.imageId;
+    if (hasContent) {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
+        recipientFid: args.recipientFid,
+        hasAudio: !!args.audioId,
       });
     }
 
@@ -859,5 +905,24 @@ export const replyToMessage = mutation({
     }
 
     return { success: true };
+  },
+});
+
+// Admin: Clear all VibeMails
+export const clearAllVibeMails = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allVotes = await ctx.db
+      .query("cardVotes")
+      .filter((q) => q.neq(q.field("message"), undefined))
+      .collect();
+    
+    let deleted = 0;
+    for (const vote of allVotes) {
+      await ctx.db.delete(vote._id);
+      deleted++;
+    }
+    
+    return { deleted };
   },
 });
