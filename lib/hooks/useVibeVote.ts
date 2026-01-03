@@ -50,12 +50,13 @@ export function useVibeVote({ cardFid, voterFid, voterAddress }: UseVibeVoteProp
   // Mutation
   const voteForCardMutation = useMutation(api.cardVotes.voteForCard);
 
-  // Vote handler with optional VibeMail message/audio
+  // Vote handler with optional VibeMail message/audio/image
   const vote = useCallback(async (
     isPaid: boolean = false,
     voteCount: number = 1,
     message?: string,
-    audioId?: string
+    audioId?: string,
+    imageId?: string
   ): Promise<VoteResult> => {
     if (!voterFid || !voterAddress) {
       return { success: false, error: "Not connected" };
@@ -90,6 +91,7 @@ export function useVibeVote({ cardFid, voterFid, voterAddress }: UseVibeVoteProp
       }
 
       // Save vote to Convex with optional VibeMail
+      const hasContent = message?.trim() || imageId;
       const result = await voteForCardMutation({
         cardFid,
         voterFid,
@@ -97,7 +99,8 @@ export function useVibeVote({ cardFid, voterFid, voterAddress }: UseVibeVoteProp
         isPaid,
         voteCount: isPaid ? voteCount : 1,
         message: message?.trim() || undefined,
-        audioId: message?.trim() ? audioId : undefined, // Only save audio if message exists
+        audioId: hasContent ? audioId : undefined, // Only save audio if message/image exists
+        imageId: imageId || undefined,
       });
 
       if (!result.success) {
@@ -116,12 +119,12 @@ export function useVibeVote({ cardFid, voterFid, voterAddress }: UseVibeVoteProp
   }, [cardFid, voterFid, voterAddress, isVoting, isTransferPending, voteForCardMutation, transferVBMS]);
 
   // Free vote with optional message
-  const voteFree = useCallback((message?: string, audioId?: string) =>
-    vote(false, 1, message, audioId), [vote]);
+  const voteFree = useCallback((message?: string, audioId?: string, imageId?: string) =>
+    vote(false, 1, message, audioId, imageId), [vote]);
 
   // Paid vote with optional message
-  const votePaid = useCallback((count: number = 1, message?: string, audioId?: string) =>
-    vote(true, count, message, audioId), [vote]);
+  const votePaid = useCallback((count: number = 1, message?: string, audioId?: string, imageId?: string) =>
+    vote(true, count, message, audioId, imageId), [vote]);
 
   return {
     // Vote state

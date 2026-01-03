@@ -1,11 +1,13 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { createAuditLog } from "./coinAudit";
+import { internal } from "./_generated/api";
 
 /**
  * VibeFID Card Voting System
  *
  * Features:
- * - 3 free votes per day per user
+ * - 1 free vote per day per user
  * - Paid votes (unlimited) cost 100 coins each
  * - Daily prize pool distributed to top voted card
  * - Vote history tracking
@@ -70,7 +72,7 @@ export const getUserFreeVotesRemaining = query({
       .collect();
 
     const freeVotesUsed = votesToday.length;
-    const maxFreeVotes = 3;
+    const maxFreeVotes = 1;
 
     return {
       remaining: Math.max(0, maxFreeVotes - freeVotesUsed),
@@ -91,6 +93,7 @@ export const voteForCard = mutation({
     // VibeMail - Anonymous message with vote
     message: v.optional(v.string()), // Optional text message (max 200 chars)
     audioId: v.optional(v.string()), // Optional meme sound ID
+    imageId: v.optional(v.string()), // Optional meme image ID
   },
   handler: async (ctx, args) => {
     const today = new Date().toISOString().split('T')[0];
@@ -127,7 +130,7 @@ export const voteForCard = mutation({
         ))
         .collect();
 
-      if (votesToday.length >= 3) {
+      if (votesToday.length >= 1) {
         return { success: false, error: "No free votes remaining today" };
       }
     }
@@ -160,6 +163,7 @@ export const voteForCard = mutation({
 
     // Record the vote with optional VibeMail message
     const hasMessage = args.message && args.message.trim().length > 0;
+    const hasContent = hasMessage || args.imageId; // Message or image counts as VibeMail
     await ctx.db.insert("cardVotes", {
       cardFid: args.cardFid,
       voterFid: args.voterFid,
@@ -169,13 +173,22 @@ export const voteForCard = mutation({
       voteCount: voteCount,
       createdAt: now,
       // VibeMail fields
-      message: hasMessage && args.message ? args.message.slice(0, 200) : undefined, // Max 200 chars
-      audioId: hasMessage ? args.audioId : undefined, // Only save audio if message exists
-      isRead: hasMessage ? false : undefined, // Only track read status if message exists
+      message: hasMessage && args.message ? args.message.slice(0, 200) : undefined,
+      audioId: hasContent ? args.audioId : undefined,
+      imageId: args.imageId || undefined,
+      isRead: hasContent ? false : undefined,
     });
 
     // Update daily leaderboard
     await updateDailyLeaderboard(ctx, args.cardFid, today, voteCount);
+
+    // 💌 Send VibeMail notification if there's a message or image
+    if (hasContent) {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
+        recipientFid: args.cardFid,
+        hasAudio: !!args.audioId,
+      });
+    }
 
     // Update vibeRewards for card owner (100 VBMS per vote)
     const vbmsReward = voteCount * 100;
@@ -396,8 +409,25 @@ export const distributeDailyPrize = mutation({
         .first();
 
       if (profile) {
+        const balanceBefore = profile.coins || 0;
+        const balanceAfter = balanceBefore + prizePool;
         await ctx.db.patch(profile._id, {
-          coins: (profile.coins || 0) + prizePool,
+          coins: balanceAfter,
+          // 🔒 SECURITY FIX (2026-01-01): Track lifetimeEarned
+          lifetimeEarned: (profile.lifetimeEarned || 0) + prizePool,
+        });
+        // 🔒 AUDIT LOG
+        await createAuditLog(ctx, profile.address, "earn", prizePool, balanceBefore, balanceAfter, "cardVotes:distributeDailyPrize");
+        // 📊 Log transaction for history
+        await ctx.db.insert("coinTransactions", {
+          address: profile.address.toLowerCase(),
+          type: "earn",
+          amount: prizePool,
+          source: "leaderboard",
+          description: "Card voting prize - Top voter reward",
+          balanceBefore,
+          balanceAfter,
+          timestamp: Date.now(),
         });
       }
     }
@@ -427,7 +457,7 @@ export const distributeDailyPrize = mutation({
 // VIBEMAIL - Anonymous messages with votes
 // ============================================================================
 
-// Get all RECEIVED messages for a card (inbox)
+// Get all messages for a card (inbox)
 export const getMessagesForCard = query({
   args: {
     cardFid: v.number(),
@@ -436,29 +466,167 @@ export const getMessagesForCard = query({
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
 
-    const messages = await ctx.db
+    // Get all votes with messages for this card
+    const allVotes = await ctx.db
       .query("cardVotes")
-      .withIndex("by_card_unread", (q) => q.eq("cardFid", args.cardFid))
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("message"), undefined),
-          q.neq(q.field("isSent"), true) // Only received messages
-        )
-      )
+      .filter((q) => q.eq(q.field("cardFid"), args.cardFid))
       .order("desc")
-      .take(limit);
+      .collect();
+
+    // Filter to only votes with messages
+    const messages = allVotes
+      .filter(v => v.message !== undefined)
+      .slice(0, limit);
 
     return messages.map(m => ({
       _id: m._id,
       message: m.message,
       audioId: m.audioId,
-      imageId: m.imageId,
       isRead: m.isRead ?? false,
       createdAt: m.createdAt,
       voteCount: m.voteCount,
       isPaid: m.isPaid,
+    }));
+  },
+});
+
+// Mark a message as read
+export const markMessageAsRead = mutation({
+  args: { messageId: v.id("cardVotes") },
+  handler: async (ctx, args) => {
+    const vote = await ctx.db.get(args.messageId);
+    if (!vote || !vote.message) {
+      return { success: false, error: "Message not found" };
+    }
+
+    await ctx.db.patch(args.messageId, { isRead: true });
+    return { success: true };
+  },
+});
+
+// Get unread message count for a card
+export const getUnreadMessageCount = query({
+  args: { cardFid: v.number() },
+  handler: async (ctx, args) => {
+    // Get all votes for this card
+    const allVotes = await ctx.db
+      .query("cardVotes")
+      .filter((q) => q.eq(q.field("cardFid"), args.cardFid))
+      .collect();
+
+    // Count unread messages
+    const unread = allVotes.filter(v =>
+      v.message !== undefined && v.isRead === false
+    );
+
+    return unread.length;
+  },
+});
+
+
+// ============================================================================
+// ADMIN: Broadcast VibeMail to multiple FIDs
+// ============================================================================
+
+export const broadcastVibeMail = mutation({
+  args: {
+    recipientFids: v.array(v.number()), // List of FIDs to send to
+    message: v.string(),
+    audioId: v.optional(v.string()),
+    senderFid: v.optional(v.number()), // Admin sender FID (default: 0 for system)
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const today = new Date().toISOString().split('T')[0];
+    const senderFid = args.senderFid || 0; // 0 = system message
+
+    const results = [];
+
+    for (const recipientFid of args.recipientFids) {
+      try {
+        // Insert VibeMail directly (no vote restrictions)
+        await ctx.db.insert("cardVotes", {
+          cardFid: recipientFid,
+          voterFid: senderFid,
+          voterAddress: "0x0000000000000000000000000000000000000000", // System address
+          date: today,
+          createdAt: now,
+          voteCount: 0, // No vote, just message
+          isPaid: false,
+          message: args.message.slice(0, 1000), // Increased limit for system messages
+          audioId: args.audioId,
+          isRead: false,
+        });
+
+        // Send notification
+        await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
+          recipientFid,
+          hasAudio: !!args.audioId,
+        });
+
+        results.push({ fid: recipientFid, success: true });
+      } catch (error: any) {
+        results.push({ fid: recipientFid, success: false, error: error.message });
+      }
+    }
+
+    return {
+      success: true,
+      total: args.recipientFids.length,
+      sent: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success).length,
+      results,
+    };
+  },
+});
+
+// Get recent VibeMail messages for background display (for specific user)
+export const getRecentVibeMails = query({
+  args: {
+    cardFid: v.optional(v.number()), // Filter by recipient FID
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 6;
+
+    // If cardFid provided, get messages for that user only
+    if (args.cardFid) {
+      const cardFid = args.cardFid;
+      const messages = await ctx.db
+        .query("cardVotes")
+        .withIndex("by_card_date", (q) => q.eq("cardFid", cardFid))
+        .filter((q) => q.neq(q.field("message"), undefined))
+        .collect();
+
+      const sorted = messages
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+        .slice(0, limit);
+
+      return sorted.map(m => ({
+        _id: m._id,
+        message: m.message?.slice(0, 50),
+        cardFid: m.cardFid,
+        voterFid: m.voterFid,
+        createdAt: m.createdAt,
+      }));
+    }
+
+    // Fallback: get all recent messages
+    const allMessages = await ctx.db
+      .query("cardVotes")
+      .filter((q) => q.neq(q.field("message"), undefined))
+      .collect();
+
+    const sorted = allMessages
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .slice(0, limit);
+
+    return sorted.map(m => ({
+      _id: m._id,
+      message: m.message?.slice(0, 50),
+      cardFid: m.cardFid,
       voterFid: m.voterFid,
-      isSent: m.isSent ?? false,
+      createdAt: m.createdAt,
     }));
   },
 });
@@ -512,225 +680,38 @@ export const getSentMessages = query({
   },
 });
 
-// Mark a message as read
-export const markMessageAsRead = mutation({
-  args: { messageId: v.id("cardVotes") },
-  handler: async (ctx, args) => {
-    const vote = await ctx.db.get(args.messageId);
-    if (!vote || !vote.message) {
-      return { success: false, error: "Message not found" };
-    }
-
-    await ctx.db.patch(args.messageId, { isRead: true });
-    return { success: true };
+// Search cards for VibeMail recipient
+export const searchCardsForVibeMail = query({
+  args: {
+    searchTerm: v.string(),
+    limit: v.optional(v.number()),
   },
-});
-
-// Get unread message count for a card
-export const getUnreadMessageCount = query({
-  args: { cardFid: v.number() },
   handler: async (ctx, args) => {
-    const unread = await ctx.db
-      .query("cardVotes")
-      .withIndex("by_card_unread", (q) =>
-        q.eq("cardFid", args.cardFid).eq("isRead", false)
+    const limit = args.limit || 5;
+    const searchLower = args.searchTerm.toLowerCase();
+
+    // Search by username
+    const allCards = await ctx.db
+      .query("farcasterCards")
+      .collect();
+
+    const matches = allCards
+      .filter(card =>
+        card.username.toLowerCase().includes(searchLower) ||
+        card.fid.toString() === args.searchTerm
       )
-      .filter((q) => q.neq(q.field("message"), undefined))
-      .collect();
-
-    return unread.length;
-  },
-});
-
-// Get recent VibeMail messages for background display (for specific user)
-export const getRecentVibeMails = query({
-  args: {
-    cardFid: v.optional(v.number()), // Filter by recipient FID
-    limit: v.optional(v.number())
-  },
-  handler: async (ctx, args) => {
-    const limit = args.limit || 6;
-
-    // If cardFid provided, get messages for that user only
-    if (args.cardFid) {
-      const cardFid = args.cardFid;
-      const messages = await ctx.db
-        .query("cardVotes")
-        .withIndex("by_card_unread", (q) => q.eq("cardFid", cardFid))
-        .filter((q) => q.neq(q.field("message"), undefined))
-        .collect();
-
-      const sorted = messages
-        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-        .slice(0, limit);
-
-      return sorted.map(m => ({
-        _id: m._id,
-        message: m.message?.slice(0, 50),
-        cardFid: m.cardFid,
-        voterFid: m.voterFid,
-        createdAt: m.createdAt,
+      .slice(0, limit)
+      .map(card => ({
+        fid: card.fid,
+        username: card.username,
+        pfpUrl: card.pfpUrl,
       }));
-    }
 
-    // Fallback: get all recent messages
-    const allMessages = await ctx.db
-      .query("cardVotes")
-      .filter((q) => q.neq(q.field("message"), undefined))
-      .collect();
-
-    const sorted = allMessages
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-      .slice(0, limit);
-
-    return sorted.map(m => ({
-      _id: m._id,
-      message: m.message?.slice(0, 50),
-      cardFid: m.cardFid,
-      voterFid: m.voterFid,
-      createdAt: m.createdAt,
-    }));
+    return matches;
   },
 });
 
-// Reply to a message anonymously - looks up voterFid internally for privacy
-// Costs 100 coins, recipient gets 100 VBMS
-export const replyToMessage = mutation({
-  args: {
-    originalMessageId: v.id("cardVotes"),
-    senderFid: v.number(),
-    senderAddress: v.string(),
-    message: v.string(),
-    audioId: v.optional(v.string()),
-    imageId: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const today = new Date().toISOString().split('T')[0];
-    const costPerMessage = 100;
-    const vbmsReward = 100;
-
-    // Get original message to find who sent it
-    const originalMessage = await ctx.db.get(args.originalMessageId);
-    if (!originalMessage) {
-      return { success: false, error: "Original message not found" };
-    }
-
-    // Get the voterFid from original message - this is who we reply to
-    const recipientFid = originalMessage.voterFid;
-    if (!recipientFid) {
-      return { success: false, error: "Cannot reply to this message" };
-    }
-
-    // Cannot reply to yourself
-    if (recipientFid === args.senderFid) {
-      return { success: false, error: "Cannot send VibeMail to yourself" };
-    }
-
-    // Check if sender has a minted card
-    const senderCard = await ctx.db
-      .query("farcasterCards")
-      .withIndex("by_fid", (q) => q.eq("fid", args.senderFid))
-      .first();
-    if (!senderCard || !senderCard.contractAddress) {
-      return { success: false, error: "You need a minted VibeFID card to send VibeMail" };
-    }
-
-    // Check if recipient has a minted card
-    const recipientCard = await ctx.db
-      .query("farcasterCards")
-      .withIndex("by_fid", (q) => q.eq("fid", recipientFid))
-      .first();
-    if (!recipientCard || !recipientCard.contractAddress) {
-      return { success: false, error: "Recipient doesn't have a minted VibeFID card" };
-    }
-
-    // Find sender profile and check coins
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_address", (q) => q.eq("address", args.senderAddress.toLowerCase()))
-      .first();
-
-    if (!profile) {
-      return { success: false, error: "Profile not found" };
-    }
-
-    const currentCoins = profile.coins || 0;
-    if (currentCoins < costPerMessage) {
-      return { success: false, error: `Not enough coins. Need ${costPerMessage}, have ${currentCoins}` };
-    }
-
-    // Deduct coins from sender
-    await ctx.db.patch(profile._id, {
-      coins: currentCoins - costPerMessage,
-    });
-
-    // Get recipient username for sent copy (recipientCard already fetched above)
-    const recipientUsername = recipientCard?.username || `FID ${recipientFid}`;
-
-    // Create the reply message (sent to the original sender's inbox)
-    await ctx.db.insert("cardVotes", {
-      cardFid: recipientFid,
-      voterFid: args.senderFid,
-      voterAddress: args.senderAddress.toLowerCase(),
-      date: today,
-      isPaid: true,
-      voteCount: 1,
-      message: args.message.slice(0, 200),
-      audioId: args.audioId,
-      imageId: args.imageId,
-      isRead: false,
-      isSent: false,
-      createdAt: now,
-    });
-
-    // Create copy for sender (sent folder)
-    await ctx.db.insert("cardVotes", {
-      cardFid: args.senderFid, // Goes to sender's inbox
-      voterFid: args.senderFid,
-      voterAddress: args.senderAddress.toLowerCase(),
-      date: today,
-      isPaid: true,
-      voteCount: 1,
-      message: args.message.slice(0, 200),
-      audioId: args.audioId,
-      imageId: args.imageId,
-      isRead: true,
-      isSent: true,
-      recipientFid: recipientFid,
-      recipientUsername,
-      createdAt: now,
-    });
-
-    // Update vibeRewards for recipient
-    const existingReward = await ctx.db
-      .query("vibeRewards")
-      .withIndex("by_fid", (q) => q.eq("fid", recipientFid))
-      .first();
-
-    if (existingReward) {
-      await ctx.db.patch(existingReward._id, {
-        pendingVbms: existingReward.pendingVbms + vbmsReward,
-        totalVotes: existingReward.totalVotes + 1,
-        lastVoteAt: now,
-      });
-    } else {
-      await ctx.db.insert("vibeRewards", {
-        fid: recipientFid,
-        pendingVbms: vbmsReward,
-        claimedVbms: 0,
-        totalVotes: 1,
-        lastVoteAt: now,
-        lastClaimAt: 0,
-      });
-    }
-
-    return { success: true };
-  },
-});
-
-// Send VibeMail directly to a FID
-// Costs 100 coins, recipient gets 100 VBMS
+// Send direct VibeMail to a card
 export const sendDirectVibeMail = mutation({
   args: {
     recipientFid: v.number(),
@@ -743,94 +724,41 @@ export const sendDirectVibeMail = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
-    const costPerMessage = 100;
-    const vbmsReward = 100;
 
-    // Don't allow sending to yourself
-    if (args.recipientFid === args.senderFid) {
-      return { success: false, error: "Cannot send VibeMail to yourself" };
+    // Cannot send to yourself
+    if (args.senderFid === args.recipientFid) {
+      throw new Error("Cannot send VibeMail to yourself");
     }
 
-    // Check if sender has a minted card
-    const senderCard = await ctx.db
-      .query("farcasterCards")
-      .withIndex("by_fid", (q) => q.eq("fid", args.senderFid))
-      .first();
-    if (!senderCard || !senderCard.contractAddress) {
-      return { success: false, error: "You need a minted VibeFID card to send VibeMail" };
-    }
-
-    // Check if recipient has a minted card
-    const recipientCardCheck = await ctx.db
-      .query("farcasterCards")
-      .withIndex("by_fid", (q) => q.eq("fid", args.recipientFid))
-      .first();
-    if (!recipientCardCheck || !recipientCardCheck.contractAddress) {
-      return { success: false, error: "Recipient doesn't have a minted VibeFID card" };
-    }
-
-    // Find sender profile and check coins
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_address", (q) => q.eq("address", args.senderAddress.toLowerCase()))
-      .first();
-
-    if (!profile) {
-      return { success: false, error: "Profile not found" };
-    }
-
-    const currentCoins = profile.coins || 0;
-    if (currentCoins < costPerMessage) {
-      return { success: false, error: `Not enough coins. Need ${costPerMessage}, have ${currentCoins}` };
-    }
-
-    // Deduct coins from sender
-    await ctx.db.patch(profile._id, {
-      coins: currentCoins - costPerMessage,
-    });
-
-    // Get recipient username for sent copy
+    // Get recipient card info
     const recipientCard = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.recipientFid))
       .first();
-    const recipientUsername = recipientCard?.username || `FID ${args.recipientFid}`;
 
-    // Create the message for recipient (inbox)
+    if (!recipientCard) {
+      throw new Error("Recipient card not found");
+    }
+
+    // Insert as a vote with message (free vote with VibeMail)
     await ctx.db.insert("cardVotes", {
       cardFid: args.recipientFid,
       voterFid: args.senderFid,
       voterAddress: args.senderAddress.toLowerCase(),
       date: today,
-      isPaid: true,
+      isPaid: false,
       voteCount: 1,
+      createdAt: now,
       message: args.message.slice(0, 200),
       audioId: args.audioId,
       imageId: args.imageId,
       isRead: false,
-      isSent: false,
-      createdAt: now,
-    });
-
-    // Create copy for sender (sent folder)
-    await ctx.db.insert("cardVotes", {
-      cardFid: args.senderFid, // Goes to sender's inbox
-      voterFid: args.senderFid,
-      voterAddress: args.senderAddress.toLowerCase(),
-      date: today,
-      isPaid: true,
-      voteCount: 1,
-      message: args.message.slice(0, 200),
-      audioId: args.audioId,
-      imageId: args.imageId,
-      isRead: true, // Sender doesn't need to "read" their own sent message
       isSent: true,
       recipientFid: args.recipientFid,
-      recipientUsername,
-      createdAt: now,
+      recipientUsername: recipientCard.username,
     });
 
-    // Update vibeRewards for recipient
+    // Give 100 VBMS to recipient
     const existingReward = await ctx.db
       .query("vibeRewards")
       .withIndex("by_fid", (q) => q.eq("fid", args.recipientFid))
@@ -838,18 +766,17 @@ export const sendDirectVibeMail = mutation({
 
     if (existingReward) {
       await ctx.db.patch(existingReward._id, {
-        pendingVbms: existingReward.pendingVbms + vbmsReward,
+        pendingVbms: existingReward.pendingVbms + 100,
         totalVotes: existingReward.totalVotes + 1,
         lastVoteAt: now,
       });
     } else {
       await ctx.db.insert("vibeRewards", {
         fid: args.recipientFid,
-        pendingVbms: vbmsReward,
+        pendingVbms: 100,
         claimedVbms: 0,
         totalVotes: 1,
         lastVoteAt: now,
-        lastClaimAt: 0,
       });
     }
 
@@ -857,48 +784,80 @@ export const sendDirectVibeMail = mutation({
   },
 });
 
-// Search cards for VibeMail recipient (lightweight query)
-export const searchCardsForVibeMail = query({
+// Reply to a VibeMail message
+export const replyToMessage = mutation({
   args: {
-    searchTerm: v.string(),
-    limit: v.optional(v.number()),
+    originalMessageId: v.id("cardVotes"),
+    senderFid: v.number(),
+    senderAddress: v.string(),
+    message: v.string(),
+    audioId: v.optional(v.string()),
+    imageId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(args.limit || 10, 20);
-    const searchTerm = args.searchTerm.trim();
-    
-    if (!searchTerm) return [];
+    const now = Date.now();
+    const today = new Date().toISOString().split('T')[0];
 
-    // Check if search term is a FID (number)
-    const isNumericSearch = /^\d+$/.test(searchTerm);
-
-    if (isNumericSearch) {
-      const fid = parseInt(searchTerm, 10);
-      const card = await ctx.db
-        .query("farcasterCards")
-        .withIndex("by_fid", (q) => q.eq("fid", fid))
-        .first();
-      
-      if (card) {
-        return [{
-          fid: card.fid,
-          username: card.username,
-          pfpUrl: card.pfpUrl,
-        }];
-      }
-      return [];
+    // Get original message
+    const originalMessage = await ctx.db.get(args.originalMessageId);
+    if (!originalMessage) {
+      throw new Error("Original message not found");
     }
 
-    // Username search
-    const results = await ctx.db
-      .query("farcasterCards")
-      .withSearchIndex("search_username", (q) => q.search("username", searchTerm))
-      .take(limit);
+    // Reply goes to the original sender (voterFid)
+    const recipientFid = originalMessage.voterFid;
 
-    return results.map(card => ({
-      fid: card.fid,
-      username: card.username,
-      pfpUrl: card.pfpUrl,
-    }));
+    // Cannot reply to yourself
+    if (args.senderFid === recipientFid) {
+      throw new Error("Cannot reply to yourself");
+    }
+
+    // Get recipient card info
+    const recipientCard = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", recipientFid))
+      .first();
+
+    // Insert reply as a new vote/message
+    await ctx.db.insert("cardVotes", {
+      cardFid: recipientFid,
+      voterFid: args.senderFid,
+      voterAddress: args.senderAddress.toLowerCase(),
+      date: today,
+      isPaid: false,
+      voteCount: 1,
+      createdAt: now,
+      message: args.message.slice(0, 200),
+      audioId: args.audioId,
+      imageId: args.imageId,
+      isRead: false,
+      isSent: true,
+      recipientFid: recipientFid,
+      recipientUsername: recipientCard?.username || `FID ${recipientFid}`,
+    });
+
+    // Give 100 VBMS to recipient
+    const existingReward = await ctx.db
+      .query("vibeRewards")
+      .withIndex("by_fid", (q) => q.eq("fid", recipientFid))
+      .first();
+
+    if (existingReward) {
+      await ctx.db.patch(existingReward._id, {
+        pendingVbms: existingReward.pendingVbms + 100,
+        totalVotes: existingReward.totalVotes + 1,
+        lastVoteAt: now,
+      });
+    } else {
+      await ctx.db.insert("vibeRewards", {
+        fid: recipientFid,
+        pendingVbms: 100,
+        claimedVbms: 0,
+        totalVotes: 1,
+        lastVoteAt: now,
+      });
+    }
+
+    return { success: true };
   },
 });
