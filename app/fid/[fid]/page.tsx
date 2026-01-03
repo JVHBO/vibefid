@@ -324,10 +324,10 @@ export default function FidCardPage() {
     }
   };
 
-  // Check if upgrade is available (only for card owner)
+  // Check if upgrade is available (now open to everyone for score sync)
   // Allow upgrade if: rarity improved OR score changed (to fix wrong scores)
   const canUpgrade = () => {
-    if (!isOwnCard) return false; // Only card owner can upgrade
+    // Removed isOwnCard check - anyone can sync scores now
     if (!card || !neynarScoreData) return false;
     const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
     const currentRarityIndex = rarityOrder.indexOf(card.rarity);
@@ -355,9 +355,9 @@ export default function FidCardPage() {
     }
   };
 
-  // Handle upgrade with animation and video regeneration (only for card owner)
+  // Handle upgrade with animation and video regeneration (now open to everyone)
   const handleUpgrade = async () => {
-    if (!isOwnCard) return; // Security check: only owner can upgrade
+    // Removed isOwnCard check - anyone can sync scores now
     if (!card || !neynarScoreData || !canUpgrade()) return;
 
     AudioManager.buttonClick();
