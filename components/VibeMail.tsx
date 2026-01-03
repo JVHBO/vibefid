@@ -1010,7 +1010,9 @@ export function VibeMailInboxWithClaim({
               <button
                 onClick={() => {
                   AudioManager.buttonClick();
-                  setReplyToMessageId(selectedMessage._id);
+                  const msgId = selectedMessage._id;
+                  setSelectedMessage(null); // Close message view first
+                  setReplyToMessageId(msgId);
                   setShowComposer(true);
                 }}
                 className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/30 to-yellow-500/30 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/40 hover:to-yellow-500/40 transition-all flex items-center justify-center gap-2"
