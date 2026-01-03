@@ -357,21 +357,21 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
         {/* Selected Message View */}
         {selectedMessage ? (
           <div className="flex-1 flex flex-col">
-            {/* John Pork Header */}
-            <div className="bg-vintage-black/50 rounded-lg p-4 mb-3 text-center">
+            {/* John Pork Header - Compact */}
+            <div className="bg-vintage-black/50 rounded-lg p-2 mb-2 flex items-center gap-2">
               <img
                 src={secretary.image}
                 alt={secretary.name}
-                className="w-20 h-20 rounded-full border-4 border-vintage-gold mx-auto mb-3 animate-pulse"
+                className="w-10 h-10 rounded-full border-2 border-vintage-gold animate-pulse"
               />
-              <p className="text-vintage-gold font-bold text-sm">
+              <p className="text-vintage-gold font-bold text-xs">
                 {secretary.name} intercepted this message!
               </p>
             </div>
 
             {/* Message Content */}
-            <div className="bg-gradient-to-b from-vintage-black/80 to-vintage-charcoal rounded-lg p-4 flex-1">
-              <div className="text-vintage-ice text-base leading-relaxed mb-4">
+            <div className="bg-gradient-to-b from-vintage-black/80 to-vintage-charcoal rounded-lg p-3 flex-1">
+              <div className="text-vintage-ice text-sm leading-relaxed mb-3">
                 {selectedMessage.imageId ? (
                   renderMessageWithMedia(selectedMessage.message || "", selectedMessage.imageId, lang, username)
                 ) : (
@@ -379,9 +379,9 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
                 )}
               </div>
 
-              {/* Audio Player */}
+              {/* Audio Player - Compact */}
               {selectedMessage.audioId && (
-                <div className="bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg p-3 flex items-center gap-3">
+                <div className="bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg p-2 flex items-center gap-2">
                   <button
                     onClick={() => {
                       if (playingAudio === selectedMessage.audioId) {
@@ -395,7 +395,7 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
                         }
                       }
                     }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                       playingAudio === selectedMessage.audioId
                         ? 'bg-red-500 text-white animate-pulse'
                         : 'bg-vintage-gold text-black'
@@ -895,12 +895,12 @@ export function VibeMailInboxWithClaim({
         {/* Selected Message View */}
         {selectedMessage ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* John Pork Header */}
-            <div className="bg-vintage-black/50 rounded-lg p-4 mb-3 text-center">
+            {/* John Pork Header - Compact */}
+            <div className="bg-vintage-black/50 rounded-lg p-2 mb-2 flex items-center gap-2">
               <img
                 src={secretary.image}
                 alt={secretary.name}
-                className="w-16 h-16 rounded-full border-4 border-vintage-gold mx-auto mb-2 animate-pulse"
+                className="w-10 h-10 rounded-full border-2 border-vintage-gold animate-pulse"
               />
               <p className="text-vintage-gold font-bold text-xs">
                 {secretary.name} intercepted this message!
@@ -908,8 +908,8 @@ export function VibeMailInboxWithClaim({
             </div>
 
             {/* Message Content */}
-            <div className="bg-gradient-to-b from-vintage-black/80 to-vintage-charcoal rounded-lg p-4 flex-1 overflow-y-auto">
-              <div className="text-vintage-ice text-base leading-relaxed mb-4">
+            <div className="bg-gradient-to-b from-vintage-black/80 to-vintage-charcoal rounded-lg p-3 flex-1 overflow-y-auto">
+              <div className="text-vintage-ice text-sm leading-relaxed mb-3">
                 {selectedMessage.imageId ? (
                   renderMessageWithMedia(selectedMessage.message || "", selectedMessage.imageId, lang, username)
                 ) : (
@@ -918,7 +918,7 @@ export function VibeMailInboxWithClaim({
               </div>
 
               {selectedMessage.audioId && (
-                <div className="bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg p-3 flex items-center gap-3">
+                <div className="bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg p-2 flex items-center gap-2">
                   <button
                     onClick={() => {
                       if (playingAudio === selectedMessage.audioId) {
@@ -932,7 +932,7 @@ export function VibeMailInboxWithClaim({
                         }
                       }
                     }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                       playingAudio === selectedMessage.audioId
                         ? 'bg-red-500 text-white animate-pulse'
                         : 'bg-vintage-gold text-black'
@@ -941,17 +941,17 @@ export function VibeMailInboxWithClaim({
                     {playingAudio === selectedMessage.audioId ? '■' : '▶'}
                   </button>
                   <div className="flex-1">
-                    <p className="text-vintage-gold font-bold text-sm">
+                    <p className="text-vintage-gold font-bold text-xs">
                       {VIBEMAIL_SOUNDS.find(s => s.id === selectedMessage.audioId)?.name || t.memeSound}
                     </p>
-                    <p className="text-vintage-ice/50 text-xs">
+                    <p className="text-vintage-ice/50 text-[10px]">
                       {playingAudio === selectedMessage.audioId ? t.playing : t.tapToPlay}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="mt-4 pt-3 border-t border-vintage-gold/20 flex items-center justify-between text-xs">
+              <div className="mt-2 pt-2 border-t border-vintage-gold/20 flex items-center justify-between text-[10px]">
                 <span className="text-vintage-ice/50">
                   {new Date(selectedMessage.createdAt).toLocaleDateString()}
                 </span>
