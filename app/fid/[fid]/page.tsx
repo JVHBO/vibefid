@@ -324,11 +324,11 @@ export default function FidCardPage() {
     }
   };
 
-  // Check if upgrade is available (now open to everyone for score sync)
+  // Check if upgrade is available (only for card owner)
   // Allow upgrade if: rarity improved OR score changed (to fix wrong scores)
   const canUpgrade = () => {
-    // Removed isOwnCard check - anyone can sync scores now
-    if (!card || !neynarScoreData) return false;
+    // Only card owner can see and use upgrade option
+    if (!isOwnCard || !card || !neynarScoreData) return false;
     const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
     const currentRarityIndex = rarityOrder.indexOf(card.rarity);
     const newRarityIndex = rarityOrder.indexOf(neynarScoreData.rarity);
@@ -938,14 +938,10 @@ export default function FidCardPage() {
                 {canUpgrade() && (
                   <button
                     onClick={handleUpgrade}
-                    disabled={isUpgrading || !isOwnCard}
-                    className={`w-full px-4 py-3 font-bold rounded-lg transition-all disabled:opacity-50 ${
-                      isOwnCard
-                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black'
-                        : 'bg-vintage-charcoal border border-vintage-gold/30 text-vintage-ice cursor-not-allowed'
-                    }`}
+                    disabled={isUpgrading}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
                   >
-                    {isUpgrading ? t.upgrading : isOwnCard ? t.upgradeRarity : (t.onlyOwnerCanUpgrade || 'Only owner can upgrade')}
+                    {isUpgrading ? t.upgrading : t.upgradeRarity}
                   </button>
                 )}
                 <div className="flex gap-2">
