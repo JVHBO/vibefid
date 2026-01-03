@@ -24,6 +24,18 @@ export const fidTranslations = {
     enterFid: 'Digite o FID do Farcaster',
     fetch: 'Buscar',
     loading: 'Carregando...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Individual',
+    vibemailModeBroadcast: 'Transmissao',
+    vibemailModeRandom: 'Aleatorio',
+    vibemailShuffle: 'Sortear',
+    vibemailSending: 'Enviando...',
+    vibemailReply: 'Responder',
+    vibemailSendTo: 'Enviar para {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Aleatorio (100 VBMS)',
+    vibemailNextGift: 'Proximo: Presente NFT?',
+    vibemailAddRecipients: 'Adicionar destinatarios...',
+    vibemailSearchPlayers: 'Buscar jogadores...',
 
     // User info
     bio: 'Bio',
@@ -357,6 +369,18 @@ export const fidTranslations = {
     enterFid: 'Enter Farcaster FID',
     fetch: 'Fetch',
     loading: 'Loading...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Single',
+    vibemailModeBroadcast: 'Broadcast',
+    vibemailModeRandom: 'Random',
+    vibemailShuffle: 'Shuffle',
+    vibemailSending: 'Sending...',
+    vibemailReply: 'Reply',
+    vibemailSendTo: 'Send to {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Random (100 VBMS)',
+    vibemailNextGift: 'Next: Gift NFT?',
+    vibemailAddRecipients: 'Add recipients...',
+    vibemailSearchPlayers: 'Search players...',
 
     // User info
     bio: 'Bio',
@@ -689,6 +713,18 @@ export const fidTranslations = {
     enterFid: 'Ingrese el FID de Farcaster',
     fetch: 'Buscar',
     loading: 'Cargando...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Individual',
+    vibemailModeBroadcast: 'Difusion',
+    vibemailModeRandom: 'Aleatorio',
+    vibemailShuffle: 'Mezclar',
+    vibemailSending: 'Enviando...',
+    vibemailReply: 'Responder',
+    vibemailSendTo: 'Enviar a {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Aleatorio (100 VBMS)',
+    vibemailNextGift: 'Siguiente: Regalo NFT?',
+    vibemailAddRecipients: 'Agregar destinatarios...',
+    vibemailSearchPlayers: 'Buscar jugadores...',
 
     // User info
     bio: 'Bio',
@@ -1014,6 +1050,18 @@ export const fidTranslations = {
     enterFid: 'Farcaster FID दर्ज करें',
     fetch: 'प्राप्त करें',
     loading: 'लोड हो रहा है...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Single',
+    vibemailModeBroadcast: 'Broadcast',
+    vibemailModeRandom: 'Random',
+    vibemailShuffle: 'Shuffle',
+    vibemailSending: 'Bhej raha hai...',
+    vibemailReply: 'Javab',
+    vibemailSendTo: '{count} ko bhejein ({cost} VBMS)',
+    vibemailRandomCost: 'Random (100 VBMS)',
+    vibemailNextGift: 'Agla: NFT Gift?',
+    vibemailAddRecipients: 'Praaptkarta jodein...',
+    vibemailSearchPlayers: 'Khiladi khojein...',
 
     // User info
     bio: 'बायो',
@@ -1339,6 +1387,18 @@ export const fidTranslations = {
     enterFid: 'Введите Farcaster FID',
     fetch: 'Получить',
     loading: 'Загрузка...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Odinochniy',
+    vibemailModeBroadcast: 'Rassylka',
+    vibemailModeRandom: 'Sluchaynyy',
+    vibemailShuffle: 'Peremeshat',
+    vibemailSending: 'Otpravka...',
+    vibemailReply: 'Otvetit',
+    vibemailSendTo: 'Otpravit {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Sluchaynyy (100 VBMS)',
+    vibemailNextGift: 'Dalee: Podarit NFT?',
+    vibemailAddRecipients: 'Dobavit poluchateley...',
+    vibemailSearchPlayers: 'Iskat igrokov...',
 
     // User info
     bio: 'Био',
@@ -1664,6 +1724,18 @@ export const fidTranslations = {
     enterFid: '输入 Farcaster FID',
     fetch: '获取',
     loading: '加载中...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Danren',
+    vibemailModeBroadcast: 'Guangbo',
+    vibemailModeRandom: 'Suiji',
+    vibemailShuffle: 'Xipai',
+    vibemailSending: 'Fasong zhong...',
+    vibemailReply: 'Huifu',
+    vibemailSendTo: 'Fasong gei {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Suiji (100 VBMS)',
+    vibemailNextGift: 'Xiayibu: Zengsong NFT?',
+    vibemailAddRecipients: 'Tianjia shoujianren...',
+    vibemailSearchPlayers: 'Sousuo wanjia...',
 
     // User info
     bio: '简介',
@@ -1989,6 +2061,18 @@ export const fidTranslations = {
     enterFid: 'Masukkan FID Farcaster',
     fetch: 'Ambil',
     loading: 'Memuat...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Tunggal',
+    vibemailModeBroadcast: 'Siaran',
+    vibemailModeRandom: 'Acak',
+    vibemailShuffle: 'Kocok',
+    vibemailSending: 'Mengirim...',
+    vibemailReply: 'Balas',
+    vibemailSendTo: 'Kirim ke {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Acak (100 VBMS)',
+    vibemailNextGift: 'Lanjut: Hadiah NFT?',
+    vibemailAddRecipients: 'Tambah penerima...',
+    vibemailSearchPlayers: 'Cari pemain...',
 
     // User info
     bio: 'Bio',
@@ -2283,6 +2367,18 @@ export const fidTranslations = {
     enterFid: 'Entrez le FID Farcaster',
     fetch: 'Récupérer',
     loading: 'Chargement...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Individuel',
+    vibemailModeBroadcast: 'Diffusion',
+    vibemailModeRandom: 'Aleatoire',
+    vibemailShuffle: 'Melanger',
+    vibemailSending: 'Envoi...',
+    vibemailReply: 'Repondre',
+    vibemailSendTo: 'Envoyer a {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Aleatoire (100 VBMS)',
+    vibemailNextGift: 'Suivant: Cadeau NFT?',
+    vibemailAddRecipients: 'Ajouter destinataires...',
+    vibemailSearchPlayers: 'Rechercher joueurs...',
 
     // User info
     bio: 'Bio',
@@ -2576,6 +2672,18 @@ export const fidTranslations = {
     enterFid: 'Farcaster FIDを入力',
     fetch: '取得',
     loading: '読み込み中...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Tandoku',
+    vibemailModeBroadcast: 'Hoso',
+    vibemailModeRandom: 'Randamu',
+    vibemailShuffle: 'Shaffuru',
+    vibemailSending: 'Soshin-chu...',
+    vibemailReply: 'Henji',
+    vibemailSendTo: '{count} ni okuru ({cost} VBMS)',
+    vibemailRandomCost: 'Randamu (100 VBMS)',
+    vibemailNextGift: 'Tsugi: NFT purezento?',
+    vibemailAddRecipients: 'Jushinsha wo tsuika...',
+    vibemailSearchPlayers: 'Pureiya wo kensaku...',
 
     // User info
     bio: '自己紹介',
@@ -2938,6 +3046,18 @@ export const fidTranslations = {
     enterFid: 'Inserisci FID Farcaster',
     fetch: 'Cerca',
     loading: 'Caricamento...',
+    // VibeMail Modes
+    vibemailModeSingle: 'Singolo',
+    vibemailModeBroadcast: 'Trasmissione',
+    vibemailModeRandom: 'Casuale',
+    vibemailShuffle: 'Mescola',
+    vibemailSending: 'Invio...',
+    vibemailReply: 'Rispondi',
+    vibemailSendTo: 'Invia a {count} ({cost} VBMS)',
+    vibemailRandomCost: 'Casuale (100 VBMS)',
+    vibemailNextGift: 'Prossimo: Regalo NFT?',
+    vibemailAddRecipients: 'Aggiungi destinatari...',
+    vibemailSearchPlayers: 'Cerca giocatori...',
 
     // User info
     bio: 'Bio',
