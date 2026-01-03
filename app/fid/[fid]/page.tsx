@@ -410,7 +410,7 @@ export default function FidCardPage() {
         username: card.username,
         fid: card.fid,
         neynarScore: neynarScoreData.score, // Use NEW score for card image
-        rarity: isRarityUpgrade() ? result.newRarity : card.rarity, // Use new or keep current
+        rarity: isRarityUpgrade() && 'newRarity' in result ? result.newRarity : card.rarity, // Use new or keep current
         suit: card.suit as any,
         rank: card.rank as any,
         suitSymbol: card.suitSymbol,
@@ -470,10 +470,10 @@ export default function FidCardPage() {
       }
 
       setEvolutionData({
-        oldRarity: result.oldRarity,
-        newRarity: result.newRarity,
-        oldPower: result.oldPower,
-        newPower: result.newPower,
+        oldRarity: 'oldRarity' in result ? result.oldRarity : card.rarity,
+        newRarity: 'newRarity' in result ? result.newRarity : card.rarity,
+        oldPower: 'oldPower' in result ? result.oldPower : card.power,
+        newPower: 'newPower' in result ? result.newPower : card.power,
         oldScore: card.neynarScore,
         newScore: neynarScoreData.score,
         newBounty,
