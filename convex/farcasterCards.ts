@@ -42,6 +42,9 @@ export const mintFarcasterCard = mutation({
 
     // Contract
     contractAddress: v.optional(v.string()), // NFT contract address
+    
+    // Optional: User language preference
+    language: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
