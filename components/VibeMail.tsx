@@ -793,7 +793,7 @@ export function VibeMailInboxWithClaim({
                       : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
                   }`}
                 >
-                  📬 Single
+                  📬 {t.vibemailModeSingle}
                 </button>
                 <button
                   onClick={() => { setSendMode('broadcast'); setRecipientFid(null); setRecipientUsername(''); }}
@@ -803,7 +803,7 @@ export function VibeMailInboxWithClaim({
                       : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
                   }`}
                 >
-                  📢 Broadcast
+                  📢 {t.vibemailModeBroadcast}
                 </button>
                 <button
                   onClick={() => { setSendMode('random'); setRecipientFid(null); setRecipientUsername(''); setBroadcastRecipients([]); }}
@@ -813,7 +813,7 @@ export function VibeMailInboxWithClaim({
                       : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
                   }`}
                 >
-                  🎲 Random
+                  🎲 {t.vibemailModeRandom}
                 </button>
               </div>
             )}
@@ -834,7 +834,7 @@ export function VibeMailInboxWithClaim({
                       onClick={shuffleRandomCard}
                       className="px-3 py-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg text-vintage-gold text-xs hover:bg-vintage-gold/30"
                     >
-                      🔄 Shuffle
+                      🔄 {t.vibemailShuffle}
                     </button>
                   </div>
                 ) : (
@@ -1112,7 +1112,7 @@ export function VibeMailInboxWithClaim({
               disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && sendMode === 'single' && !recipientFid) || (sendMode === 'broadcast' && broadcastRecipients.length === 0) || (sendMode === 'random' && !randomCard)}
               className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/40 to-yellow-500/40 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/50 hover:to-yellow-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSending || isTransferPending ? '⏳ Sending...' : replyToMessageId ? '↩️ Reply' : sendMode === 'broadcast' ? `📢 Send to ${broadcastRecipients.length} (${broadcastRecipients.length * 100} VBMS)` : sendMode === 'random' ? '🎲 Random (100 VBMS)' : '➡️ Next: Gift NFT?'}
+              {isSending || isTransferPending ? `⏳ ${t.vibemailSending}` : replyToMessageId ? `↩️ ${t.vibemailReply}` : sendMode === 'broadcast' ? `📢 ${t.vibemailSendTo.replace('{count}', String(broadcastRecipients.length)).replace('{cost}', String(broadcastRecipients.length * 100))}` : sendMode === 'random' ? `🎲 ${t.vibemailRandomCost}` : `➡️ ${t.vibemailNextGift}`}
             </button>
             </div>
           </div>
