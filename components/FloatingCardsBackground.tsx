@@ -10,15 +10,36 @@ interface FloatingCard {
   imageUrl: string;
   x: number;
   duration: number;
-  delay: number; // Delay em segundos antes de começar a animação
+  delay: number;
 }
 
-export function FloatingCardsBackground() {
+interface FloatingMessage {
+  id: string;
+  message: string;
+  cardFid: number;
+  x: number;
+  duration: number;
+  delay: number;
+}
+
+interface FloatingCardsBackgroundProps {
+  userFid?: number; // Current user's FID to show their messages
+  onMessageClick?: () => void; // Callback when clicking on a floating message
+}
+
+export function FloatingCardsBackground({ userFid, onMessageClick }: FloatingCardsBackgroundProps) {
   const [floatingCards, setFloatingCards] = useState<FloatingCard[]>([]);
+  const [floatingMessages, setFloatingMessages] = useState<FloatingMessage[]>([]);
 
   const recentCards = useQuery(api.farcasterCards.getCardImagesOnly, {
     limit: 8,
   });
+
+  // Get VibeMails for the current user only
+  const recentVibeMails = useQuery(
+    api.cardVotes.getRecentVibeMails,
+    userFid ? { cardFid: userFid, limit: 4 } : "skip"
+  );
 
   useEffect(() => {
     if (recentCards && recentCards.length > 0) {
@@ -54,17 +75,45 @@ export function FloatingCardsBackground() {
     }
   }, [recentCards]);
 
+  // Process VibeMail messages
+  useEffect(() => {
+    if (recentVibeMails && recentVibeMails.length > 0) {
+      const random = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const messages = recentVibeMails.map((msg: any, index: number) => ({
+        id: msg._id || `msg-${index}`,
+        message: msg.message || "💌",
+        cardFid: msg.cardFid,
+        x: random(10, 90),
+        duration: random(22, 30),
+        delay: index * 5 + random(2, 4),
+      }));
+
+      setFloatingMessages(messages);
+    }
+  }, [recentVibeMails]);
+
   // Memoize keyframes CSS to avoid re-renders
   const keyframesCSS = useMemo(() => {
-    return floatingCards.map((_, index) => `
+    const cardKeyframes = floatingCards.map((_, index) => `
       @keyframes floatUp${index} {
         0% { transform: translateY(0) translateZ(0); }
         100% { transform: translateY(-150vh) translateZ(0); }
       }
     `).join('\n');
-  }, [floatingCards.length]);
 
-  if (floatingCards.length === 0) return null;
+    const msgKeyframes = floatingMessages.map((_, index) => `
+      @keyframes floatMsg${index} {
+        0% { transform: translateY(0) rotate(-3deg) translateZ(0); opacity: 0.6; }
+        50% { opacity: 0.8; }
+        100% { transform: translateY(-150vh) rotate(3deg) translateZ(0); opacity: 0.4; }
+      }
+    `).join('\n');
+
+    return cardKeyframes + msgKeyframes;
+  }, [floatingCards.length, floatingMessages.length]);
+
+  if (floatingCards.length === 0 && floatingMessages.length === 0) return null;
 
   return (
     <div
@@ -121,6 +170,48 @@ export function FloatingCardsBackground() {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
+        </div>
+      ))}
+
+      {/* Floating VibeMail Messages */}
+      {floatingMessages.map((msg, index) => (
+        <div
+          key={msg.id}
+          onClick={() => onMessageClick ? onMessageClick() : null}
+          style={{
+            position: 'absolute',
+            maxWidth: '180px',
+            padding: '10px 14px',
+            cursor: 'pointer',
+            left: `${msg.x}%`,
+            marginLeft: '-90px',
+            top: 'calc(100% + 100px)',
+            backgroundColor: 'rgba(212, 175, 55, 0.15)',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            borderRadius: '16px',
+            zIndex: 50 + index,
+            willChange: 'transform, opacity',
+            animation: `floatMsg${index} ${msg.duration}s linear ${msg.delay}s infinite`,
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <span style={{ fontSize: '16px' }}>💌</span>
+            <span style={{
+              color: 'rgba(212, 175, 55, 0.7)',
+              fontSize: '12px',
+              fontStyle: 'italic',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {msg.message}
+            </span>
+          </div>
         </div>
       ))}
 
