@@ -59,6 +59,7 @@ export default function FidCardPage() {
   const scoreHistory = useQuery(api.neynarScore.getScoreHistory, { fid });
   const saveScoreCheck = useMutation(api.neynarScore.saveScoreCheck);
   const upgradeCardRarity = useMutation(api.farcasterCards.upgradeCardRarity);
+  const refreshCardScore = useMutation(api.farcasterCards.refreshCardScore);
   const updateCardImages = useMutation(api.farcasterCards.updateCardImages);
 
   // Vibe Rewards
@@ -324,13 +325,23 @@ export default function FidCardPage() {
   };
 
   // Check if upgrade is available (only for card owner)
+  // Allow upgrade if: rarity improved OR score changed (to fix wrong scores)
   const canUpgrade = () => {
     if (!isOwnCard) return false; // Only card owner can upgrade
     if (!card || !neynarScoreData) return false;
     const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
     const currentRarityIndex = rarityOrder.indexOf(card.rarity);
     const newRarityIndex = rarityOrder.indexOf(neynarScoreData.rarity);
-    return newRarityIndex > currentRarityIndex;
+    const rarityImproved = newRarityIndex > currentRarityIndex;
+    const scoreDifferent = Math.abs(neynarScoreData.score - card.neynarScore) > 0.001;
+    return rarityImproved || scoreDifferent;
+  };
+
+  // Check if this is a rarity upgrade or just a score refresh
+  const isRarityUpgrade = () => {
+    if (!card || !neynarScoreData) return false;
+    const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
+    return rarityOrder.indexOf(neynarScoreData.rarity) > rarityOrder.indexOf(card.rarity);
   };
 
   // Play evolution sound
@@ -367,27 +378,39 @@ export default function FidCardPage() {
     await new Promise(resolve => setTimeout(resolve, 1500)); // Transform (longer to match sound)
 
     try {
-      // Step 1: Upgrade rarity/power in database
-      const result = await upgradeCardRarity({
-        fid: card.fid,
-        newNeynarScore: neynarScoreData.score,
-        newRarity: neynarScoreData.rarity,
-      });
+      // Step 1: Upgrade rarity/power OR just refresh score
+      let result;
+      let newBounty;
 
-      const newBounty = result.newPower * 10;
+      if (isRarityUpgrade()) {
+        // Full upgrade - changes rarity, power, and score
+        result = await upgradeCardRarity({
+          fid: card.fid,
+          newNeynarScore: neynarScoreData.score,
+          newRarity: neynarScoreData.rarity,
+        });
+        newBounty = result.newPower * 10;
+      } else {
+        // Just refresh score - keep rarity and power
+        result = await refreshCardScore({
+          fid: card.fid,
+          newNeynarScore: neynarScoreData.score,
+        });
+        newBounty = card.power * 10; // Keep same bounty
+      }
 
       // Step 2: Regenerate video with new values
       setEvolutionPhase('regenerating');
       setRegenerationStatus('Generating new card image...');
 
-      // Generate new card image with updated bounty/rarity
+      // Generate new card image with updated values
       const cardImageDataUrl = await generateFarcasterCardImage({
         pfpUrl: card.pfpUrl,
         displayName: card.displayName,
         username: card.username,
         fid: card.fid,
-        neynarScore: card.neynarScore, // Keep original neynar score on card
-        rarity: result.newRarity,
+        neynarScore: neynarScoreData.score, // Use NEW score for card image
+        rarity: isRarityUpgrade() ? result.newRarity : card.rarity, // Use new or keep current
         suit: card.suit as any,
         rank: card.rank as any,
         suitSymbol: card.suitSymbol,
