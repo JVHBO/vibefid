@@ -33,11 +33,12 @@ export function FarcasterNotificationRegistration() {
         if (notificationDetails?.notificationDetails) {
           const { token, url } = notificationDetails.notificationDetails;
 
-          // Save to Convex
+          // Save to Convex with app identifier
           await saveToken({
             fid,
             token,
             url,
+            app: "vibefid", // Identify this is VibeFID app
           });
         }
       } catch (error) {
