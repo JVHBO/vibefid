@@ -907,7 +907,6 @@ export function VibeMailInboxWithClaim({
                       message: composerMessage,
                       audioId: composerAudioId || undefined,
                       imageId: composerImageId || undefined,
-                      isPaid: !hasFreeVotes, // Pass isPaid based on free votes
                     });
                   }
                   AudioManager.buttonClick();
