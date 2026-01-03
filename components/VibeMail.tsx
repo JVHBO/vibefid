@@ -681,8 +681,8 @@ export function VibeMailInboxWithClaim({
         {showComposer && myFid && myAddress && (
           <div className="fixed inset-0 z-[500] bg-black/95 flex items-center justify-center p-4">
             <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col">
-            {/* HEADER - BIG RED CLOSE BUTTON */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-vintage-gold/50">
+            {/* HEADER */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-vintage-gold/30">
               <button
                 onClick={() => {
                   setShowComposer(false);
@@ -700,14 +700,12 @@ export function VibeMailInboxWithClaim({
                     composerAudioRef.current.pause();
                   }
                 }}
-                className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg"
-              >
-                ✕ VOLTAR
-              </button>
+                className="w-8 h-8 bg-vintage-black/50 border border-vintage-gold/30 rounded-full text-vintage-gold hover:bg-vintage-gold/20 transition-all flex items-center justify-center"
+              >X</button>
               <h3 className="text-vintage-gold font-bold text-lg">
-                {replyToMessageId ? '↩️ Reply' : '✉️ New VibeMail'}
+                {replyToMessageId ? 'Reply' : 'New VibeMail'}
               </h3>
-              <div className="w-24" />
+              <div className="w-10" />
             </div>
 
             {/* Reply indicator */}
