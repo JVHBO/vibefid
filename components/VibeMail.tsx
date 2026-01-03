@@ -9,6 +9,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { fidTranslations } from '@/lib/fidTranslations';
 import { translations } from '@/lib/translations';
 import { sdk } from '@farcaster/miniapp-sdk';
+import { useTransferVBMS } from '@/lib/hooks/useVBMSContracts';
+import { CONTRACTS } from '@/lib/contracts';
+import { parseEther } from 'viem';
+
+const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
 
 
 
@@ -365,7 +370,7 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
                 className="w-10 h-10 rounded-full border-2 border-vintage-gold animate-pulse"
               />
               <p className="text-vintage-gold font-bold text-xs">
-                {secretary.name} intercepted this message!
+                {secretary.name} {t.secretaryInterceptedMessage}
               </p>
             </div>
 
@@ -537,8 +542,20 @@ export function VibeMailInboxWithClaim({
   const [composerImageId, setComposerImageId] = useState<string | null>(null);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const composerAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
   const sendDirectMutation = useMutation(api.cardVotes.sendDirectVibeMail);
   const replyMutation = useMutation(api.cardVotes.replyToMessage);
+
+  // TX hook for VibeMail (free vote = 0 VBMS but requires TX signature)
+  const { transfer: transferVBMS, isPending: isTransferPending } = useTransferVBMS();
+
+  // Free VibeMail limit (uses same system as voting)
+  const freeVotesRemaining = useQuery(
+    api.cardVotes.getUserFreeVotesRemaining,
+    myFid ? { voterFid: myFid } : 'skip'
+  );
+  const hasFreeVotes = (freeVotesRemaining?.remaining ?? 0) > 0;
+
   const searchResults = useQuery(
     api.cardVotes.searchCardsForVibeMail,
     searchQuery.length >= 2 ? { searchTerm: searchQuery, limit: 5 } : 'skip'
@@ -840,14 +857,39 @@ export function VibeMailInboxWithClaim({
               </div>
             )}
 
-            {/* Send Button */}
+            {/* Free VibeMail limit display */}
+            <div className="text-center text-xs mb-2">
+              {hasFreeVotes ? (
+                <span className="text-green-400">🆓 {t.freeVotesRemaining}: {freeVotesRemaining?.remaining ?? 0}</span>
+              ) : (
+                <span className="text-vintage-gold">💰 {t.costPerVote}: {VIBEMAIL_COST_VBMS} VBMS</span>
+              )}
+            </div>
+
+            {/* Send Button - Requires TX signature */}
             <button
               onClick={async () => {
-                if (isSending) return;
+                if (isSending || isTransferPending) return;
                 if (!composerMessage.trim() && !composerImageId) return;
+                if (!myAddress) return;
 
                 setIsSending(true);
+                setTxHash(null);
                 try {
+                  // Step 1: Calculate cost - 0 for free, 100 for paid
+                  const isPaid = !hasFreeVotes;
+                  const cost = isPaid ? parseEther(VIBEMAIL_COST_VBMS) : BigInt(0);
+                  console.log(isPaid ? "💰 Paid VibeMail" : "🆓 Free VibeMail", "- transferring", cost.toString(), "VBMS...");
+
+                  // Step 2: Require TX signature
+                  const hash = await transferVBMS(
+                    CONTRACTS.VBMSPoolTroll as `0x${string}`,
+                    cost
+                  );
+                  console.log("✅ VibeMail TX signed:", hash);
+                  setTxHash(hash);
+
+                  // Step 3: Save message to Convex
                   if (replyToMessageId) {
                     await replyMutation({
                       originalMessageId: replyToMessageId,
@@ -865,6 +907,7 @@ export function VibeMailInboxWithClaim({
                       message: composerMessage,
                       audioId: composerAudioId || undefined,
                       imageId: composerImageId || undefined,
+                      isPaid: !hasFreeVotes, // Pass isPaid based on free votes
                     });
                   }
                   AudioManager.buttonClick();
@@ -878,16 +921,17 @@ export function VibeMailInboxWithClaim({
                   setComposerImageId(null);
                   setShowSoundPicker(false);
                   setShowImagePicker(false);
-                } catch (err) {
-                  console.error('Failed to send message:', err);
+                } catch (err: any) {
+                  console.error('Failed to send VibeMail:', err);
+                  // Don't save if TX was rejected
                 } finally {
                   setIsSending(false);
                 }
               }}
-              disabled={isSending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && !recipientFid)}
+              disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && !recipientFid)}
               className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/40 to-yellow-500/40 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/50 hover:to-yellow-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSending ? '⏳ Sending...' : '📨 Send Anonymously'}
+              {isSending || isTransferPending ? '⏳ Confirm TX...' : hasFreeVotes ? '📨 Send Free (TX)' : `📨 Send (${VIBEMAIL_COST_VBMS} VBMS)`}
             </button>
           </div>
         )}
@@ -903,7 +947,7 @@ export function VibeMailInboxWithClaim({
                 className="w-10 h-10 rounded-full border-2 border-vintage-gold animate-pulse"
               />
               <p className="text-vintage-gold font-bold text-xs">
-                {secretary.name} intercepted this message!
+                {secretary.name} {t.secretaryInterceptedMessage}
               </p>
             </div>
 
@@ -971,7 +1015,7 @@ export function VibeMailInboxWithClaim({
                 }}
                 className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/30 to-yellow-500/30 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/40 hover:to-yellow-500/40 transition-all flex items-center justify-center gap-2"
               >
-                ↩️ Reply Anonymously
+                {t.replyAnonymously}
               </button>
             )}
 
@@ -982,7 +1026,7 @@ export function VibeMailInboxWithClaim({
               }}
               className="mt-3 w-full py-2 bg-vintage-black border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10"
             >
-              Voltar
+              {t.back}
             </button>
           </div>
         ) : (
