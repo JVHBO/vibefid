@@ -679,8 +679,8 @@ export function VibeMailInboxWithClaim({
 
         {/* VibeMail Composer Modal */}
         {showComposer && myFid && myAddress && (
-          <div className="absolute inset-0 bg-vintage-charcoal rounded-2xl p-4 flex flex-col z-20">
-            <div className="flex items-center justify-between mb-3">
+          <div className="absolute inset-0 bg-vintage-charcoal rounded-2xl p-4 flex flex-col z-20 overflow-y-auto">
+            <div className="flex items-center justify-between mb-3 sticky top-0 bg-vintage-charcoal py-2 z-10">
               <button
                 onClick={() => {
                   setShowComposer(false);
@@ -698,9 +698,9 @@ export function VibeMailInboxWithClaim({
                     composerAudioRef.current.pause();
                   }
                 }}
-                className="text-vintage-gold text-sm hover:text-vintage-gold/80"
+                className="text-vintage-gold text-sm hover:text-vintage-gold/80 bg-vintage-black/50 px-3 py-1 rounded-lg border border-vintage-gold/30"
               >
-                ← Back
+                ← {t.back}
               </button>
               <h3 className="text-vintage-gold font-bold">
                 {replyToMessageId ? '↩️ Reply' : '✉️ New'}
