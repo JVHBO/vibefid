@@ -1,0 +1,42 @@
+Checking 100 videos...
+✅ 0/100 checked...
+❌ 332658 gobfather - NO DURATION
+❌ 212556 nhagio - NO DURATION
+❌ 519300 uvtrader - NO DURATION
+❌ 13182 sekoweed.eth - NO DURATION
+❌ 1399843 emcsteez603 - NO DURATION
+❌ 344069 mkcrypto - NO DURATION
+❌ 449044 pedramiix.eth - NO DURATION
+❌ 337876 berkeyaruk - NO DURATION
+❌ 17296 york - NO DURATION
+❌ 346906 tantan777 - NO DURATION
+❌ 310953 nuelprime - NO DURATION
+❌ 2802 garrett - NO DURATION
+❌ 269091 nickysap - NO DURATION
+❌ 248111 darkoh.eth - NO DURATION
+❌ 8152 undefined - NO DURATION
+❌ 473366 daimaverick.base.eth - NO DURATION
+❌ 286418 shonari - NO DURATION
+❌ 8942 to - NO DURATION
+❌ 250003 febrianandriana - NO DURATION
+❌ 2005436 reffpop.base.eth - NO DURATION
+❌ 890554 marymj - NO DURATION
+❌ 1319832 shutupmate - NO DURATION
+✅ 40/100 checked...
+❌ 437668 banana0877 - NO DURATION
+❌ 415716 aruun.eth - NO DURATION
+✅ 50/100 checked...
+❌ 933481 mandyzhu - NO DURATION
+❌ 1514187 liljr55 - NO DURATION
+❌ 1009822 0x0embryo.eth - NO DURATION
+❌ 784230 tormbreakeer - NO DURATION
+❌ 994120 nft-einstein - NO DURATION
+❌ 213559 mustang - NO DURATION
+❌ 1148848 jusmemecoin - NO DURATION
+❌ 1406370 post-it.eth - NO DURATION
+✅ 70/100 checked...
+❌ 404873 veriznode.base.eth - NO DURATION
+❌ 558207 fracchia33 - NO DURATION
+✅ 80/100 checked...
+❌ 414258 babytomato.eth - NO DURATION
+✅ 90/100 checked...

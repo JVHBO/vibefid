@@ -256,7 +256,7 @@ interface VibeMailMessage {
   message?: string;
   audioId?: string;
   imageId?: string;
-  isRead: boolean;
+  isRead?: boolean;
   createdAt: number;
   voteCount: number;
   isPaid: boolean;
@@ -264,6 +264,7 @@ interface VibeMailMessage {
   isSent?: boolean;
   recipientFid?: number;
   recipientUsername?: string;
+  recipientPfpUrl?: string;
 }
 
 interface VibeMailInboxProps {
@@ -1071,13 +1072,16 @@ interface VibeMailComposerProps {
   setMessage: (msg: string) => void;
   audioId: string | null;
   setAudioId: (id: string | null) => void;
+  imageId?: string | null;
+  setImageId?: (id: string | null) => void;
 }
 
 // VibeMail Composer - Inline component for vote modal
-export function VibeMailComposer({ message, setMessage, audioId, setAudioId }: VibeMailComposerProps) {
+export function VibeMailComposer({ message, setMessage, audioId, setAudioId, imageId, setImageId }: VibeMailComposerProps) {
   const { lang } = useLanguage();
   const t = fidTranslations[lang];
   const [showSoundPicker, setShowSoundPicker] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [previewSound, setPreviewSound] = useState<string | null>(null);
@@ -1119,7 +1123,10 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId }: V
         placeholder={t.vibeMailPlaceholder}
         className="w-full h-20 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg p-2 text-vintage-ice text-sm placeholder:text-vintage-ice/30 resize-none focus:border-vintage-gold focus:outline-none"
       />
-      <p className="text-right text-vintage-ice/40 text-xs">{message.length}/200</p>
+      <div className="flex justify-between items-center">
+        <p className="text-vintage-gold/60 text-xs">{t.vibeImageTip}</p>
+        <p className="text-vintage-ice/40 text-xs">{message.length}/200</p>
+      </div>
 
       {/* Sound Picker */}
       <div>
@@ -1160,6 +1167,46 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId }: V
           </div>
         )}
       </div>
+
+      {/* Image Picker */}
+      {setImageId && (
+        <div>
+          <button
+            onClick={() => {
+              AudioManager.buttonClick();
+              setShowImagePicker(!showImagePicker);
+            }}
+            className="w-full flex items-center justify-between p-2 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg text-vintage-ice text-sm hover:border-vintage-gold/50"
+          >
+            <span>
+              {imageId ? `🖼️ ${VIBEMAIL_IMAGES.find(i => i.id === imageId)?.name}` : '🖼️ Add meme image (optional)'}
+            </span>
+            <span className="text-vintage-gold">{showImagePicker ? '▲' : '▼'}</span>
+          </button>
+
+          {showImagePicker && (
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {VIBEMAIL_IMAGES.map((img) => (
+                <button
+                  key={img.id}
+                  onClick={() => setImageId(imageId === img.id ? null : img.id)}
+                  className={`p-1 rounded-lg border transition-all ${
+                    imageId === img.id
+                      ? 'border-vintage-gold bg-vintage-gold/20'
+                      : 'border-vintage-gold/20 hover:border-vintage-gold/50'
+                  }`}
+                >
+                  {img.isVideo ? (
+                    <video src={img.file} className="w-full h-10 object-cover rounded" muted loop autoPlay playsInline />
+                  ) : (
+                    <img src={img.file} alt={img.name} className="w-full h-10 object-cover rounded" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

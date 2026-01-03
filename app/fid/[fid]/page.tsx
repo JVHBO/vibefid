@@ -156,12 +156,14 @@ export default function FidCardPage() {
   const [showFreeVoteModal, setShowFreeVoteModal] = useState(false);
   const [freeVibeMailMessage, setFreeVibeMailMessage] = useState('');
   const [freeVibeMailAudioId, setFreeVibeMailAudioId] = useState<string | null>(null);
+  const [freeVibeMailImageId, setFreeVibeMailImageId] = useState<string | null>(null);
   const [showVoteExplainModal, setShowVoteExplainModal] = useState(false);
   const [paidVoteCount, setPaidVoteCount] = useState(1);
 
   // VibeMail state
   const [vibeMailMessage, setVibeMailMessage] = useState('');
   const [vibeMailAudioId, setVibeMailAudioId] = useState<string | null>(null);
+  const [vibeMailImageId, setVibeMailImageId] = useState<string | null>(null);
   const [showVibeMailInbox, setShowVibeMailInbox] = useState(false);
   const unreadMessageCount = useQuery(
     api.cardVotes.getUnreadMessageCount,
@@ -1340,6 +1342,8 @@ export default function FidCardPage() {
                 setMessage={setVibeMailMessage}
                 audioId={vibeMailAudioId}
                 setAudioId={setVibeMailAudioId}
+                imageId={vibeMailImageId}
+                setImageId={setVibeMailImageId}
               />
 
               {/* Cost Summary */}
@@ -1371,12 +1375,13 @@ export default function FidCardPage() {
                 <button
                   onClick={async () => {
                     AudioManager.buttonClick();
-                    const result = await votePaid(paidVoteCount, vibeMailMessage, vibeMailAudioId || undefined);
+                    const result = await votePaid(paidVoteCount, vibeMailMessage, vibeMailAudioId || undefined, vibeMailImageId || undefined);
                     if (result.success) {
                       setShowPaidVoteModal(false);
                       setPaidVoteCount(1);
                       setVibeMailMessage('');
                       setVibeMailAudioId(null);
+                      setVibeMailImageId(null);
                     } else {
                       setError(result.error || 'Vote failed');
                       setTimeout(() => setError(null), 5000);
@@ -1414,6 +1419,7 @@ export default function FidCardPage() {
                     setShowFreeVoteModal(false);
                     setFreeVibeMailMessage('');
                     setFreeVibeMailAudioId(null);
+                    setFreeVibeMailImageId(null);
                   }}
                   className="w-8 h-8 bg-vintage-black/50 border border-vintage-gold/30 rounded-full text-vintage-gold hover:bg-vintage-gold/20 transition-all text-sm font-bold"
                 >
@@ -1431,6 +1437,8 @@ export default function FidCardPage() {
                 setMessage={setFreeVibeMailMessage}
                 audioId={freeVibeMailAudioId}
                 setAudioId={setFreeVibeMailAudioId}
+                imageId={freeVibeMailImageId}
+                setImageId={setFreeVibeMailImageId}
               />
 
               {/* Buttons */}
@@ -1441,6 +1449,7 @@ export default function FidCardPage() {
                     setShowFreeVoteModal(false);
                     setFreeVibeMailMessage('');
                     setFreeVibeMailAudioId(null);
+                    setFreeVibeMailImageId(null);
                   }}
                   className="flex-1 py-2 bg-vintage-burnt-gold/30 hover:bg-vintage-burnt-gold/50 text-vintage-gold font-bold rounded-xl transition-all"
                 >
@@ -1449,11 +1458,12 @@ export default function FidCardPage() {
                 <button
                   onClick={async () => {
                     AudioManager.buttonClick();
-                    const result = await voteFree(freeVibeMailMessage || undefined, freeVibeMailAudioId || undefined);
+                    const result = await voteFree(freeVibeMailMessage || undefined, freeVibeMailAudioId || undefined, freeVibeMailImageId || undefined);
                     if (result.success) {
                       setShowFreeVoteModal(false);
                       setFreeVibeMailMessage('');
                       setFreeVibeMailAudioId(null);
+                      setFreeVibeMailImageId(null);
                     } else {
                       setError(result.error || 'Vote failed');
                       setTimeout(() => setError(null), 5000);
