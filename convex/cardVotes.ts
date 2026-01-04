@@ -501,7 +501,7 @@ export const markMessageAsRead = mutation({
   args: { messageId: v.id("cardVotes") },
   handler: async (ctx, args) => {
     const vote = await ctx.db.get(args.messageId);
-    if (!vote || !vote.message) {
+    if (!vote || vote.message === undefined) {
       return { success: false, error: "Message not found" };
     }
 
@@ -1046,7 +1046,7 @@ export const deleteMessage = mutation({
   },
   handler: async (ctx, args) => {
     const vote = await ctx.db.get(args.messageId);
-    if (!vote || !vote.message) {
+    if (!vote || vote.message === undefined) {
       return { success: false, error: "Message not found" };
     }
     if (vote.cardFid !== args.ownerFid) {
@@ -1069,7 +1069,7 @@ export const deleteMessages = mutation({
 
     for (const messageId of args.messageIds) {
       const vote = await ctx.db.get(messageId);
-      if (!vote || !vote.message) {
+      if (!vote || vote.message === undefined) {
         errors++;
         continue;
       }
