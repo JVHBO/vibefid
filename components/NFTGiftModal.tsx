@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWaitForTransactionReceipt } from 'wagmi';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useTransferVBMS } from '@/lib/hooks/useVBMSContracts';
 import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
+import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from '@/lib/hooks/useWriteContractWithAttribution';
 
 // ERC-721 ABI for safeTransferFrom
 const ERC721_ABI = [
@@ -93,7 +94,7 @@ export function NFTGiftModal({
   const { transfer: transferVBMS, isPending: isTransferPending } = useTransferVBMS();
 
   // Wagmi write contract hook
-  const { writeContractAsync } = useWriteContract();
+  const { writeContractAsync } = useWriteContractWithAttribution();
 
   // Hardcoded giftable collections - show immediately, load NFTs on demand
   const GIFTABLE_COLLECTIONS: CollectionInfo[] = [
@@ -175,12 +176,16 @@ export function NFTGiftModal({
                   ],
                 });
 
+                // Add builder code suffix for attribution
+                console.log('Adding builder code:', BUILDER_CODE);
+                const dataWithBuilderCode = (data + dataSuffix.slice(2)) as `0x${string}`;
+
                 nftTxHash = await provider.request({
                   method: 'eth_sendTransaction',
                   params: [{
                     from: address,
                     to: selectedNft.contractAddress as `0x${string}`,
-                    data,
+                    data: dataWithBuilderCode,
                   }],
                 }) as string;
               }
