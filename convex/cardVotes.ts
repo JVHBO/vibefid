@@ -1033,3 +1033,54 @@ export const getRandomCardMutation = mutation({
     };
   },
 });
+
+// ============================================================================
+// DELETE MESSAGES FROM INBOX
+// ============================================================================
+
+// Delete a single message from inbox (only owner can delete)
+export const deleteMessage = mutation({
+  args: {
+    messageId: v.id("cardVotes"),
+    ownerFid: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const vote = await ctx.db.get(args.messageId);
+    if (!vote || !vote.message) {
+      return { success: false, error: "Message not found" };
+    }
+    if (vote.cardFid !== args.ownerFid) {
+      return { success: false, error: "Not authorized" };
+    }
+    await ctx.db.delete(args.messageId);
+    return { success: true };
+  },
+});
+
+// Delete multiple messages from inbox
+export const deleteMessages = mutation({
+  args: {
+    messageIds: v.array(v.id("cardVotes")),
+    ownerFid: v.number(),
+  },
+  handler: async (ctx, args) => {
+    let deleted = 0;
+    let errors = 0;
+
+    for (const messageId of args.messageIds) {
+      const vote = await ctx.db.get(messageId);
+      if (!vote || !vote.message) {
+        errors++;
+        continue;
+      }
+      if (vote.cardFid !== args.ownerFid) {
+        errors++;
+        continue;
+      }
+      await ctx.db.delete(messageId);
+      deleted++;
+    }
+
+    return { success: true, deleted, errors };
+  },
+});
