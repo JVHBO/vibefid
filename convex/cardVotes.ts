@@ -539,12 +539,15 @@ export const broadcastVibeMail = mutation({
     recipientFids: v.array(v.number()), // List of FIDs to send to
     message: v.string(),
     audioId: v.optional(v.string()),
-    senderFid: v.optional(v.number()), // Admin sender FID (default: 0 for system)
+    imageId: v.optional(v.string()), // Meme image
+    senderFid: v.optional(v.number()), // Sender FID
+    senderAddress: v.optional(v.string()), // Sender address
   },
   handler: async (ctx, args) => {
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
-    const senderFid = args.senderFid || 0; // 0 = system message
+    const senderFid = args.senderFid || 0;
+    const senderAddress = args.senderAddress?.toLowerCase() || "0x0000000000000000000000000000000000000000";
 
     const results = [];
 
@@ -554,13 +557,14 @@ export const broadcastVibeMail = mutation({
         await ctx.db.insert("cardVotes", {
           cardFid: recipientFid,
           voterFid: senderFid,
-          voterAddress: "0x0000000000000000000000000000000000000000", // System address
+          voterAddress: senderAddress,
           date: today,
           createdAt: now,
-          voteCount: 0, // No vote, just message
-          isPaid: false,
-          message: args.message.slice(0, 1000), // Increased limit for system messages
+          voteCount: 1,
+          isPaid: true,
+          message: args.message.slice(0, 200),
           audioId: args.audioId,
+          imageId: args.imageId,
           isRead: false,
         });
 
