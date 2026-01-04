@@ -1434,16 +1434,12 @@ export function VibeMailInboxWithClaim({
                       <button
                         onClick={async () => {
                           if (!cardFid) return;
-                          const confirmed = confirm((t.vibemailDeleteConfirm || 'Delete {count} messages?').replace('{count}', String(selectedForDelete.size)));
-                          if (!confirmed) return;
                           try {
                             const result = await deleteMessagesMutation({
                               messageIds: Array.from(selectedForDelete) as Id<'cardVotes'>[],
                               ownerFid: cardFid,
                             });
-                            if (result.success) {
-                              alert((t.vibemailDeleteSuccess || '✅ {count} messages deleted').replace('{count}', String(result.deleted)));
-                            }
+                            console.log('Deleted:', result.deleted, 'messages');
                             setSelectedForDelete(new Set());
                             setDeleteMode(false);
                           } catch (err) {
