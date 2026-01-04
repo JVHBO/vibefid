@@ -573,14 +573,28 @@ export function VibeMailInboxWithClaim({
   const sendDirectMutation = useMutation(api.cardVotes.sendDirectVibeMail);
   const replyMutation = useMutation(api.cardVotes.replyToMessage);
   const broadcastMutation = useMutation(api.cardVotes.broadcastVibeMail);
+  const deleteMessagesMutation = useMutation(api.cardVotes.deleteMessages);
 
   // Send mode: 'single' | 'broadcast' | 'random'
   const [sendMode, setSendMode] = useState<'single' | 'broadcast' | 'random'>('single');
   const [broadcastRecipients, setBroadcastRecipients] = useState<Array<{ fid: number; username: string }>>([]);
 
+  // Broadcast result feedback
+  const [broadcastResult, setBroadcastResult] = useState<{ success: boolean; sent: number; total: number; failed: number } | null>(null);
+
+  // Delete mode state
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set());
+
+  // LIMIT: max 100 recipients for broadcast
+  const MAX_BROADCAST_RECIPIENTS = 100;
+
   // Random card state and mutation
   const [randomCard, setRandomCard] = useState<{ fid: number; username: string; pfpUrl?: string; displayName?: string; address?: string } | null>(null);
   const getRandomCardMutation = useMutation(api.cardVotes.getRandomCardMutation);
+
+  // Random list mode (multiple random cards)
+  const [randomList, setRandomList] = useState<Array<{ fid: number; username: string; pfpUrl?: string }>>([]);
 
   // Fetch random card when entering random mode
   useEffect(() => {
@@ -594,6 +608,14 @@ export function VibeMailInboxWithClaim({
     if (myFid) {
       const newCard = await getRandomCardMutation({ excludeFid: myFid });
       setRandomCard(newCard);
+    }
+  };
+
+  // Add current random card to list
+  const addRandomToList = () => {
+    if (randomCard && !randomList.some(c => c.fid === randomCard.fid)) {
+      setRandomList(prev => [...prev, { fid: randomCard.fid, username: randomCard.username, pfpUrl: randomCard.pfpUrl }]);
+      shuffleRandomCard(); // Get new random card
     }
   };
 
@@ -820,33 +842,79 @@ export function VibeMailInboxWithClaim({
 
             {/* Random Recipient Display */}
             {sendMode === 'random' && !replyToMessageId && (
-              <div className="mb-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg p-3">
-                {randomCard ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">🎲</span>
-                      <div>
-                        <p className="text-vintage-gold font-bold text-sm">@{randomCard.username}</p>
-                        <p className="text-vintage-ice/50 text-xs">FID: {randomCard.fid}</p>
+              <div className="mb-3">
+                {/* Random List - Cards already added */}
+                {randomList.length > 0 && (
+                  <div className="mb-2 bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg p-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-vintage-gold text-xs font-bold">
+                        📋 {(t.vibemailRandomListCount || '{count} in list').replace('{count}', String(randomList.length))}
+                      </p>
+                      <button
+                        onClick={() => setRandomList([])}
+                        className="text-red-400 text-xs hover:text-red-300"
+                      >
+                        {t.vibemailClearList || 'Clear'}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                      {randomList.map(r => (
+                        <span key={r.fid} className="inline-flex items-center gap-1 bg-purple-500/20 border border-purple-500/50 rounded-full px-2 py-0.5 text-xs text-vintage-ice">
+                          @{r.username}
+                          <button
+                            onClick={() => setRandomList(prev => prev.filter(p => p.fid !== r.fid))}
+                            className="text-red-400 hover:text-red-300"
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Current Random Card + Shuffle/Add buttons */}
+                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg p-3">
+                  {randomCard ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🎲</span>
+                        <div>
+                          <p className="text-vintage-gold font-bold text-sm">@{randomCard.username}</p>
+                          <p className="text-vintage-ice/50 text-xs">FID: {randomCard.fid}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={addRandomToList}
+                          disabled={randomList.some(c => c.fid === randomCard.fid)}
+                          className="px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-xs hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ➕ {t.vibemailAddToList || 'Add'}
+                        </button>
+                        <button
+                          onClick={shuffleRandomCard}
+                          className="px-3 py-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg text-vintage-gold text-xs hover:bg-vintage-gold/30"
+                        >
+                          🔄 {t.vibemailShuffle}
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={shuffleRandomCard}
-                      className="px-3 py-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg text-vintage-gold text-xs hover:bg-vintage-gold/30"
-                    >
-                      🔄 {t.vibemailShuffle}
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-vintage-ice/50 text-sm text-center">Loading random recipient...</p>
-                )}
+                  ) : (
+                    <p className="text-vintage-ice/50 text-sm text-center">Loading random recipient...</p>
+                  )}
+                </div>
+                <p className="text-vintage-ice/40 text-xs mt-1 text-center">
+                  {randomList.length > 0
+                    ? `📢 ${(t.vibemailSendToList || 'Send to list ({count})').replace('{count}', String(randomList.length))} = ${randomList.length * 100} VBMS`
+                    : `🎲 ${t.vibemailRandomCost || 'Send to 1 random = 100 VBMS'}`
+                  }
+                </p>
               </div>
             )}
 
             {/* Broadcast Recipients (multiple selection) */}
             {sendMode === 'broadcast' && !replyToMessageId && (
               <div className="mb-3">
-                <div className="flex flex-wrap gap-1 mb-2">
+                <div className="flex flex-wrap gap-1 mb-2 max-h-24 overflow-y-auto">
                   {broadcastRecipients.map(r => (
                     <span key={r.fid} className="inline-flex items-center gap-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-full px-2 py-1 text-xs text-vintage-gold">
                       @{r.username}
@@ -857,33 +925,67 @@ export function VibeMailInboxWithClaim({
                     </span>
                   ))}
                 </div>
-                <p className="text-vintage-ice/50 text-xs mb-1">📢 {broadcastRecipients.length} recipients selected</p>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search to add recipients..."
-                    className="w-full bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-3 py-2 text-vintage-ice text-sm placeholder:text-vintage-ice/40 focus:outline-none focus:border-vintage-gold"
-                  />
-                  {searchResults && searchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-vintage-charcoal border border-vintage-gold/50 rounded-lg overflow-hidden z-30 max-h-40 overflow-y-auto">
-                      {searchResults.filter((card: { fid: number }) => !broadcastRecipients.some(r => r.fid === card.fid)).map((card: { fid: number; username: string }) => (
-                        <button
-                          key={card.fid}
-                          onClick={() => {
-                            setBroadcastRecipients(prev => [...prev, { fid: card.fid, username: card.username }]);
-                            setSearchQuery('');
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-vintage-gold/20 text-vintage-ice text-sm border-b border-vintage-gold/20 last:border-0"
-                        >
-                          <strong>{card.username}</strong>
-                          <span className="text-vintage-ice/50 ml-2">FID: {card.fid}</span>
-                        </button>
-                      ))}
-                    </div>
+                <div className="flex justify-between items-center mb-1">
+                  <p className={`text-xs ${broadcastRecipients.length >= MAX_BROADCAST_RECIPIENTS ? 'text-red-400' : 'text-vintage-ice/50'}`}>
+                    📢 {broadcastRecipients.length}/{MAX_BROADCAST_RECIPIENTS} {t.vibemailBroadcastLimit || `max ${MAX_BROADCAST_RECIPIENTS}`}
+                  </p>
+                  {broadcastRecipients.length > 0 && (
+                    <button
+                      onClick={() => setBroadcastRecipients([])}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      {t.vibemailClearList || 'Clear'}
+                    </button>
                   )}
                 </div>
+                {broadcastRecipients.length < MAX_BROADCAST_RECIPIENTS && (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t.vibemailSearchPlayers || "Search to add recipients..."}
+                      className="w-full bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-3 py-2 text-vintage-ice text-sm placeholder:text-vintage-ice/40 focus:outline-none focus:border-vintage-gold"
+                    />
+                    {searchResults && searchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-vintage-charcoal border border-vintage-gold/50 rounded-lg overflow-hidden z-30 max-h-40 overflow-y-auto">
+                        {searchResults.filter((card: { fid: number }) => !broadcastRecipients.some(r => r.fid === card.fid)).map((card: { fid: number; username: string }) => (
+                          <button
+                            key={card.fid}
+                            onClick={() => {
+                              if (broadcastRecipients.length < MAX_BROADCAST_RECIPIENTS) {
+                                setBroadcastRecipients(prev => [...prev, { fid: card.fid, username: card.username }]);
+                                setSearchQuery('');
+                              }
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-vintage-gold/20 text-vintage-ice text-sm border-b border-vintage-gold/20 last:border-0"
+                          >
+                            <strong>{card.username}</strong>
+                            <span className="text-vintage-ice/50 ml-2">FID: {card.fid}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Broadcast Result Feedback */}
+                {broadcastResult && (
+                  <div className={`mt-2 p-2 rounded-lg text-xs ${
+                    broadcastResult.failed === 0
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                      : broadcastResult.sent > 0
+                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/50'
+                  }`}>
+                    {broadcastResult.failed === 0
+                      ? (t.vibemailBroadcastSuccess || '✅ Broadcast sent!').replace('{sent}', String(broadcastResult.sent)).replace('{total}', String(broadcastResult.total))
+                      : broadcastResult.sent > 0
+                        ? (t.vibemailBroadcastPartial || '⚠️ Partial').replace('{sent}', String(broadcastResult.sent)).replace('{total}', String(broadcastResult.total)).replace('{failed}', String(broadcastResult.failed))
+                        : (t.vibemailBroadcastError || '❌ Error').replace('{error}', 'All messages failed')
+                    }
+                    <button onClick={() => setBroadcastResult(null)} className="ml-2 text-vintage-ice/50 hover:text-vintage-ice">✕</button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1056,11 +1158,13 @@ export function VibeMailInboxWithClaim({
                 if (sendMode === 'broadcast' && broadcastRecipients.length > 0) {
                   const totalCost = BigInt(broadcastRecipients.length) * parseEther(VIBEMAIL_COST_VBMS);
                   setIsSending(true);
+                  setBroadcastResult(null);
                   try {
                     // Transfer VBMS to contract (payment for broadcast)
                     const txHash = await transferVBMS(CONTRACTS.VBMSPoolTroll, totalCost);
                     if (!txHash) {
                       console.error('Broadcast payment failed');
+                      setBroadcastResult({ success: false, sent: 0, total: broadcastRecipients.length, failed: broadcastRecipients.length });
                       setIsSending(false);
                       return;
                     }
@@ -1076,7 +1180,14 @@ export function VibeMailInboxWithClaim({
                       senderFid: myFid,
                     });
                     console.log('Broadcast result:', result);
-                    // Reset and close
+                    // Save result for feedback display
+                    setBroadcastResult({
+                      success: result.success,
+                      sent: result.sent,
+                      total: result.total,
+                      failed: result.failed,
+                    });
+                    // Reset composer but keep result visible
                     setShowComposer(false);
                     setSendMode('single');
                     setBroadcastRecipients([]);
@@ -1085,6 +1196,43 @@ export function VibeMailInboxWithClaim({
                     setComposerImageId(null);
                   } catch (err) {
                     console.error('Broadcast error:', err);
+                    setBroadcastResult({ success: false, sent: 0, total: broadcastRecipients.length, failed: broadcastRecipients.length });
+                  } finally {
+                    setIsSending(false);
+                  }
+                  return;
+                }
+
+                // RANDOM LIST MODE - send to random list (like broadcast)
+                if (sendMode === 'random' && randomList.length > 0) {
+                  const totalCost = BigInt(randomList.length) * parseEther(VIBEMAIL_COST_VBMS);
+                  setIsSending(true);
+                  setBroadcastResult(null);
+                  try {
+                    const txHash = await transferVBMS(CONTRACTS.VBMSPoolTroll, totalCost);
+                    if (!txHash) {
+                      setBroadcastResult({ success: false, sent: 0, total: randomList.length, failed: randomList.length });
+                      setIsSending(false);
+                      return;
+                    }
+                    const result = await broadcastMutation({
+                      recipientFids: randomList.map(r => r.fid),
+                      message: composerMessage,
+                      audioId: composerAudioId || undefined,
+                      imageId: composerImageId || undefined,
+                      senderAddress: myAddress,
+                      senderFid: myFid,
+                    });
+                    setBroadcastResult({ success: result.success, sent: result.sent, total: result.total, failed: result.failed });
+                    setShowComposer(false);
+                    setSendMode('single');
+                    setRandomList([]);
+                    setComposerMessage('');
+                    setComposerAudioId(null);
+                    setComposerImageId(null);
+                  } catch (err) {
+                    console.error('Random list error:', err);
+                    setBroadcastResult({ success: false, sent: 0, total: randomList.length, failed: randomList.length });
                   } finally {
                     setIsSending(false);
                   }
@@ -1109,10 +1257,21 @@ export function VibeMailInboxWithClaim({
                   // Don't close composer yet - will close after gift modal
                 }
               }}
-              disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && sendMode === 'single' && !recipientFid) || (sendMode === 'broadcast' && broadcastRecipients.length === 0) || (sendMode === 'random' && !randomCard)}
+              disabled={isSending || isTransferPending || (!composerMessage.trim() && !composerImageId) || (!replyToMessageId && sendMode === 'single' && !recipientFid) || (sendMode === 'broadcast' && broadcastRecipients.length === 0) || (sendMode === 'random' && !randomCard && randomList.length === 0)}
               className="mt-3 w-full py-2 bg-gradient-to-r from-vintage-gold/40 to-yellow-500/40 border border-vintage-gold/50 text-vintage-gold rounded-lg hover:from-vintage-gold/50 hover:to-yellow-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSending || isTransferPending ? `⏳ ${t.vibemailSending}` : replyToMessageId ? `↩️ ${t.vibemailReply}` : sendMode === 'broadcast' ? `📢 ${t.vibemailSendTo.replace('{count}', String(broadcastRecipients.length)).replace('{cost}', String(broadcastRecipients.length * 100))}` : sendMode === 'random' ? `🎲 ${t.vibemailRandomCost}` : `➡️ ${t.vibemailNextGift}`}
+              {isSending || isTransferPending
+                ? `⏳ ${t.vibemailSending}`
+                : replyToMessageId
+                  ? `↩️ ${t.vibemailReply}`
+                  : sendMode === 'broadcast'
+                    ? `📢 ${t.vibemailSendTo.replace('{count}', String(broadcastRecipients.length)).replace('{cost}', String(broadcastRecipients.length * 100))}`
+                    : sendMode === 'random'
+                      ? randomList.length > 0
+                        ? `📢 ${(t.vibemailSendToList || 'Send to List ({count})').replace('{count}', String(randomList.length))} (${randomList.length * 100} VBMS)`
+                        : `🎲 ${t.vibemailRandomCost}`
+                      : `➡️ ${t.vibemailNextGift}`
+              }
             </button>
             </div>
           </div>
@@ -1238,7 +1397,70 @@ export function VibeMailInboxWithClaim({
           </div>
         ) : (
           /* Message List */
-          <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+          <div className="flex-1 overflow-hidden flex flex-col mb-4">
+            {/* Delete Mode Controls */}
+            {activeTab === 'inbox' && currentMessages && currentMessages.length > 0 && (
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-vintage-gold/20">
+                <button
+                  onClick={() => {
+                    setDeleteMode(!deleteMode);
+                    setSelectedForDelete(new Set());
+                  }}
+                  className={`text-xs px-2 py-1 rounded-lg border transition-all ${
+                    deleteMode
+                      ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                      : 'bg-vintage-black/30 border-vintage-gold/30 text-vintage-ice/70 hover:border-vintage-gold/50'
+                  }`}
+                >
+                  {deleteMode ? '✕ Cancel' : `🗑️ ${t.vibemailDeleteMode || 'Select'}`}
+                </button>
+                {deleteMode && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (selectedForDelete.size === currentMessages.length) {
+                          setSelectedForDelete(new Set());
+                        } else {
+                          setSelectedForDelete(new Set(currentMessages.map((m: VibeMailMessage) => m._id)));
+                        }
+                      }}
+                      className="text-xs px-2 py-1 bg-vintage-gold/20 border border-vintage-gold/30 text-vintage-gold rounded-lg"
+                    >
+                      {selectedForDelete.size === currentMessages.length
+                        ? (t.vibemailDeselectAll || 'Deselect All')
+                        : (t.vibemailSelectAll || 'Select All')}
+                    </button>
+                    {selectedForDelete.size > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (!cardFid) return;
+                          const confirmed = confirm((t.vibemailDeleteConfirm || 'Delete {count} messages?').replace('{count}', String(selectedForDelete.size)));
+                          if (!confirmed) return;
+                          try {
+                            const result = await deleteMessagesMutation({
+                              messageIds: Array.from(selectedForDelete) as Id<'cardVotes'>[],
+                              ownerFid: cardFid,
+                            });
+                            if (result.success) {
+                              alert((t.vibemailDeleteSuccess || '✅ {count} messages deleted').replace('{count}', String(result.deleted)));
+                            }
+                            setSelectedForDelete(new Set());
+                            setDeleteMode(false);
+                          } catch (err) {
+                            console.error('Delete error:', err);
+                          }
+                        }}
+                        className="text-xs px-2 py-1 bg-red-500/30 border border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/40"
+                      >
+                        🗑️ {(t.vibemailDeleteSelected || 'Delete ({count})').replace('{count}', String(selectedForDelete.size))}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto space-y-2">
             {!currentMessages || currentMessages.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-vintage-ice/50 text-sm">{t.noMessagesYet}</p>
@@ -1248,14 +1470,36 @@ export function VibeMailInboxWithClaim({
               </div>
             ) : (
               currentMessages.map((msg: VibeMailMessage) => (
+                <div key={msg._id} className="flex items-center gap-2">
+                  {/* Checkbox for delete mode */}
+                  {deleteMode && activeTab === 'inbox' && (
+                    <button
+                      onClick={() => {
+                        const newSelected = new Set(selectedForDelete);
+                        if (newSelected.has(msg._id)) {
+                          newSelected.delete(msg._id);
+                        } else {
+                          newSelected.add(msg._id);
+                        }
+                        setSelectedForDelete(newSelected);
+                      }}
+                      className={`w-6 h-6 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                        selectedForDelete.has(msg._id)
+                          ? 'bg-red-500 border-red-500 text-white'
+                          : 'border-vintage-gold/50 hover:border-vintage-gold'
+                      }`}
+                    >
+                      {selectedForDelete.has(msg._id) && '✓'}
+                    </button>
+                  )}
                 <button
-                  key={msg._id}
-                  onClick={() => handleOpenMessage(msg)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                  onClick={() => !deleteMode && handleOpenMessage(msg)}
+                  disabled={deleteMode}
+                  className={`flex-1 text-left p-3 rounded-lg border transition-all ${
                     msg.isRead
                       ? 'bg-vintage-black/30 border-vintage-gold/20 hover:border-vintage-gold/40'
                       : 'bg-vintage-gold/10 border-vintage-gold/50 hover:bg-vintage-gold/20'
-                  }`}
+                  } ${deleteMode ? 'opacity-80' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full ${msg.isRead ? 'bg-vintage-ice/30' : 'bg-vintage-gold animate-pulse'}`} />
@@ -1286,8 +1530,10 @@ export function VibeMailInboxWithClaim({
                     </span>
                   </div>
                 </button>
+                </div>
               ))
             )}
+            </div>
           </div>
         )}
 

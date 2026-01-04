@@ -347,6 +347,27 @@ export const fidTranslations = {
     noCardsFoundSearch: 'Nenhuma carta encontrada',
     noRankingData: 'Sem dados de ranking ainda',
     bounty: 'Recompensa',
+
+    // Broadcast improvements
+    vibemailBroadcastLimit: 'Máximo 100 destinatários por envio',
+    vibemailBroadcastSuccess: '✅ Broadcast enviado! {sent}/{total} mensagens',
+    vibemailBroadcastError: '❌ Erro no broadcast: {error}',
+    vibemailBroadcastPartial: '⚠️ Parcial: {sent}/{total} enviadas, {failed} falharam',
+
+    // Random mode with list
+    vibemailRandomList: 'Lista Aleatória',
+    vibemailAddToList: 'Adicionar à Lista',
+    vibemailRandomListCount: '{count} pessoas na lista',
+    vibemailClearList: 'Limpar Lista',
+    vibemailSendToList: 'Enviar para Lista ({count})',
+
+    // Delete messages
+    vibemailDeleteMode: 'Modo Seleção',
+    vibemailDeleteSelected: 'Apagar Selecionadas ({count})',
+    vibemailDeleteConfirm: 'Apagar {count} mensagens?',
+    vibemailDeleteSuccess: '✅ {count} mensagens apagadas',
+    vibemailSelectAll: 'Selecionar Todas',
+    vibemailDeselectAll: 'Desmarcar Todas',
   },
 
   "en": {
@@ -691,6 +712,27 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'Search by username or FID...',
     noCardsFoundSearch: 'No cards found matching your search',
     noRankingData: 'No ranking data yet',
+
+    // Broadcast improvements
+    vibemailBroadcastLimit: 'Maximum 100 recipients per send',
+    vibemailBroadcastSuccess: '✅ Broadcast sent! {sent}/{total} messages',
+    vibemailBroadcastError: '❌ Broadcast error: {error}',
+    vibemailBroadcastPartial: '⚠️ Partial: {sent}/{total} sent, {failed} failed',
+
+    // Random mode with list
+    vibemailRandomList: 'Random List',
+    vibemailAddToList: 'Add to List',
+    vibemailRandomListCount: '{count} people in list',
+    vibemailClearList: 'Clear List',
+    vibemailSendToList: 'Send to List ({count})',
+
+    // Delete messages
+    vibemailDeleteMode: 'Selection Mode',
+    vibemailDeleteSelected: 'Delete Selected ({count})',
+    vibemailDeleteConfirm: 'Delete {count} messages?',
+    vibemailDeleteSuccess: '✅ {count} messages deleted',
+    vibemailSelectAll: 'Select All',
+    vibemailDeselectAll: 'Deselect All',
   },
 
   "es": {
@@ -1028,6 +1070,27 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'Buscar por nombre o FID...',
     noCardsFoundSearch: 'No se encontraron cartas',
     noRankingData: 'Sin datos de ranking aún',
+
+    // Broadcast improvements
+    vibemailBroadcastLimit: 'Máximo 100 destinatarios por envío',
+    vibemailBroadcastSuccess: '✅ ¡Broadcast enviado! {sent}/{total} mensajes',
+    vibemailBroadcastError: '❌ Error en broadcast: {error}',
+    vibemailBroadcastPartial: '⚠️ Parcial: {sent}/{total} enviados, {failed} fallaron',
+
+    // Random mode with list
+    vibemailRandomList: 'Lista Aleatoria',
+    vibemailAddToList: 'Añadir a Lista',
+    vibemailRandomListCount: '{count} personas en lista',
+    vibemailClearList: 'Limpiar Lista',
+    vibemailSendToList: 'Enviar a Lista ({count})',
+
+    // Delete messages
+    vibemailDeleteMode: 'Modo Selección',
+    vibemailDeleteSelected: 'Eliminar Seleccionadas ({count})',
+    vibemailDeleteConfirm: '¿Eliminar {count} mensajes?',
+    vibemailDeleteSuccess: '✅ {count} mensajes eliminados',
+    vibemailSelectAll: 'Seleccionar Todo',
+    vibemailDeselectAll: 'Deseleccionar Todo',
   },
 
   "hi": {
@@ -1365,6 +1428,23 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'नाम या FID से खोजें...',
     noCardsFoundSearch: 'कोई कार्ड नहीं मिला',
     noRankingData: 'अभी तक कोई रैंकिंग डेटा नहीं',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: 'Max 100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ Error',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: 'Random List',
+    vibemailAddToList: 'Add',
+    vibemailRandomListCount: '{count} in list',
+    vibemailClearList: 'Clear',
+    vibemailSendToList: 'Send ({count})',
+    vibemailDeleteMode: 'Select',
+    vibemailDeleteSelected: 'Delete ({count})',
+    vibemailDeleteConfirm: 'Delete {count}?',
+    vibemailDeleteSuccess: '✅ {count} deleted',
+    vibemailSelectAll: 'All',
+    vibemailDeselectAll: 'None',
   },
 
   "ru": {
@@ -1702,6 +1782,23 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'Поиск по имени или FID...',
     noCardsFoundSearch: 'Карты не найдены',
     noRankingData: 'Данные рейтинга пока отсутствуют',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: 'Макс 100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ Ошибка',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: 'Случайный список',
+    vibemailAddToList: 'Добавить',
+    vibemailRandomListCount: '{count} в списке',
+    vibemailClearList: 'Очистить',
+    vibemailSendToList: 'Отправить ({count})',
+    vibemailDeleteMode: 'Выбрать',
+    vibemailDeleteSelected: 'Удалить ({count})',
+    vibemailDeleteConfirm: 'Удалить {count}?',
+    vibemailDeleteSuccess: '✅ {count} удалено',
+    vibemailSelectAll: 'Все',
+    vibemailDeselectAll: 'Снять',
   },
 
   "zh-CN": {
@@ -2039,6 +2136,23 @@ export const fidTranslations = {
     searchByUsernameOrFid: '按用户名或 FID 搜索...',
     noCardsFoundSearch: '未找到卡片',
     noRankingData: '暂无排名数据',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: '最多100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ 错误',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: '随机列表',
+    vibemailAddToList: '添加',
+    vibemailRandomListCount: '列表中{count}人',
+    vibemailClearList: '清空',
+    vibemailSendToList: '发送({count})',
+    vibemailDeleteMode: '选择',
+    vibemailDeleteSelected: '删除({count})',
+    vibemailDeleteConfirm: '删除{count}条消息？',
+    vibemailDeleteSuccess: '✅ 已删除{count}条',
+    vibemailSelectAll: '全选',
+    vibemailDeselectAll: '取消',
   },
 
   "id": {
@@ -2345,6 +2459,23 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'Cari berdasarkan nama atau FID...',
     noCardsFoundSearch: 'Tidak ada kartu ditemukan',
     noRankingData: 'Belum ada data peringkat',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: 'Maks 100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ Error',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: 'Daftar Acak',
+    vibemailAddToList: 'Tambah',
+    vibemailRandomListCount: '{count} di daftar',
+    vibemailClearList: 'Hapus',
+    vibemailSendToList: 'Kirim ({count})',
+    vibemailDeleteMode: 'Pilih',
+    vibemailDeleteSelected: 'Hapus ({count})',
+    vibemailDeleteConfirm: 'Hapus {count}?',
+    vibemailDeleteSuccess: '✅ {count} dihapus',
+    vibemailSelectAll: 'Semua',
+    vibemailDeselectAll: 'Batal',
   },
 
   "fr": {
@@ -2651,6 +2782,23 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'Rechercher par nom ou FID...',
     noCardsFoundSearch: 'Aucune carte trouvée',
     noRankingData: 'Pas encore de données de classement',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: 'Max 100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ Erreur',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: 'Liste aléatoire',
+    vibemailAddToList: 'Ajouter',
+    vibemailRandomListCount: '{count} dans la liste',
+    vibemailClearList: 'Effacer',
+    vibemailSendToList: 'Envoyer ({count})',
+    vibemailDeleteMode: 'Sélect',
+    vibemailDeleteSelected: 'Supprimer ({count})',
+    vibemailDeleteConfirm: 'Supprimer {count}?',
+    vibemailDeleteSuccess: '✅ {count} supprimés',
+    vibemailSelectAll: 'Tout',
+    vibemailDeselectAll: 'Aucun',
   },
   "ja": {
     // Password screen
@@ -3025,6 +3173,23 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'ユーザー名またはFIDで検索...',
     noCardsFoundSearch: 'カードが見つかりません',
     noRankingData: 'ランキングデータはまだありません',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: '最大100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ エラー',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: 'ランダムリスト',
+    vibemailAddToList: '追加',
+    vibemailRandomListCount: 'リストに{count}人',
+    vibemailClearList: 'クリア',
+    vibemailSendToList: '送信({count})',
+    vibemailDeleteMode: '選択',
+    vibemailDeleteSelected: '削除({count})',
+    vibemailDeleteConfirm: '{count}件削除?',
+    vibemailDeleteSuccess: '✅ {count}件削除',
+    vibemailSelectAll: '全選択',
+    vibemailDeselectAll: '解除',
   },
   "it": {
     // Password screen
@@ -3361,5 +3526,22 @@ export const fidTranslations = {
     searchByUsernameOrFid: 'Cerca per nome o FID...',
     noCardsFoundSearch: 'Nessuna carta trovata',
     noRankingData: 'Nessun dato di classifica ancora',
+
+    // Broadcast/Delete
+    vibemailBroadcastLimit: 'Max 100',
+    vibemailBroadcastSuccess: '✅ {sent}/{total}',
+    vibemailBroadcastError: '❌ Errore',
+    vibemailBroadcastPartial: '⚠️ {sent}/{total}',
+    vibemailRandomList: 'Lista casuale',
+    vibemailAddToList: 'Aggiungi',
+    vibemailRandomListCount: '{count} in lista',
+    vibemailClearList: 'Svuota',
+    vibemailSendToList: 'Invia ({count})',
+    vibemailDeleteMode: 'Seleziona',
+    vibemailDeleteSelected: 'Elimina ({count})',
+    vibemailDeleteConfirm: 'Elimina {count}?',
+    vibemailDeleteSuccess: '✅ {count} eliminati',
+    vibemailSelectAll: 'Tutti',
+    vibemailDeselectAll: 'Nessuno',
   },
 };
