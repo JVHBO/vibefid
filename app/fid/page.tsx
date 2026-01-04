@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract, useConnect, useSendTransaction } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction } from "wagmi";
+import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from "@/lib/hooks/useWriteContractWithAttribution";
 import { encodeFunctionData } from "viem";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -462,7 +463,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   };
 
   // Contract interaction - use both methods for iOS compatibility
-  const { writeContract, data: writeHash, isPending: isContractPending, error: writeError } = useWriteContract();
+  const { writeContract, data: writeHash, isPending: isContractPending, error: writeError } = useWriteContractWithAttribution();
   const { sendTransaction, data: sendHash, isPending: isSendPending, error: sendError } = useSendTransaction();
 
   // Use whichever hash is available
@@ -1121,9 +1122,13 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           args: [BigInt(userData.fid), metadataUrl, signature as `0x${string}`],
         });
 
+        // Add builder code suffix for Base attribution
+        const dataWithBuilderCode = (data + dataSuffix.slice(2)) as `0x${string}`;
+        console.log('🏗️ Builder code:', BUILDER_CODE);
+
         sendTransaction({
           to: VIBEFID_CONTRACT_ADDRESS,
-          data,
+          data: dataWithBuilderCode,
           value: parseEther(MINT_PRICE),
         });
       } else {
