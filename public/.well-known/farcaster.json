@@ -9,7 +9,7 @@
     "name": "VibeFID - Mint and VibeMail",
     "iconUrl": "https://vibefid.xyz/images/vibefid-icon.jpg",
     "homeUrl": "https://vibefid.xyz",
-    "imageUrl": "https://vibefid.xyz/images/share-vibefid.gif?v=2",
+    "imageUrl": "https://vibefid.xyz/images/share-vibefid.gif",
     "aspectRatio": "3:2",
     "buttonTitle": "Mint Your Card",
     "splashImageUrl": "https://vibefid.xyz/images/splash.jpg",
@@ -19,24 +19,16 @@
     "subtitle": "Farcaster Identity Cards",
     "description": "Generate and mint your unique Farcaster identity card as an NFT on Base. Your FID, your card, your legacy!",
     "screenshotUrls": [
-      "https://vibefid.xyz/images/share-vibefid.gif?v=2"
+      "https://vibefid.xyz/images/og-vibefid.png"
     ],
     "primaryCategory": "social",
-    "tags": [
-      "farcaster",
-      "nft",
-      "identity",
-      "cards",
-      "base"
-    ],
-    "heroImageUrl": "https://vibefid.xyz/images/share-vibefid.gif?v=2",
+    "tags": ["farcaster", "nft", "identity", "cards", "base"],
+    "heroImageUrl": "https://vibefid.xyz/images/share-vibefid.gif",
     "tagline": "Your FID, Your Card",
     "ogTitle": "VibeFID - FID Cards",
     "ogDescription": "Generate and mint your unique Farcaster identity card as an NFT on Base!",
-    "ogImageUrl": "https://vibefid.xyz/images/share-vibefid.gif?v=2",
-    "requiredCapabilities": [
-      "wallet.getEthereumProvider"
-    ],
+    "ogImageUrl": "https://vibefid.xyz/images/share-vibefid.gif",
+    "requiredCapabilities": ["wallet.getEthereumProvider"],
     "noindex": false
   },
   "baseBuilder": {
