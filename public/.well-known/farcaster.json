@@ -14,7 +14,7 @@
     "buttonTitle": "Mint Your Card",
     "splashImageUrl": "https://vibefid.xyz/images/splash.jpg",
     "splashBackgroundColor": "#1a1a1a",
-    "webhookUrl": "https://api.neynar.com/f/app/f595d65b-e6d3-458b-abe0-0545bdf393f5/event",
+    "webhookUrl": "https://vibefid.xyz/api/farcaster/webhook",
     "castShareUrl": "https://vibefid.xyz",
     "subtitle": "Farcaster Identity Cards",
     "description": "Generate and mint your unique Farcaster identity card as an NFT on Base. Your FID, your card, your legacy!",
