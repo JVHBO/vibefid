@@ -13,7 +13,7 @@
     "aspectRatio": "3:2",
     "buttonTitle": "Mint Your Card",
     "splashImageUrl": "https://vibefid.xyz/images/splash.jpg",
-    "splashBackgroundColor": "#c9b896",
+    "splashBackgroundColor": "#1a1a1a",
     "webhookUrl": "https://api.neynar.com/f/app/f595d65b-e6d3-458b-abe0-0545bdf393f5/event",
     "castShareUrl": "https://vibefid.xyz",
     "subtitle": "Farcaster Identity Cards",
