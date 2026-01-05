@@ -23,11 +23,11 @@
     ],
     "primaryCategory": "social",
     "tags": ["farcaster", "nft", "identity", "cards", "base"],
-    "heroImageUrl": "https://vibefid.xyz/images/og-vibefid.gif",
+    "heroImageUrl": "https://vibefid.xyz/images/vibefid-card-og.gif",
     "tagline": "Your FID, Your Card",
     "ogTitle": "VibeFID - FID Cards",
     "ogDescription": "Generate and mint your unique Farcaster identity card as an NFT on Base!",
-    "ogImageUrl": "https://vibefid.xyz/images/og-vibefid.gif",
+    "ogImageUrl": "https://vibefid.xyz/images/vibefid-card-og.gif",
     "requiredCapabilities": ["wallet.getEthereumProvider"],
     "noindex": false
   },

@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     url: "https://vibefid.xyz",
     images: [
       {
-        url: "https://vibefid.xyz/images/og-vibefid.gif",
+        url: "https://vibefid.xyz/images/vibefid-card-og.gif",
         width: 1200,
         height: 630,
         alt: "VibeFID Game"
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "VibeFID - Farcaster Identity Cards",
     description: "Generate and mint your unique Farcaster identity card as an NFT on Base",
-    images: ["https://vibefid.xyz/images/og-vibefid.gif"],
+    images: ["https://vibefid.xyz/images/vibefid-card-og.gif"],
   },
   other: {
     // Base.dev App ID (REQUIRED FOR ANALYTICS)
