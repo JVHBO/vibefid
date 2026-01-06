@@ -10,7 +10,7 @@ export const contentType = 'image/gif';
 export const revalidate = 604800;
 
 export default async function Image() {
-  const gifResponse = await fetch('https://vibefid.xyz/images/vibefid-card-og.gif', {
+  const gifResponse = await fetch('https://ipfs.filebase.io/ipfs/QmWbJ6JveX56Bse2L55PtDq5pkqfR9GLNoa1U41FNTNtwt', {
     next: { revalidate: 604800 },
   });
 
