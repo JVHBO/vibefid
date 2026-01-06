@@ -593,8 +593,9 @@ export const refreshCardScore = mutation({
       throw new Error(`No card found for FID ${args.fid}`);
     }
 
-    // Only update neynarScore - keep rarity and power unchanged
+    // Update neynarScore (shown on card) and latestNeynarScore - keep rarity and power unchanged
     await ctx.db.patch(card._id, {
+      neynarScore: args.newNeynarScore, // This is the score shown on the card!
       latestNeynarScore: args.newNeynarScore,
       latestScoreCheckedAt: Date.now(),
     });
