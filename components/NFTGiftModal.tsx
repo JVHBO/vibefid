@@ -56,7 +56,7 @@ interface NFTGiftModalProps {
   imageId?: string;
   isPaidVibeMail: boolean;
   // Reply support
-  replyToMessageId?: string; // If provided, this is a reply
+  replyToMessageId?: Id<'cardVotes'>; // If provided, this is a reply
 }
 
 const VIBEMAIL_COST_VBMS = "100";
@@ -236,7 +236,7 @@ export function NFTGiftModal({
       if (replyToMessageId) {
         // Reply to existing message
         await replyMutation({
-          originalMessageId: replyToMessageId as Id<'cardVotes'>,
+          originalMessageId: replyToMessageId,
           senderFid,
           senderAddress,
           message,
