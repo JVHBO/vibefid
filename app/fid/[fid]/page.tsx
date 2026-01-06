@@ -325,7 +325,7 @@ export default function FidCardPage() {
   };
 
   // Check if upgrade is available (only for card owner)
-  // Allow: ONE TIME sync (if never upgraded) OR rarity would change
+  // Allow: ONE TIME sync (if never upgraded) OR rarity would change OR score changed significantly
   const canUpgrade = () => {
     if (!isOwnCard || !card || !neynarScoreData) return false;
     const rarityOrder = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
@@ -333,8 +333,10 @@ export default function FidCardPage() {
     const newRarityIndex = rarityOrder.indexOf(neynarScoreData.rarity);
     const rarityImproved = newRarityIndex > currentRarityIndex;
     const neverUpgraded = !card.upgradedAt;
-    // Allow upgrade if: never synced before OR rarity would improve
-    return neverUpgraded || rarityImproved;
+    // Allow refresh if score changed by more than 0.02 (updates card image)
+    const scoreChanged = Math.abs(neynarScoreData.score - card.neynarScore) > 0.02;
+    // Allow upgrade if: never synced before OR rarity would improve OR score changed
+    return neverUpgraded || rarityImproved || scoreChanged;
   };
 
   // Check if this is a rarity upgrade or just a score refresh
@@ -432,29 +434,47 @@ export default function FidCardPage() {
 
       setRegenerationStatus('Uploading to IPFS...');
 
-      // Upload to IPFS
-      const formData = new FormData();
-      formData.append('video', videoBlob, 'card.webm');
+      // Upload VIDEO to IPFS
+      const videoFormData = new FormData();
+      videoFormData.append('video', videoBlob, 'card.webm');
 
-      const uploadResponse = await fetch('/api/upload-nft-video', {
+      const videoUploadResponse = await fetch('/api/upload-nft-video', {
         method: 'POST',
-        body: formData,
+        body: videoFormData,
       });
 
-      if (!uploadResponse.ok) {
-        const uploadError = await uploadResponse.json();
+      if (!videoUploadResponse.ok) {
+        const uploadError = await videoUploadResponse.json();
         throw new Error(uploadError.error || 'Failed to upload video');
       }
 
-      const uploadResult = await uploadResponse.json();
-      const newVideoUrl = uploadResult.ipfsUrl;
+      const videoUploadResult = await videoUploadResponse.json();
+      const newVideoUrl = videoUploadResult.ipfsUrl;
+
+      // Upload static PNG to IPFS (so card image also updates!)
+      setRegenerationStatus('Uploading card image...');
+      const pngBlob = await (await fetch(cardImageDataUrl)).blob();
+      const pngFormData = new FormData();
+      pngFormData.append('image', pngBlob, 'card.png');
+
+      const pngUploadResponse = await fetch('/api/upload-nft-image', {
+        method: 'POST',
+        body: pngFormData,
+      });
+
+      let newCardImageUrl: string | undefined;
+      if (pngUploadResponse.ok) {
+        const pngUploadResult = await pngUploadResponse.json();
+        newCardImageUrl = pngUploadResult.ipfsUrl;
+      }
 
       setRegenerationStatus('Updating card data...');
 
-      // Step 3: Update card images in database
+      // Step 3: Update card images in database (both video AND static PNG)
       await updateCardImages({
         fid: card.fid,
         imageUrl: newVideoUrl,
+        cardImageUrl: newCardImageUrl,
       });
 
       // Step 4: Refresh OpenSea metadata
@@ -786,17 +806,6 @@ export default function FidCardPage() {
 
             {/* Action Buttons Row */}
             <div className="w-full flex gap-2">
-              {isOwnCard && (
-                <button
-                  onClick={() => {
-                    AudioManager.buttonClick();
-                    setShowShareModal(true);
-                  }}
-                  className="flex-1 px-3 py-2 bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold font-bold rounded-lg hover:bg-vintage-gold/10 transition-colors text-xs"
-                >
-                  Share
-                </button>
-              )}
               <button
                 onClick={() => {
                   AudioManager.buttonClick();
@@ -941,7 +950,7 @@ export default function FidCardPage() {
                     disabled={isUpgrading}
                     className="w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold rounded-lg transition-all disabled:opacity-50"
                   >
-                    {isUpgrading ? t.upgrading : t.upgradeRarity}
+                    {isUpgrading ? t.upgrading : (isRarityUpgrade() ? t.upgradeRarity : (t.refreshScore || 'REFRESH SCORE'))}
                   </button>
                 )}
                 <div className="flex gap-2">
@@ -1318,10 +1327,18 @@ export default function FidCardPage() {
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-vintage-ice/60 text-xs">{(t as any).yourVbmsBalance || 'Your VBMS Balance'}</p>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       AudioManager.buttonClick();
-                      setShowPaidVoteModal(false);
-                      setShowFreeVoteModal(true);
+                      const DEX_URL = 'https://vibemostwanted.xyz/dex';
+                      if (farcasterContext.isInMiniapp) {
+                        try {
+                          await sdk.actions.openMiniApp({ url: DEX_URL });
+                        } catch (err) {
+                          window.open(DEX_URL, '_blank');
+                        }
+                      } else {
+                        window.open(DEX_URL, '_blank');
+                      }
                     }}
                     className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
                   >
