@@ -1337,7 +1337,7 @@ export default function FidCardPage() {
                   <button
                     onClick={async () => {
                       AudioManager.buttonClick();
-                      const DEX_URL = 'https://vibemostwanted.xyz/dex';
+                      const DEX_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms/dex';
                       if (farcasterContext.isInMiniapp) {
                         try {
                           await sdk.actions.openMiniApp({ url: DEX_URL });
