@@ -1337,8 +1337,16 @@ export default function FidCardPage() {
                   <button
                     onClick={async () => {
                       AudioManager.buttonClick();
-                      const DEX_URL = 'https://www.vibemostwanted.xyz/dex';
-                      window.open(DEX_URL, '_blank');
+                      const DEX_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms/dex';
+                      if (farcasterContext.isInMiniapp) {
+                        try {
+                          await sdk.actions.openMiniApp({ url: DEX_URL });
+                        } catch (err) {
+                          window.open(DEX_URL, '_blank');
+                        }
+                      } else {
+                        window.open(DEX_URL, '_blank');
+                      }
                     }}
                     className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
                   >
