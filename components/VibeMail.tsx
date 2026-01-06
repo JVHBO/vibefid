@@ -9,7 +9,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { fidTranslations } from '@/lib/fidTranslations';
 import { translations } from '@/lib/translations';
 import { sdk } from '@farcaster/miniapp-sdk';
-import { useTransferVBMS } from '@/lib/hooks/useVBMSContracts';
+import { useTransferVBMS, useVBMSBalance } from '@/lib/hooks/useVBMSContracts';
+import { useFarcasterContext } from '@/lib/hooks/useFarcasterContext';
 import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
 import { NFTGiftModal } from './NFTGiftModal';
@@ -581,6 +582,10 @@ export function VibeMailInboxWithClaim({
     myFid ? { fid: myFid } : 'skip'
   );
 
+  // VBMS Balance for Need More button
+  const { balance: vbmsBalance } = useVBMSBalance(myAddress as `0x${string}` | undefined);
+  const farcasterContext = useFarcasterContext();
+
   // Success feedback state
   const [sendSuccess, setSendSuccess] = useState<{ recipient: string; timestamp: number } | null>(null);
 
@@ -856,6 +861,34 @@ export function VibeMailInboxWithClaim({
                 {replyToMessageId ? 'Reply' : 'New VibeMail'}
               </h3>
               <div className="w-10" />
+            </div>
+
+            {/* VBMS Balance */}
+            <div className="bg-vintage-black/50 rounded-lg p-3 mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-vintage-ice/60 text-xs">{(t as any).yourVbmsBalance || 'Your VBMS Balance'}</p>
+                <button
+                  onClick={async () => {
+                    AudioManager.buttonClick();
+                    const DEX_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms/dex';
+                    if (farcasterContext?.isInMiniapp) {
+                      try {
+                        await sdk.actions.openMiniApp({ url: DEX_URL });
+                      } catch (err) {
+                        window.open(DEX_URL, '_blank');
+                      }
+                    } else {
+                      window.open(DEX_URL, '_blank');
+                    }
+                  }}
+                  className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
+                >
+                  {(t as any).needMoreVbms || 'Need more VBMS'} →
+                </button>
+              </div>
+              <p className="text-vintage-gold font-bold text-lg">
+                {vbmsBalance ? parseFloat(vbmsBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'} VBMS
+              </p>
             </div>
 
             {/* Reply indicator */}
