@@ -606,9 +606,14 @@ export function VibeMailInboxWithClaim({
   // Random card state and mutation
   const [randomCard, setRandomCard] = useState<{ fid: number; username: string; pfpUrl?: string; displayName?: string; address?: string } | null>(null);
   const getRandomCardMutation = useMutation(api.cardVotes.getRandomCardMutation);
+  const getRandomCardsMutation = useMutation(api.cardVotes.getRandomCardsMutation);
 
   // Random list mode (multiple random cards)
   const [randomList, setRandomList] = useState<Array<{ fid: number; username: string; pfpUrl?: string }>>([]);
+
+  // Random quantity selector
+  const [randomQuantity, setRandomQuantity] = useState<number>(10);
+  const [isLoadingRandom, setIsLoadingRandom] = useState(false);
 
   // Fetch random card when entering random mode
   useEffect(() => {
@@ -630,6 +635,25 @@ export function VibeMailInboxWithClaim({
     if (randomCard && !randomList.some(c => c.fid === randomCard.fid)) {
       setRandomList(prev => [...prev, { fid: randomCard.fid, username: randomCard.username, pfpUrl: randomCard.pfpUrl }]);
       shuffleRandomCard(); // Get new random card
+    }
+  };
+
+  // Auto-fill random list with specified quantity
+  const autoFillRandomList = async () => {
+    if (!myFid || isLoadingRandom) return;
+    setIsLoadingRandom(true);
+    try {
+      const cards = await getRandomCardsMutation({
+        count: randomQuantity,
+        excludeFid: myFid,
+      });
+      if (cards && cards.length > 0) {
+        setRandomList(cards.map(c => ({ fid: c.fid, username: c.username, pfpUrl: c.pfpUrl })));
+      }
+    } catch (err) {
+      console.error('Error fetching random cards:', err);
+    } finally {
+      setIsLoadingRandom(false);
     }
   };
 
@@ -930,6 +954,34 @@ export function VibeMailInboxWithClaim({
             {/* Random Recipient Display */}
             {sendMode === 'random' && !replyToMessageId && (
               <div className="mb-3">
+                {/* Quick Select Quantity */}
+                <div className="mb-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg p-3">
+                  <p className="text-vintage-gold text-xs font-bold mb-2">🎲 {t.vibemailQuickRandom || 'Quick Random Select'}</p>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={randomQuantity}
+                      onChange={(e) => setRandomQuantity(Number(e.target.value))}
+                      className="flex-1 bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-2 py-2 text-vintage-ice text-sm focus:outline-none focus:border-vintage-gold"
+                    >
+                      <option value={5}>5 {t.vibemailPeople || 'people'}</option>
+                      <option value={10}>10 {t.vibemailPeople || 'people'}</option>
+                      <option value={25}>25 {t.vibemailPeople || 'people'}</option>
+                      <option value={50}>50 {t.vibemailPeople || 'people'}</option>
+                      <option value={100}>100 {t.vibemailPeople || 'people'}</option>
+                    </select>
+                    <button
+                      onClick={autoFillRandomList}
+                      disabled={isLoadingRandom}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg hover:from-purple-400 hover:to-pink-400 transition-all disabled:opacity-50 text-sm"
+                    >
+                      {isLoadingRandom ? '⏳' : '🎲'} {t.vibemailAutoSelect || 'Select'}
+                    </button>
+                  </div>
+                  <p className="text-vintage-ice/50 text-[10px] mt-1 text-center">
+                    💰 {randomQuantity * 100} VBMS ({randomQuantity} × 100)
+                  </p>
+                </div>
+
                 {/* Random List - Cards already added */}
                 {randomList.length > 0 && (
                   <div className="mb-2 bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg p-2">
@@ -944,7 +996,7 @@ export function VibeMailInboxWithClaim({
                         {t.vibemailClearList || 'Clear'}
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                       {randomList.map(r => (
                         <span key={r.fid} className="inline-flex items-center gap-1 bg-purple-500/20 border border-purple-500/50 rounded-full px-2 py-0.5 text-xs text-vintage-ice">
                           @{r.username}
@@ -958,43 +1010,44 @@ export function VibeMailInboxWithClaim({
                   </div>
                 )}
 
-                {/* Current Random Card + Shuffle/Add buttons */}
-                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg p-3">
+                {/* Manual Add - Current Random Card + Shuffle/Add buttons */}
+                <div className="bg-vintage-black/30 border border-vintage-gold/20 rounded-lg p-2">
+                  <p className="text-vintage-ice/50 text-[10px] mb-1">{t.vibemailOrManual || 'Or add manually:'}</p>
                   {randomCard ? (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">🎲</span>
+                        <span className="text-lg">🎲</span>
                         <div>
-                          <p className="text-vintage-gold font-bold text-sm">@{randomCard.username}</p>
-                          <p className="text-vintage-ice/50 text-xs">FID: {randomCard.fid}</p>
+                          <p className="text-vintage-gold font-bold text-xs">@{randomCard.username}</p>
+                          <p className="text-vintage-ice/50 text-[10px]">FID: {randomCard.fid}</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <button
                           onClick={addRandomToList}
                           disabled={randomList.some(c => c.fid === randomCard.fid)}
-                          className="px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-xs hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-2 py-1 bg-green-500/20 border border-green-500/50 rounded text-green-400 text-[10px] hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          ➕ {t.vibemailAddToList || 'Add'}
+                          ➕
                         </button>
                         <button
                           onClick={shuffleRandomCard}
-                          className="px-3 py-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg text-vintage-gold text-xs hover:bg-vintage-gold/30"
+                          className="px-2 py-1 bg-vintage-gold/20 border border-vintage-gold/50 rounded text-vintage-gold text-[10px] hover:bg-vintage-gold/30"
                         >
-                          🔄 {t.vibemailShuffle}
+                          🔄
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-vintage-ice/50 text-sm text-center">Loading random recipient...</p>
+                    <p className="text-vintage-ice/50 text-xs text-center">Loading...</p>
                   )}
                 </div>
-                <p className="text-vintage-ice/40 text-xs mt-1 text-center">
-                  {randomList.length > 0
-                    ? `📢 ${(t.vibemailSendToList || 'Send to list ({count})').replace('{count}', String(randomList.length))} = ${randomList.length * 100} VBMS`
-                    : `🎲 ${t.vibemailRandomCost || 'Send to 1 random = 100 VBMS'}`
-                  }
-                </p>
+
+                {randomList.length > 0 && (
+                  <p className="text-green-400 text-xs mt-2 text-center font-bold">
+                    ✅ {(t.vibemailReadyToSend || 'Ready to send to {count} people').replace('{count}', String(randomList.length))} = {randomList.length * 100} VBMS
+                  </p>
+                )}
               </div>
             )}
 
