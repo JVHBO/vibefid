@@ -956,25 +956,25 @@ export function VibeMailInboxWithClaim({
               <div className="mb-3">
                 {/* Quick Select Quantity */}
                 <div className="mb-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-lg p-3">
-                  <p className="text-vintage-gold text-xs font-bold mb-2">🎲 {t.vibemailQuickRandom || 'Quick Random Select'}</p>
+                  <p className="text-vintage-gold text-xs font-bold mb-2">🎲 {(t as any).vibemailQuickRandom || 'Quick Random Select'}</p>
                   <div className="flex items-center gap-2">
                     <select
                       value={randomQuantity}
                       onChange={(e) => setRandomQuantity(Number(e.target.value))}
                       className="flex-1 bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-2 py-2 text-vintage-ice text-sm focus:outline-none focus:border-vintage-gold"
                     >
-                      <option value={5}>5 {t.vibemailPeople || 'people'}</option>
-                      <option value={10}>10 {t.vibemailPeople || 'people'}</option>
-                      <option value={25}>25 {t.vibemailPeople || 'people'}</option>
-                      <option value={50}>50 {t.vibemailPeople || 'people'}</option>
-                      <option value={100}>100 {t.vibemailPeople || 'people'}</option>
+                      <option value={5}>5 {(t as any).vibemailPeople || 'people'}</option>
+                      <option value={10}>10 {(t as any).vibemailPeople || 'people'}</option>
+                      <option value={25}>25 {(t as any).vibemailPeople || 'people'}</option>
+                      <option value={50}>50 {(t as any).vibemailPeople || 'people'}</option>
+                      <option value={100}>100 {(t as any).vibemailPeople || 'people'}</option>
                     </select>
                     <button
                       onClick={autoFillRandomList}
                       disabled={isLoadingRandom}
                       className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg hover:from-purple-400 hover:to-pink-400 transition-all disabled:opacity-50 text-sm"
                     >
-                      {isLoadingRandom ? '⏳' : '🎲'} {t.vibemailAutoSelect || 'Select'}
+                      {isLoadingRandom ? '⏳' : '🎲'} {(t as any).vibemailAutoSelect || 'Select'}
                     </button>
                   </div>
                   <p className="text-vintage-ice/50 text-[10px] mt-1 text-center">
@@ -1012,7 +1012,7 @@ export function VibeMailInboxWithClaim({
 
                 {/* Manual Add - Current Random Card + Shuffle/Add buttons */}
                 <div className="bg-vintage-black/30 border border-vintage-gold/20 rounded-lg p-2">
-                  <p className="text-vintage-ice/50 text-[10px] mb-1">{t.vibemailOrManual || 'Or add manually:'}</p>
+                  <p className="text-vintage-ice/50 text-[10px] mb-1">{(t as any).vibemailOrManual || 'Or add manually:'}</p>
                   {randomCard ? (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1045,7 +1045,7 @@ export function VibeMailInboxWithClaim({
 
                 {randomList.length > 0 && (
                   <p className="text-green-400 text-xs mt-2 text-center font-bold">
-                    ✅ {(t.vibemailReadyToSend || 'Ready to send to {count} people').replace('{count}', String(randomList.length))} = {randomList.length * 100} VBMS
+                    ✅ {((t as any).vibemailReadyToSend || 'Ready to send to {count} people').replace('{count}', String(randomList.length))} = {randomList.length * 100} VBMS
                   </p>
                 )}
               </div>
