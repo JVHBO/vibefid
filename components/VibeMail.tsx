@@ -1185,7 +1185,7 @@ export function VibeMailInboxWithClaim({
               value={composerMessage}
               onChange={(e) => setComposerMessage(e.target.value.slice(0, 200))}
               placeholder="Write your anonymous message..."
-              className="bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-3 py-2 text-vintage-ice text-sm placeholder:text-vintage-ice/40 focus:outline-none focus:border-vintage-gold resize-none h-20"
+              className="w-full bg-vintage-black/50 border border-vintage-gold/30 rounded-lg px-3 py-2 text-vintage-ice text-sm placeholder:text-vintage-ice/40 focus:outline-none focus:border-vintage-gold resize-none h-28 min-h-[112px]"
             />
             <div className="flex justify-between items-center">
               <p className="text-vintage-gold/60 text-xs">{t.vibeImageTip}</p>
@@ -1797,7 +1797,7 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId, ima
         value={message}
         onChange={(e) => setMessage(e.target.value.slice(0, 200))}
         placeholder={t.vibeMailPlaceholder}
-        className="w-full h-20 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg p-2 text-vintage-ice text-sm placeholder:text-vintage-ice/30 resize-none focus:border-vintage-gold focus:outline-none"
+        className="w-full h-28 min-h-[112px] bg-vintage-charcoal border border-vintage-gold/30 rounded-lg p-2 text-vintage-ice text-sm placeholder:text-vintage-ice/30 resize-none focus:border-vintage-gold focus:outline-none"
       />
       <div className="flex justify-between items-center">
         <p className="text-vintage-gold/60 text-xs">{t.vibeImageTip}</p>
