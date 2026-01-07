@@ -1205,34 +1205,36 @@ export function VibeMailInboxWithClaim({
             </button>
 
             {showSoundPicker && (
-              <div className="mt-2 grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                {VIBEMAIL_SOUNDS.map((sound) => (
-                  <button
-                    key={sound.id}
-                    onClick={() => {
-                      // Play preview
-                      if (composerAudioRef.current) {
-                        if (previewSound === sound.id) {
-                          composerAudioRef.current.pause();
-                          setPreviewSound(null);
-                        } else {
-                          composerAudioRef.current.src = sound.file;
-                          composerAudioRef.current.play().catch(console.error);
-                          setPreviewSound(sound.id);
+              <div className="mt-2 bg-vintage-charcoal/50 p-2 rounded-lg border border-vintage-gold/20">
+                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                  {VIBEMAIL_SOUNDS.map((sound) => (
+                    <button
+                      key={sound.id}
+                      onClick={() => {
+                        // Play preview
+                        if (composerAudioRef.current) {
+                          if (previewSound === sound.id) {
+                            composerAudioRef.current.pause();
+                            setPreviewSound(null);
+                          } else {
+                            composerAudioRef.current.src = sound.file;
+                            composerAudioRef.current.play().catch(console.error);
+                            setPreviewSound(sound.id);
+                          }
                         }
-                      }
-                      setComposerAudioId(composerAudioId === sound.id ? null : sound.id);
-                    }}
-                    className={`p-2 rounded-lg border text-xs transition-all flex items-center gap-2 ${
-                      composerAudioId === sound.id
-                        ? 'bg-vintage-gold/30 border-vintage-gold text-vintage-gold'
-                        : 'bg-vintage-black/30 border-vintage-gold/20 text-vintage-ice/70 hover:border-vintage-gold/50'
-                    }`}
-                  >
-                    <span>{previewSound === sound.id ? '⏸️' : '▶️'}</span>
-                    <span className="truncate">{sound.name}</span>
-                  </button>
-                ))}
+                        setComposerAudioId(composerAudioId === sound.id ? null : sound.id);
+                      }}
+                      className={`p-2 rounded-lg border text-xs transition-all flex items-center gap-2 ${
+                        composerAudioId === sound.id
+                          ? 'bg-vintage-gold/30 border-vintage-gold text-vintage-gold'
+                          : 'bg-vintage-charcoal border-vintage-gold/30 text-vintage-ice hover:border-vintage-gold/50 hover:bg-vintage-gold/10'
+                      }`}
+                    >
+                      <span>{previewSound === sound.id ? '⏹' : '▶️'}</span>
+                      <span className="truncate">{sound.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -1820,7 +1822,7 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId, ima
         </button>
 
         {showSoundPicker && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="mt-2 grid grid-cols-2 gap-2 bg-vintage-charcoal/50 p-2 rounded-lg border border-vintage-gold/20">
             {VIBEMAIL_SOUNDS.map((sound) => (
               <button
                 key={sound.id}
@@ -1830,12 +1832,12 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId, ima
                 }}
                 className={`p-2 rounded-lg border text-xs transition-all flex items-center gap-2 ${
                   audioId === sound.id
-                    ? 'bg-vintage-gold/20 border-vintage-gold text-vintage-gold'
-                    : 'bg-vintage-black border-vintage-gold/30 text-vintage-ice hover:border-vintage-gold/50'
+                    ? 'bg-vintage-gold/30 border-vintage-gold text-vintage-gold'
+                    : 'bg-vintage-charcoal border-vintage-gold/30 text-vintage-ice hover:border-vintage-gold/50 hover:bg-vintage-gold/10'
                 }`}
               >
                 <span className={previewSound === sound.id ? 'animate-pulse' : ''}>
-                  {previewSound === sound.id ? '■' : '▶'}
+                  {previewSound === sound.id ? '⏹' : '▶️'}
                 </span>
                 <span className="truncate">{sound.name}</span>
               </button>
