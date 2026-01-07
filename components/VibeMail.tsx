@@ -648,7 +648,7 @@ export function VibeMailInboxWithClaim({
         excludeFid: myFid,
       });
       if (cards && cards.length > 0) {
-        setRandomList(cards.map(c => ({ fid: c.fid, username: c.username, pfpUrl: c.pfpUrl })));
+        setRandomList(cards.map((c: { fid: number; username: string; pfpUrl?: string }) => ({ fid: c.fid, username: c.username, pfpUrl: c.pfpUrl })));
       }
     } catch (err) {
       console.error('Error fetching random cards:', err);
