@@ -786,17 +786,20 @@ export function VibeMailInboxWithClaim({
               <p className="text-vintage-ice/60 text-xs">
                 {messages?.length || 0} {t.messagesCount}
               </p>
-              {/* VibeMail Stats */}
-              {vibeMailStats && (vibeMailStats.totalVbmsSent > 0 || vibeMailStats.totalVbmsReceived > 0) && (
-                <div className="flex gap-2 text-[10px] mt-1">
-                  {vibeMailStats.totalVbmsSent > 0 && (
-                    <span className="text-red-400">📤 {vibeMailStats.totalVbmsSent} VBMS</span>
-                  )}
-                  {vibeMailStats.totalVbmsReceived > 0 && (
-                    <span className="text-green-400">📥 {vibeMailStats.totalVbmsReceived} VBMS</span>
-                  )}
-                </div>
-              )}
+              {/* VibeMail Stats - Always show sent/received */}
+              <div className="flex gap-3 text-[10px] mt-1">
+                <span className="text-green-400 flex items-center gap-1">
+                  <span>↓</span> {vibeMailStats?.totalVbmsReceived || 0} VBMS
+                </span>
+                <span className="text-red-400 flex items-center gap-1">
+                  <span>↑</span> {vibeMailStats?.totalVbmsSent || 0} VBMS
+                </span>
+                {pendingVbms > 0 && (
+                  <span className="text-vintage-gold flex items-center gap-1">
+                    💰 {pendingVbms}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
