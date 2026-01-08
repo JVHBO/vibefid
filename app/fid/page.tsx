@@ -71,6 +71,21 @@ export default function FidPage() {
   const router = useRouter();
 const searchParams = useSearchParams();  const testFid = searchParams.get("testFid");  const isTestMode = !!testFid;
 
+  // Initialize Farcaster SDK - REQUIRED for developer ranking
+  useEffect(() => {
+    const initFarcasterSDK = async () => {
+      try {
+        if (typeof window !== 'undefined') {
+          await sdk.actions.ready();
+          console.log('[VibeFID] ✅ Farcaster SDK ready called');
+        }
+      } catch (error) {
+        console.error('[VibeFID] ❌ Failed to call SDK ready:', error);
+      }
+    };
+    initFarcasterSDK();
+  }, []);
+
   // Auto-connect wallet in Farcaster miniapp
   useEffect(() => {
     const autoConnectWallet = async () => {
