@@ -582,6 +582,9 @@ export function VibeMailInboxWithClaim({
     myFid ? { fid: myFid } : 'skip'
   );
 
+  // Debug: Log VibeMail stats
+  console.log('[VibeMail] myFid:', myFid, 'stats:', vibeMailStats);
+
   // VBMS Balance for Need More button
   const { balance: vbmsBalance } = useVBMSBalance(myAddress as `0x${string}` | undefined);
   const farcasterContext = useFarcasterContext();
