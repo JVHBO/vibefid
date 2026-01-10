@@ -1,38 +1,76 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
+
+const SAMPLE_CARDS = [
+  'https://peach-genuine-lamprey-972.mypinata.cloud/ipfs/bafybeig6nwy6a5z4nlcn6ow5qxwrr6v4akm6gyeehcxsq7y7dcjnhm2zfa',
+  'https://peach-genuine-lamprey-972.mypinata.cloud/ipfs/bafybeibtevwfvxqnxl6p6pnrm4z36q4syt5fmmxf6csoxlyggjkz2dkfoi',
+  'https://peach-genuine-lamprey-972.mypinata.cloud/ipfs/bafybeicj7vwuihpx2yqqqccvbk5ltdyizyrnq4ijjnf5bnwfzlhqh2q7vu',
+];
 
 export default function HowToCompletePage() {
   return (
-    <div className="min-h-screen bg-vintage-dark text-vintage-cream p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-wanted text-vintage-gold mb-6">
-          How to Complete the Quest
-        </h1>
+    <div className="min-h-screen bg-gradient-to-b from-vintage-black via-vintage-charcoal to-vintage-black text-white p-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-vintage text-vintage-gold mb-2 drop-shadow-lg">
+            VibeFID Quest
+          </h1>
+          <p className="text-vintage-gold/70 text-lg">
+            Mint your Farcaster identity card
+          </p>
+        </div>
 
-        <div className="bg-vintage-charcoal/50 rounded-xl p-6 border border-vintage-gold/30 space-y-6">
-          <section>
-            <h2 className="text-xl font-bold text-vintage-gold mb-3">
-              Mint a VibeFID Card
-            </h2>
-            <p className="text-vintage-cream/80 mb-4">
-              VibeFID is your unique Farcaster identity card on Base chain.
-              Each card shows your Neynar social score and criminal backstory.
-            </p>
+        {/* Sample Cards */}
+        <div className="flex justify-center gap-4 mb-8 overflow-hidden">
+          {SAMPLE_CARDS.map((url, i) => (
+            <div
+              key={i}
+              className="relative w-32 h-44 rounded-lg overflow-hidden border-2 border-vintage-gold/30 shadow-gold transform hover:scale-105 transition-transform"
+              style={{ transform: `rotate(${(i - 1) * 8}deg)` }}
+            >
+              <Image
+                src={url}
+                alt={`VibeFID Card ${i + 1}`}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-gradient-to-br from-vintage-charcoal to-vintage-deep-black rounded-2xl p-8 border border-vintage-gold/40 shadow-gold-lg">
+          <h2 className="text-2xl font-vintage text-vintage-gold mb-4 flex items-center gap-3">
+            <span className="text-3xl">🎴</span>
+            Mint a VibeFID Card
+          </h2>
+
+          <p className="text-gray-300 mb-6 text-lg leading-relaxed">
+            VibeFID is your unique <span className="text-vintage-gold font-bold">Farcaster identity card</span> on Base chain.
+            Each card displays your Neynar social score and a unique criminal backstory.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
             <Link
               href="https://farcaster.xyz/miniapps/aisYLhjuH5_G/vibefid"
               target="_blank"
-              className="inline-block bg-vintage-gold text-vintage-dark px-6 py-3 rounded-lg font-bold hover:bg-vintage-gold/80 transition text-lg"
+              className="bg-gradient-to-r from-vintage-gold to-vintage-gold-dark text-vintage-black px-8 py-4 rounded-xl font-bold text-xl hover:shadow-gold-lg transition-all transform hover:scale-105"
             >
-              Mint VibeFID
+              Mint VibeFID →
             </Link>
-          </section>
-
-          <div className="border-t border-vintage-gold/20 pt-6">
-            <p className="text-vintage-cream/70 text-sm">
-              Once you mint your VibeFID, the quest will auto-verify using your connected wallet.
-            </p>
+            <span className="text-gray-500 text-sm">Free mint on Base</span>
           </div>
+        </div>
+
+        {/* Info */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-500 text-sm">
+            ✓ Once you mint, the quest will auto-verify using your connected wallet
+          </p>
         </div>
       </div>
     </div>
