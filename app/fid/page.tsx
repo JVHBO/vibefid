@@ -1151,13 +1151,22 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           value: parseEther(MINT_PRICE),
         });
       } else {
-        // Non-iOS: Use standard writeContract
-        console.log('💻 Using writeContract for desktop/Android');
-        writeContract({
-          address: VIBEFID_CONTRACT_ADDRESS,
+        // Non-iOS: Use sendTransaction with builder code (same as iOS)
+        // CRITICAL: writeContract() sync version does NOT add builder code!
+        console.log('💻 Using sendTransaction for desktop/Android with builder code');
+        const data = encodeFunctionData({
           abi: VIBEFID_ABI,
           functionName: 'presignedMint',
           args: [BigInt(userData.fid), metadataUrl, signature as `0x${string}`],
+        });
+
+        // Add builder code suffix for Base attribution
+        const dataWithBuilderCode = (data + dataSuffix.slice(2)) as `0x${string}`;
+        console.log('🏗️ Builder code:', BUILDER_CODE);
+
+        sendTransaction({
+          to: VIBEFID_CONTRACT_ADDRESS,
+          data: dataWithBuilderCode,
           value: parseEther(MINT_PRICE),
         });
       }
