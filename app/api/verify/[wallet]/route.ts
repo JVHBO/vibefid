@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 const VIBEFID_CONTRACT = '0x60274A138d026E3cB337B40567100FdEC3127565';
 
 export async function GET(
@@ -8,12 +7,15 @@ export async function GET(
   { params }: { params: Promise<{ wallet: string }> }
 ) {
   try {
+    // Get API key at runtime, not build time
+    const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+
     const { wallet } = await params;
 
     if (!ALCHEMY_API_KEY) {
       console.error('[verify] ALCHEMY_API_KEY not configured');
       return NextResponse.json(
-        { verified: false, error: 'API not configured', debug: 'missing_key' },
+        { verified: false, error: 'API not configured' },
         { status: 500 }
       );
     }
@@ -28,23 +30,18 @@ export async function GET(
     const walletLower = wallet.toLowerCase();
     const url = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/isHolderOfContract?wallet=${walletLower}&contractAddress=${VIBEFID_CONTRACT}`;
 
-    console.log('[verify] Checking wallet:', walletLower);
-
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' },
     });
 
     if (response.ok) {
       const data = await response.json();
-      console.log('[verify] Alchemy response:', data);
       if (data.isHolderOfContract) {
         return NextResponse.json(
           { verified: true, wallet: walletLower },
           { status: 200 }
         );
       }
-    } else {
-      console.error('[verify] Alchemy error:', response.status, await response.text());
     }
 
     return NextResponse.json(
