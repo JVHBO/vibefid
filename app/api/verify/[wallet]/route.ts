@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+const ALCHEMY_KEY = 'REDACTED';
 const VIBEFID_CONTRACT = '0x60274A138d026E3cB337B40567100FdEC3127565';
 
 export async function GET(
@@ -7,14 +8,13 @@ export async function GET(
   { params }: { params: Promise<{ wallet: string }> }
 ) {
   try {
-    const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
     const { wallet } = await params;
 
-    if (!ALCHEMY_API_KEY || !wallet || !wallet.match(/^0x[a-fA-F0-9]{40}$/i)) {
+    if (!wallet || !wallet.match(/^0x[a-fA-F0-9]{40}$/i)) {
       return NextResponse.json({ verified: false });
     }
 
-    const url = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/isHolderOfContract?wallet=${wallet.toLowerCase()}&contractAddress=${VIBEFID_CONTRACT}`;
+    const url = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_KEY}/isHolderOfContract?wallet=${wallet.toLowerCase()}&contractAddress=${VIBEFID_CONTRACT}`;
 
     const response = await fetch(url);
     if (response.ok) {
