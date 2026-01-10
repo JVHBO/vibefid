@@ -7,53 +7,25 @@ export async function GET(
   { params }: { params: Promise<{ wallet: string }> }
 ) {
   try {
-    // Get API key at runtime, not build time
     const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
-
     const { wallet } = await params;
 
-    if (!ALCHEMY_API_KEY) {
-      console.error('[verify] ALCHEMY_API_KEY not configured');
-      return NextResponse.json(
-        { verified: false, error: 'API not configured' },
-        { status: 500 }
-      );
+    if (!ALCHEMY_API_KEY || !wallet || !wallet.match(/^0x[a-fA-F0-9]{40}$/i)) {
+      return NextResponse.json({ verified: false });
     }
 
-    if (!wallet || !wallet.match(/^0x[a-fA-F0-9]{40}$/)) {
-      return NextResponse.json(
-        { verified: false, error: 'Invalid wallet address' },
-        { status: 400 }
-      );
-    }
+    const url = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/isHolderOfContract?wallet=${wallet.toLowerCase()}&contractAddress=${VIBEFID_CONTRACT}`;
 
-    const walletLower = wallet.toLowerCase();
-    const url = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/isHolderOfContract?wallet=${walletLower}&contractAddress=${VIBEFID_CONTRACT}`;
-
-    const response = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-    });
-
+    const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
       if (data.isHolderOfContract) {
-        return NextResponse.json(
-          { verified: true, wallet: walletLower },
-          { status: 200 }
-        );
+        return NextResponse.json({ verified: true });
       }
     }
 
-    return NextResponse.json(
-      { verified: false, error: 'Wallet does not hold VibeFID' },
-      { status: 400 }
-    );
-
-  } catch (error) {
-    console.error('[verify] Error:', error);
-    return NextResponse.json(
-      { verified: false, error: 'Verification failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ verified: false });
+  } catch {
+    return NextResponse.json({ verified: false });
   }
 }
