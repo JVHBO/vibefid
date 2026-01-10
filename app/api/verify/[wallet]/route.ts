@@ -10,6 +10,14 @@ export async function GET(
   try {
     const { wallet } = await params;
 
+    if (!ALCHEMY_API_KEY) {
+      console.error('[verify] ALCHEMY_API_KEY not configured');
+      return NextResponse.json(
+        { verified: false, error: 'API not configured', debug: 'missing_key' },
+        { status: 500 }
+      );
+    }
+
     if (!wallet || !wallet.match(/^0x[a-fA-F0-9]{40}$/)) {
       return NextResponse.json(
         { verified: false, error: 'Invalid wallet address' },
@@ -20,18 +28,23 @@ export async function GET(
     const walletLower = wallet.toLowerCase();
     const url = `https://base-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/isHolderOfContract?wallet=${walletLower}&contractAddress=${VIBEFID_CONTRACT}`;
 
+    console.log('[verify] Checking wallet:', walletLower);
+
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' },
     });
 
     if (response.ok) {
       const data = await response.json();
+      console.log('[verify] Alchemy response:', data);
       if (data.isHolderOfContract) {
         return NextResponse.json(
           { verified: true, wallet: walletLower },
           { status: 200 }
         );
       }
+    } else {
+      console.error('[verify] Alchemy error:', response.status, await response.text());
     }
 
     return NextResponse.json(
