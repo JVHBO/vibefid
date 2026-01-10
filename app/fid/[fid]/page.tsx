@@ -514,20 +514,33 @@ export default function FidCardPage() {
     setIsUpgrading(false);
   };
 
-  // Notify Farcaster SDK that app is ready
+  // Notify Farcaster SDK that app is ready - affects ranking!
+  // CRITICAL: Call ready() IMMEDIATELY - affects ranking and $10k reward pool!
+  const [sdkReadyCalled, setSdkReadyCalled] = useState(false);
+
   useEffect(() => {
+    if (sdkReadyCalled) return;
+
     const initFarcasterSDK = async () => {
       try {
-        if (typeof window !== 'undefined') {
-          await sdk.actions.ready();
-          console.log('Farcaster SDK ready called');
+        if (typeof window === 'undefined') return;
+
+        if (!sdk || typeof sdk.actions?.ready !== 'function') {
+          console.log('[VibeFID Card] SDK not available');
+          return;
         }
+
+        // Call ready() IMMEDIATELY - DO NOT wait for wallet/context!
+        await sdk.actions.ready();
+        setSdkReadyCalled(true);
+        console.log('[VibeFID Card] ✅ SDK ready() called IMMEDIATELY');
       } catch (error) {
-        console.error('Error calling Farcaster SDK ready:', error);
+        console.error('[VibeFID Card] ❌ SDK ready() error:', error);
       }
     };
+
     initFarcasterSDK();
-  }, []);
+  }, [sdkReadyCalled]);
 
   // Generate backstory for the card
   useEffect(() => {

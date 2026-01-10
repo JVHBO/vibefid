@@ -72,19 +72,36 @@ export default function FidPage() {
 const searchParams = useSearchParams();  const testFid = searchParams.get("testFid");  const isTestMode = !!testFid;
 
   // Initialize Farcaster SDK - REQUIRED for developer ranking
+  // CRITICAL: Call ready() IMMEDIATELY - affects ranking and $10k reward pool!
+  // Do NOT wait for wallet connection - Farcaster counts daily users via ready()
+  const [sdkReadyCalled, setSdkReadyCalled] = useState(false);
+
   useEffect(() => {
+    // Only call once
+    if (sdkReadyCalled) return;
+
     const initFarcasterSDK = async () => {
       try {
-        if (typeof window !== 'undefined') {
-          await sdk.actions.ready();
-          console.log('[VibeFID] ✅ Farcaster SDK ready called');
+        if (typeof window === 'undefined') return;
+
+        // Check if SDK is available
+        if (!sdk || typeof sdk.actions?.ready !== 'function') {
+          console.log('[VibeFID SDK] Not available (not in miniapp context)');
+          return;
         }
+
+        // Call ready() IMMEDIATELY - DO NOT wait for wallet connection!
+        await sdk.actions.ready();
+        setSdkReadyCalled(true);
+        console.log('[VibeFID SDK] ✅ ready() called IMMEDIATELY on app load');
       } catch (error) {
-        console.error('[VibeFID] ❌ Failed to call SDK ready:', error);
+        console.error('[VibeFID SDK] ❌ Failed to call ready():', error);
       }
     };
+
+    // Execute immediately on mount
     initFarcasterSDK();
-  }, []);
+  }, [sdkReadyCalled]);
 
   // Auto-connect wallet in Farcaster miniapp
   useEffect(() => {
@@ -258,20 +275,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
     }
   }, [farcasterContext.isReady, farcasterContext.user]);
 
-  // Notify Farcaster SDK that miniapp is ready
-  useEffect(() => {
-    const initFarcasterSDK = async () => {
-      try {
-        if (typeof window !== 'undefined') {
-          await sdk.actions.ready();
-          console.log('[SDK] Farcaster SDK ready called');
-        }
-      } catch (error) {
-        console.error('Error calling Farcaster SDK ready:', error);
-      }
-    };
-    initFarcasterSDK();
-  }, []);
+  // REMOVED: Duplicate sdk.actions.ready() call - already called at line ~75
 
   // Background music is already playing from main page
   // No need to start it again here

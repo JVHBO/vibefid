@@ -26,12 +26,14 @@ export function FarcasterNotificationRegistration() {
 
         const fid = context.user.fid.toString();
 
-        // Request notification permission and get token (re-import to ensure sdk is available)
+        // Request to add miniapp (includes notification permission)
+        // NOTE: addMiniApp() replaced deprecated addFrame()
         const { sdk: sdkActions } = await import('@farcaster/miniapp-sdk');
-        const notificationDetails = await sdkActions.actions.addFrame();
+        const result = await sdkActions.actions.addMiniApp();
+        console.log('[VibeFID Notification] addMiniApp result:', result);
 
-        if (notificationDetails?.notificationDetails) {
-          const { token, url } = notificationDetails.notificationDetails;
+        if (result?.notificationDetails) {
+          const { token, url } = result.notificationDetails;
 
           // Save to Convex with app identifier
           await saveToken({
@@ -40,6 +42,7 @@ export function FarcasterNotificationRegistration() {
             url,
             app: "vibefid", // Identify this is VibeFID app
           });
+          console.log('[VibeFID Notification] ✅ Token saved for FID:', fid);
         }
       } catch (error) {
         console.error('Error registering notification token:', error);
