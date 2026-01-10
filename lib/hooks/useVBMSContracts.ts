@@ -510,7 +510,8 @@ export function useUserBettingStats(address?: `0x${string}`) {
  * Calls the backend to sign the result, then submits to blockchain
  */
 export function useFinishVBMSBattle() {
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
+  // FIXED: Use attribution hook for builder code
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContractWithAttribution();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const finishBattle = async (battleId: number, winnerAddress: `0x${string}`) => {
