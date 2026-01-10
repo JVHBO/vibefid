@@ -7,19 +7,19 @@
   "miniapp": {
     "version": "1",
     "name": "VibeFID - Mint and VibeMail",
-    "iconUrl": "https://vibefid.xyz/images/vibefid-icon.jpg",
+    "iconUrl": "https://vibefid.xyz/images/vibefid-icon.png",
     "homeUrl": "https://vibefid.xyz",
     "imageUrl": "https://vibefid.xyz/images/share-vibefid.gif",
     "aspectRatio": "3:2",
     "buttonTitle": "Mint Your Card",
-    "splashImageUrl": "https://vibefid.xyz/images/splash.jpg",
+    "splashImageUrl": "https://vibefid.xyz/images/splash-200.png",
     "splashBackgroundColor": "#1a1a1a",
     "webhookUrl": "https://api.neynar.com/f/app/f595d65b-e6d3-458b-abe0-0545bdf393f5/event",
     "castShareUrl": "https://vibefid.xyz",
     "subtitle": "Farcaster Identity Cards",
     "description": "Generate and mint your unique Farcaster identity card as an NFT on Base. Your FID, your card, your legacy!",
     "screenshotUrls": [
-      "https://vibefid.xyz/images/og-vibefid.png"
+      "https://vibefid.xyz/images/screenshot-1.png"
     ],
     "primaryCategory": "social",
     "tags": ["farcaster", "nft", "identity", "cards", "base"],
