@@ -18,7 +18,8 @@ import { encodeFunctionData, type Abi } from 'viem';
 import { Attribution } from 'ox/erc8021';
 
 // Your unique builder code from base.dev
-export const BUILDER_CODE = 'bc_j3oc0rlv';
+// VibeFID has its own builder code (different from VBMS)
+export const BUILDER_CODE = 'bc_jqtoxmvp';
 
 // Coinbase Paymaster URL for Base mainnet (gas sponsorship)
 // Get your key from: https://portal.cdp.coinbase.com/
