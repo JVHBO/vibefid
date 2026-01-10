@@ -1,12 +1,11 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
 const SAMPLE_CARDS = [
-  'https://peach-genuine-lamprey-972.mypinata.cloud/ipfs/bafybeig6nwy6a5z4nlcn6ow5qxwrr6v4akm6gyeehcxsq7y7dcjnhm2zfa',
-  'https://peach-genuine-lamprey-972.mypinata.cloud/ipfs/bafybeibtevwfvxqnxl6p6pnrm4z36q4syt5fmmxf6csoxlyggjkz2dkfoi',
-  'https://peach-genuine-lamprey-972.mypinata.cloud/ipfs/bafybeicj7vwuihpx2yqqqccvbk5ltdyizyrnq4ijjnf5bnwfzlhqh2q7vu',
+  'https://ipfs.filebase.io/ipfs/QmfHk64Kwd9Qnn7MwaBcTuXZiMDMubsoBqbQ9NpJ7QkdzW',
+  'https://ipfs.filebase.io/ipfs/QmSUye2194NvSzk4Q6iQ35jHzFQn8yceKrP1ACD69i6zmw',
+  'https://ipfs.filebase.io/ipfs/QmdLjTGh1f8jtqqHxU5B2Z4zcTezCeV9NpVeWmNXUMQd3M',
 ];
 
 export default function HowToCompletePage() {
@@ -23,20 +22,21 @@ export default function HowToCompletePage() {
           </p>
         </div>
 
-        {/* Sample Cards */}
+        {/* Sample Cards with Videos */}
         <div className="flex justify-center gap-4 mb-8 overflow-hidden">
           {SAMPLE_CARDS.map((url, i) => (
             <div
               key={i}
-              className="relative w-32 h-44 rounded-lg overflow-hidden border-2 border-vintage-gold/30 shadow-gold transform hover:scale-105 transition-transform"
+              className="relative w-32 h-44 rounded-lg overflow-hidden border-2 border-vintage-gold/30 shadow-gold hover:scale-105 transition-transform"
               style={{ transform: `rotate(${(i - 1) * 8}deg)` }}
             >
-              <Image
+              <video
                 src={url}
-                alt={`VibeFID Card ${i + 1}`}
-                fill
-                className="object-cover"
-                unoptimized
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
               />
             </div>
           ))}
@@ -54,16 +54,13 @@ export default function HowToCompletePage() {
             Each card displays your Neynar social score and a unique criminal backstory.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Link
-              href="https://farcaster.xyz/miniapps/aisYLhjuH5_G/vibefid"
-              target="_blank"
-              className="bg-gradient-to-r from-vintage-gold to-vintage-gold-dark text-vintage-black px-8 py-4 rounded-xl font-bold text-xl hover:shadow-gold-lg transition-all transform hover:scale-105"
-            >
-              Mint VibeFID →
-            </Link>
-            <span className="text-gray-500 text-sm">Free mint on Base</span>
-          </div>
+          <Link
+            href="https://farcaster.xyz/miniapps/aisYLhjuH5_G/vibefid"
+            target="_blank"
+            className="bg-gradient-to-r from-vintage-gold to-vintage-gold-dark text-vintage-black px-8 py-4 rounded-xl font-bold text-xl hover:shadow-gold-lg transition-all transform hover:scale-105"
+          >
+            Mint VibeFID →
+          </Link>
         </div>
 
         {/* Info */}
