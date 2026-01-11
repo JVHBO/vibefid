@@ -14,10 +14,7 @@ export function FarcasterNotificationRegistration() {
   useEffect(() => {
     async function registerNotificationToken() {
       try {
-        // Dynamic import to prevent SSR/non-Farcaster errors
         const { sdk } = await import('@farcaster/miniapp-sdk');
-
-        // Check if running in Farcaster
         const context = await sdk.context;
 
         if (!context?.user?.fid) {
@@ -26,31 +23,30 @@ export function FarcasterNotificationRegistration() {
 
         const fid = context.user.fid.toString();
 
-        // Request to add miniapp (includes notification permission)
-        // NOTE: addMiniApp() replaced deprecated addFrame()
-        const { sdk: sdkActions } = await import('@farcaster/miniapp-sdk');
-        const result = await sdkActions.actions.addMiniApp();
-        console.log('[VibeFID Notification] addMiniApp result:', result);
+        // 1. Check if token exists in context (user already has notifications enabled)
+        const contextDetails = (context.client as any)?.notificationDetails;
+        if (contextDetails?.token && contextDetails?.url) {
+          await saveToken({ fid, token: contextDetails.token, url: contextDetails.url, app: "vibefid" });
+          console.log('[VibeFID] ✅ Token from context for FID:', fid);
+          return;
+        }
+
+        // 2. Otherwise try addMiniApp (prompts user to add/enable notifications)
+        const result = await sdk.actions.addMiniApp();
+        console.log('[VibeFID] addMiniApp result:', result);
 
         if (result?.notificationDetails) {
           const { token, url } = result.notificationDetails;
-
-          // Save to Convex with app identifier
-          await saveToken({
-            fid,
-            token,
-            url,
-            app: "vibefid", // Identify this is VibeFID app
-          });
-          console.log('[VibeFID Notification] ✅ Token saved for FID:', fid);
+          await saveToken({ fid, token, url, app: "vibefid" });
+          console.log('[VibeFID] ✅ Token from addMiniApp for FID:', fid);
         }
       } catch (error) {
-        console.error('Error registering notification token:', error);
+        console.error('[VibeFID] Notification error:', error);
       }
     }
 
     registerNotificationToken();
   }, [saveToken]);
 
-  return null; // This component doesn't render anything
+  return null;
 }
