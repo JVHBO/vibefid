@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const ALCHEMY_KEY = 'REDACTED';
+const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY;
 const VIBEFID_CONTRACT = '0x60274A138d026E3cB337B40567100FdEC3127565';
 
 export async function GET(

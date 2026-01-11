@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || "REDACTED";
+const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
 export async function GET(request: NextRequest) {
   const fid = request.nextUrl.searchParams.get("fid");
