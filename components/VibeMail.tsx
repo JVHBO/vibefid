@@ -14,6 +14,7 @@ import { useFarcasterContext } from '@/lib/hooks/useFarcasterContext';
 import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
 import { NFTGiftModal } from './NFTGiftModal';
+import haptics from '@/lib/haptics';
 
 const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
 
@@ -1717,7 +1718,8 @@ export function VibeMailInboxWithClaim({
           onComplete={() => {
             // Show success feedback
             const recipientName = giftRecipientUsername || 'sender';
-            setSendSuccess({ recipient: recipientName, timestamp: Date.now() });
+            haptics.send(); // Haptic on send
+                  setSendSuccess({ recipient: recipientName, timestamp: Date.now() });
             // Auto-hide after 3 seconds
             setTimeout(() => setSendSuccess(null), 3000);
             // Reset everything after complete

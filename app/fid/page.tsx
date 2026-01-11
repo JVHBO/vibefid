@@ -18,6 +18,7 @@ import FoilCardEffect from "@/components/FoilCardEffect";
 import { CardMedia } from "@/components/CardMedia";
 import { useFarcasterContext } from "@/lib/hooks/useFarcasterContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import haptics from "@/lib/haptics";
 import { useMusic } from "@/contexts/MusicContext";
 import type { CriminalBackstoryData } from "@/lib/generateCriminalBackstory";
 import { VIBEFID_POWER_CONFIG } from "@/lib/collections";
@@ -607,6 +608,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         try {
           // Play victory sound on successful mint
           AudioManager.win();
+          haptics.mint(); // Haptic on successful mint
 
           setError("Saving card data...");
 

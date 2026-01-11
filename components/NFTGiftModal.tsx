@@ -10,6 +10,7 @@ import { useTransferVBMS } from '@/lib/hooks/useVBMSContracts';
 import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
 import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from '@/lib/hooks/useWriteContractWithAttribution';
+import haptics from '@/lib/haptics';
 
 // ERC-721 ABI for safeTransferFrom
 const ERC721_ABI = [
