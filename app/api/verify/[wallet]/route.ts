@@ -8,6 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ wallet: string }> }
 ) {
   try {
+    if (!ALCHEMY_KEY) {
+      return NextResponse.json({ verified: false });
+    }
+
     const { wallet } = await params;
 
     if (!wallet || !wallet.match(/^0x[a-fA-F0-9]{40}$/i)) {

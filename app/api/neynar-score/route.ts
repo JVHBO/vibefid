@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
 export async function GET(request: NextRequest) {
+  if (!NEYNAR_API_KEY) {
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+  }
+
   const fid = request.nextUrl.searchParams.get("fid");
 
   if (!fid) {
