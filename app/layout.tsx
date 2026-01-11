@@ -6,7 +6,6 @@ import { MusicProvider } from "@/contexts/MusicContext";
 import { Web3Provider } from "@/contexts/Web3Provider";
 import { ConvexClientProvider } from "@/contexts/ConvexClientProvider";
 // PlayerCardsProvider removed - not needed for VibeFID miniapp
-import { FarcasterNotificationRegistration } from "@/components/FarcasterNotificationRegistration";
 import { Analytics } from "@vercel/analytics/react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { NeynarMiniAppProvider } from "@/contexts/NeynarMiniAppProvider";
@@ -125,7 +124,6 @@ export default function RootLayout({
                 
                   <LanguageProvider>
                     <MusicProvider>
-                      <FarcasterNotificationRegistration />
                       {children}
                     </MusicProvider>
                   </LanguageProvider>
