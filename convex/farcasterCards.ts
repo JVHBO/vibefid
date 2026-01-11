@@ -60,7 +60,7 @@ export const mintFarcasterCard = mutation({
     );
 
     if (!validation.valid) {
-      console.warn(, validation.errors);
+      console.warn(`⚠️ SECURITY: Invalid card traits for FID ${args.fid}:`, validation.errors);
       // Use corrected values instead of rejecting (for better UX)
       // In production, you may want to reject entirely
     }
