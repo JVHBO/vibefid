@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { validateCardTraits } from "./cardValidation";
 
 /**
  * Mint a Farcaster Card
@@ -48,6 +49,28 @@ export const mintFarcasterCard = mutation({
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
+    // 🔒 SECURITY: Server-side validation of card traits
+    const validation = validateCardTraits(
+      args.fid,
+      args.neynarScore,
+      args.rarity,
+      args.foil,
+      args.wear,
+      args.power
+    );
+
+    if (!validation.valid) {
+      console.warn(, validation.errors);
+      // Use corrected values instead of rejecting (for better UX)
+      // In production, you may want to reject entirely
+    }
+
+    // Use server-calculated values (ignore client values)
+    const finalRarity = validation.correctedValues!.rarity;
+    const finalFoil = validation.correctedValues!.foil;
+    const finalWear = validation.correctedValues!.wear;
+    const finalPower = validation.correctedValues!.power;
+
 
     // CRITICAL FIX: Check if FID already exists to prevent orphan duplicates
     const existingCards = await ctx.db
@@ -92,11 +115,11 @@ export const mintFarcasterCard = mutation({
 
       // Card Properties
       cardId,
-      rarity: args.rarity,
-      foil: args.foil,
-      wear: args.wear,
+      rarity: finalRarity, // 🔒 Server-validated
+      foil: finalFoil, // 🔒 Server-validated
+      wear: finalWear, // 🔒 Server-validated
       status: "Rarity Assigned", // All Farcaster cards have rarity from Neynar score
-      power: args.power,
+      power: finalPower, // 🔒 Server-validated
 
       // Playing Card Properties
       suit: args.suit,
@@ -146,8 +169,8 @@ export const mintFarcasterCard = mutation({
     return {
       success: true,
       cardId,
-      rarity: args.rarity,
-      power: args.power,
+      rarity: finalRarity,
+      power: finalPower,
       message: `Successfully minted ${args.rarity} card for ${args.username}!`,
     };
   },
