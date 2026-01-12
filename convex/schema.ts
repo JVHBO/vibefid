@@ -173,8 +173,10 @@ export default defineSchema({
     lastPlayedIndex: v.optional(v.number()), // Track which song was last played
 
     // Badges
-    hasVibeBadge: v.optional(v.boolean()), // VIBE badge
-    rouletteTestMode: v.optional(v.boolean()), // Roulette test mode enabled - claimed by VibeFID holders (bonus coins in Wanted Cast)
+    hasVibeBadge: v.optional(v.boolean()), // VIBE badge - claimed by VibeFID holders (bonus coins in Wanted Cast)
+
+    // Roulette
+    rouletteTestMode: v.optional(v.boolean()), // Admin: unlimited spins for testing
 
     // Metadata
     userIndex: v.optional(v.number()),
@@ -493,7 +495,7 @@ export default defineSchema({
       v.literal("immediate"), // Claimed immediately after battle
       v.literal("manual"), // Manual claim
       v.literal("testvbms_conversion"), // TESTVBMS to VBMS conversion
-      v.literal("roulette") // Roulette winnings
+      v.literal("roulette") // Daily roulette claim
     ),
   })
     .index("by_player", ["playerAddress", "timestamp"])
@@ -1573,7 +1575,8 @@ export default defineSchema({
   })
     .index("by_card_date", ["cardFid", "date"])
     .index("by_voter_date", ["voterFid", "date"])
-    .index("by_date", ["date"]),
+    .index("by_date", ["date"])
+    .index("by_card_unread", ["cardFid", "isRead"]),
 
   // 📊 Daily Vote Leaderboard
   dailyVoteLeaderboard: defineTable({
@@ -1654,4 +1657,49 @@ export default defineSchema({
     .index("by_sender", ["senderFid", "createdAt"])
     .index("by_recipient", ["recipientFid", "createdAt"])
     .index("by_txHash", ["txHash"]),
+
+  // Roulette daily spins
+  rouletteSpins: defineTable({
+    address: v.string(),
+    date: v.string(), // YYYY-MM-DD
+    prizeAmount: v.number(),
+    prizeIndex: v.number(),
+    spunAt: v.number(),
+    claimed: v.optional(v.boolean()),
+    isPaidSpin: v.optional(v.boolean()), // Whether prize was claimed
+    claimedAt: v.optional(v.number()), // When claimed
+    txHash: v.optional(v.string()), // Claim transaction hash
+  })
+    .index("by_address_date", ["address", "date"])
+    .index("by_date", ["date"]),
+
+  // Access analytics - track miniapp vs web visits
+  accessAnalytics: defineTable({
+    date: v.string(), // YYYY-MM-DD
+    source: v.union(
+      v.literal("miniapp"),       // Farcaster miniapp (SDK context present) - Warpcast app
+      v.literal("farcaster_web"), // farcaster.xyz in browser (no SDK but farcaster referrer)
+      v.literal("web"),           // Direct website access
+      v.literal("frame")          // Farcaster frame (legacy)
+    ),
+    uniqueUsers: v.number(),  // Count of unique addresses
+    sessions: v.number(),     // Total sessions
+    addresses: v.array(v.string()), // List of addresses (for dedup)
+  })
+    .index("by_date", ["date"])
+    .index("by_date_source", ["date", "source"]),
+
+  // Access debug logs - detailed info for debugging access detection
+  accessDebugLogs: defineTable({
+    address: v.string(),
+    source: v.string(),
+    userAgent: v.optional(v.string()),
+    referrer: v.optional(v.string()),
+    currentUrl: v.optional(v.string()),
+    isIframe: v.optional(v.boolean()),
+    sdkAvailable: v.optional(v.boolean()),
+    timestamp: v.number(),
+  })
+    .index("by_address", ["address"])
+    .index("by_timestamp", ["timestamp"]),
 });
