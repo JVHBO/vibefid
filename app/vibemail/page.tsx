@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useFarcasterContext } from '@/lib/hooks/useFarcasterContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAccount } from 'wagmi';
 import { useClaimVBMS } from '@/lib/hooks/useVBMSContracts';
