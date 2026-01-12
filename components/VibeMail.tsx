@@ -253,6 +253,27 @@ export function isCustomAudio(audioId: string | undefined): boolean {
   return audioId?.startsWith('custom:') || false;
 }
 
+// Get Vibe Market URL for a collection name
+const COLLECTION_MARKETPLACE_URLS: Record<string, string> = {
+  'Vibe Most Wanted': 'https://vibechain.com/market/vibe-most-wanted?ref=XCLR1DJ6LQTT',
+  'GM VBRS': 'https://vibechain.com/market/gm-vbrs?ref=XCLR1DJ6LQTT',
+  'Viberuto': 'https://vibechain.com/market/viberuto-packs?ref=XCLR1DJ6LQTT',
+  'Meowverse': 'https://vibechain.com/market/meowverse?ref=XCLR1DJ6LQTT',
+  'Poorly Drawn Pepes': 'https://vibechain.com/market/poorly-drawn-pepes?ref=XCLR1DJ6LQTT',
+  'Team Pothead': 'https://vibechain.com/market/team-pothead?ref=XCLR1DJ6LQTT',
+  'Tarot': 'https://vibechain.com/market/tarot?ref=XCLR1DJ6LQTT',
+  'Baseball Cabal': 'https://vibechain.com/market/base-ball-cabal?ref=XCLR1DJ6LQTT',
+  'Vibe FX': 'https://vibechain.com/market/vibe-fx?ref=XCLR1DJ6LQTT',
+  'History of Computer': 'https://vibechain.com/market/historyofcomputer?ref=XCLR1DJ6LQTT',
+  '$CU-MI-OH!': 'https://vibechain.com/market/cu-mi-oh?ref=XCLR1DJ6LQTT',
+  'Vibe Rot Bangers': 'https://vibechain.com/market/vibe-rot-bangers?ref=XCLR1DJ6LQTT',
+};
+
+export function getMarketplaceUrl(collectionName: string | undefined): string | null {
+  if (!collectionName) return null;
+  return COLLECTION_MARKETPLACE_URLS[collectionName] || 'https://vibechain.com/market/vibe-most-wanted?ref=XCLR1DJ6LQTT';
+}
+
 // Get storage ID from custom audio ID
 export function getCustomAudioStorageId(audioId: string): string | null {
   if (!isCustomAudio(audioId)) return null;
@@ -476,7 +497,12 @@ export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailIn
 
               {/* NFT Gift Display */}
               {selectedMessage.giftNftImageUrl && (
-                <div className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3">
+                <a
+                  href={getMarketplaceUrl(selectedMessage.giftNftCollection) || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3 hover:border-vintage-gold/70 hover:from-vintage-gold/20 transition-all cursor-pointer"
+                >
                   <div className="relative flex-shrink-0">
                     <img
                       src={selectedMessage.giftNftImageUrl}
@@ -492,7 +518,8 @@ export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailIn
                     <p className="text-vintage-gold font-bold text-xs truncate">{selectedMessage.giftNftName}</p>
                     <p className="text-vintage-ice/50 text-[10px]">{selectedMessage.giftNftCollection}</p>
                   </div>
-                </div>
+                  <span className="text-vintage-gold text-lg">🛒</span>
+                </a>
               )}
 
               {/* Vote Info */}
@@ -1561,7 +1588,12 @@ export function VibeMailInboxWithClaim({
 
               {/* NFT Gift Display */}
               {selectedMessage.giftNftImageUrl && (
-                <div className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3">
+                <a
+                  href={getMarketplaceUrl(selectedMessage.giftNftCollection) || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3 hover:border-vintage-gold/70 hover:from-vintage-gold/20 transition-all cursor-pointer"
+                >
                   <div className="relative flex-shrink-0">
                     <img
                       src={selectedMessage.giftNftImageUrl}
@@ -1577,7 +1609,8 @@ export function VibeMailInboxWithClaim({
                     <p className="text-vintage-gold font-bold text-xs truncate">{selectedMessage.giftNftName}</p>
                     <p className="text-vintage-ice/50 text-[10px]">{selectedMessage.giftNftCollection}</p>
                   </div>
-                </div>
+                  <span className="text-vintage-gold text-lg">🛒</span>
+                </a>
               )}
 
               <div className="mt-2 pt-2 border-t border-vintage-gold/20 flex items-center justify-between text-[10px]">

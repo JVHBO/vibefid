@@ -97,6 +97,22 @@ export function NFTGiftModal({
   // Wagmi write contract hook
   const { writeContractAsync } = useWriteContractWithAttribution();
 
+  // Marketplace URLs for each collection
+  const MARKETPLACE_URLS: Record<string, string> = {
+    'vmw': 'https://vibechain.com/market/vibe-most-wanted?ref=XCLR1DJ6LQTT',
+    'gmvbrs': 'https://vibechain.com/market/gm-vbrs?ref=XCLR1DJ6LQTT',
+    'viberuto': 'https://vibechain.com/market/viberuto-packs?ref=XCLR1DJ6LQTT',
+    'meowverse': 'https://vibechain.com/market/meowverse?ref=XCLR1DJ6LQTT',
+    'poorlydrawnpepes': 'https://vibechain.com/market/poorly-drawn-pepes?ref=XCLR1DJ6LQTT',
+    'teampothead': 'https://vibechain.com/market/team-pothead?ref=XCLR1DJ6LQTT',
+    'tarot': 'https://vibechain.com/market/tarot?ref=XCLR1DJ6LQTT',
+    'baseballcabal': 'https://vibechain.com/market/base-ball-cabal?ref=XCLR1DJ6LQTT',
+    'vibefx': 'https://vibechain.com/market/vibe-fx?ref=XCLR1DJ6LQTT',
+    'historyofcomputer': 'https://vibechain.com/market/historyofcomputer?ref=XCLR1DJ6LQTT',
+    'cumioh': 'https://vibechain.com/market/cu-mi-oh?ref=XCLR1DJ6LQTT',
+    'viberotbangers': 'https://vibechain.com/market/vibe-rot-bangers?ref=XCLR1DJ6LQTT',
+  };
+
   // Hardcoded giftable collections - show immediately, load NFTs on demand
   const GIFTABLE_COLLECTIONS: CollectionInfo[] = [
     { id: 'vmw', name: 'Vibe Most Wanted', count: 0 },
@@ -305,20 +321,33 @@ export function NFTGiftModal({
       )}
       <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
         {collections.map((col) => (
-          <button
-            key={col.id}
-            onClick={() => {
-              setSelectedCollection(col.id);
-              setError(null);
-              fetchCollectionNFTs(col.id);
-            }}
-            className="w-full p-3 bg-vintage-black/50 border border-vintage-gold/30 rounded-lg text-left hover:border-vintage-gold/60 hover:bg-vintage-gold/10 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-vintage-gold font-bold">{col.name}</span>
-              <span className="text-vintage-ice/60 text-sm">→</span>
-            </div>
-          </button>
+          <div key={col.id} className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setSelectedCollection(col.id);
+                setError(null);
+                fetchCollectionNFTs(col.id);
+              }}
+              className="flex-1 p-3 bg-vintage-black/50 border border-vintage-gold/30 rounded-lg text-left hover:border-vintage-gold/60 hover:bg-vintage-gold/10 transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-vintage-gold font-bold">{col.name}</span>
+                <span className="text-vintage-ice/60 text-sm">→</span>
+              </div>
+            </button>
+            {MARKETPLACE_URLS[col.id] && (
+              <a
+                href={MARKETPLACE_URLS[col.id]}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="p-3 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg hover:bg-vintage-gold/30 transition-all"
+                title="Buy on Vibe Market"
+              >
+                <span className="text-vintage-gold text-lg">🛒</span>
+              </a>
+            )}
+          </div>
         ))}
       </div>
       <button
