@@ -173,7 +173,8 @@ export default defineSchema({
     lastPlayedIndex: v.optional(v.number()), // Track which song was last played
 
     // Badges
-    hasVibeBadge: v.optional(v.boolean()), // VIBE badge - claimed by VibeFID holders (bonus coins in Wanted Cast)
+    hasVibeBadge: v.optional(v.boolean()), // VIBE badge
+    rouletteTestMode: v.optional(v.boolean()), // Roulette test mode enabled - claimed by VibeFID holders (bonus coins in Wanted Cast)
 
     // Metadata
     userIndex: v.optional(v.number()),
@@ -491,7 +492,8 @@ export default defineSchema({
       v.literal("inbox_collect"), // Collected from inbox
       v.literal("immediate"), // Claimed immediately after battle
       v.literal("manual"), // Manual claim
-      v.literal("testvbms_conversion") // TESTVBMS to VBMS conversion
+      v.literal("testvbms_conversion"), // TESTVBMS to VBMS conversion
+      v.literal("roulette") // Roulette winnings
     ),
   })
     .index("by_player", ["playerAddress", "timestamp"])

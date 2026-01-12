@@ -382,10 +382,16 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[350] flex items-center justify-center bg-black/90 p-4">
+    <div className={asPage
+      ? "min-h-screen bg-vintage-dark"
+      : "fixed inset-0 z-[350] flex items-center justify-center bg-black/90 p-4"
+    }>
       <audio ref={audioRef} onEnded={() => setPlayingAudio(null)} />
 
-      <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[calc(100vh-120px)] overflow-hidden flex flex-col">
+      <div className={asPage
+        ? "bg-vintage-charcoal p-4 w-full h-full flex flex-col"
+        : "bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[calc(100vh-120px)] overflow-hidden flex flex-col"
+      }>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -572,6 +578,7 @@ interface VibeMailInboxWithClaimProps {
   onClaim: () => Promise<void>;
   myFid?: number;
   myAddress?: string;
+  asPage?: boolean; // Render as full page instead of modal
 }
 
 export function VibeMailInboxWithClaim({
@@ -585,6 +592,7 @@ export function VibeMailInboxWithClaim({
   onClaim,
   myFid,
   myAddress,
+  asPage = false,
 }: VibeMailInboxWithClaimProps) {
   const { lang } = useLanguage();
   const t = fidTranslations[lang];
@@ -767,10 +775,16 @@ export function VibeMailInboxWithClaim({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[350] flex items-center justify-center bg-black/90 p-4">
+    <div className={asPage
+      ? "min-h-screen bg-vintage-dark"
+      : "fixed inset-0 z-[350] flex items-center justify-center bg-black/90 p-4"
+    }>
       <audio ref={audioRef} onEnded={() => setPlayingAudio(null)} />
 
-      <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[calc(100vh-120px)] overflow-hidden flex flex-col">
+      <div className={asPage
+        ? "bg-vintage-charcoal h-screen w-full flex flex-col"
+        : "bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[calc(100vh-120px)] overflow-hidden flex flex-col"
+      }>
         {/* Success Feedback Toast */}
         {sendSuccess && (
           <div className="mb-3 p-3 bg-green-500/20 border border-green-500/50 rounded-lg flex items-center gap-2 animate-pulse">
@@ -901,8 +915,14 @@ export function VibeMailInboxWithClaim({
 
         {/* VibeMail Composer Modal - FULL SCREEN OVERLAY */}
         {showComposer && myFid && myAddress && (
-          <div className="fixed inset-0 z-[500] bg-black/95 flex items-center justify-center p-4">
-            <div className="bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col">
+          <div className={asPage
+            ? "fixed inset-0 z-[500] bg-vintage-dark"
+            : "fixed inset-0 z-[500] bg-black/95 flex items-center justify-center p-4"
+          }>
+            <div className={asPage
+              ? "bg-vintage-charcoal h-full w-full p-4 overflow-y-auto flex flex-col"
+              : "bg-vintage-charcoal border-2 border-vintage-gold rounded-2xl p-4 w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col"
+            }>
             {/* HEADER */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-vintage-gold/30">
               <button
@@ -1236,8 +1256,28 @@ export function VibeMailInboxWithClaim({
               <p className="text-vintage-ice/40 text-xs">{composerMessage.length}/200</p>
             </div>
 
-            {/* Audio Selector */}
+            {/* Voice Recorder - only show if no meme sound selected */}
+            {!composerAudioId || isCustomAudio(composerAudioId || undefined) ? (
+              <div className="mt-2">
+                <AudioRecorder
+                  onAudioReady={(id) => setComposerAudioId(id)}
+                  onClear={() => setComposerAudioId(null)}
+                  currentAudioId={isCustomAudio(composerAudioId || undefined) ? composerAudioId : null}
+                />
+              </div>
+            ) : (
+              <div className="mt-2 p-2 bg-vintage-gold/10 border border-vintage-gold/30 rounded-lg flex items-center justify-between">
+                <span className="text-vintage-ice text-sm">🔊 Meme sound selected</span>
+                <button
+                  onClick={() => setComposerAudioId(null)}
+                  className="text-red-400 text-xs hover:text-red-300"
+                >Clear</button>
+              </div>
+            )}
+
+            {/* Meme Sound Picker - only show if no custom audio */}
             <audio ref={composerAudioRef} onEnded={() => setPreviewSound(null)} />
+            {!isCustomAudio(composerAudioId || undefined) && (
             <button
               onClick={() => setShowSoundPicker(!showSoundPicker)}
               className="mt-2 w-full py-2 bg-vintage-black/50 border border-vintage-gold/30 rounded-lg text-vintage-ice text-sm hover:border-vintage-gold/50 flex items-center justify-between px-3"
@@ -1247,6 +1287,7 @@ export function VibeMailInboxWithClaim({
               </span>
               <span className="text-vintage-gold">{showSoundPicker ? '▲' : '▼'}</span>
             </button>
+            )}
 
             {showSoundPicker && (
               <div className="mt-2 bg-vintage-charcoal/50 p-2 rounded-lg border border-vintage-gold/20">
