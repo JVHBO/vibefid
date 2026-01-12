@@ -38,9 +38,12 @@ export default function VibeMailPage() {
     userFid ? { fid: userFid } : 'skip'
   );
 
-  // Claim VBMS hook
+  // Claim VBMS hooks and actions
   const { claimVBMS, isConfirming: isClaimTxPending } = useClaimVBMS();
+  const prepareVibeRewardsClaim = useAction(api.vibeRewards.prepareVibeRewardsClaim);
+  const restoreClaimOnTxFailure = useMutation(api.vibeRewards.restoreClaimOnTxFailure);
   const [isClaimingRewards, setIsClaimingRewards] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -91,17 +94,48 @@ export default function VibeMailPage() {
 
   // Handle claim
   const handleClaim = async () => {
-    if (!vibeRewards?.pendingVbms || !address) return;
+    if (!vibeRewards?.pendingVbms || !address || !userFid) return;
 
     setIsClaimingRewards(true);
+    setClaimError(null);
+    let claimResult: { success: boolean; amount?: number; nonce?: string; signature?: string; error?: string } | null = null;
+
     try {
-      // TODO: Implement proper claim flow
-      console.log('Claiming rewards...');
-    } catch (error) {
-      console.error('Claim error:', error);
-    } finally {
-      setIsClaimingRewards(false);
+      console.log('📝 Preparing claim via Convex action...');
+      claimResult = await prepareVibeRewardsClaim({
+        fid: userFid,
+        claimerAddress: address,
+      });
+
+      if (!claimResult || !claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
+        throw new Error(claimResult?.error || 'Failed to prepare claim');
+      }
+
+      console.log('✅ Got nonce + signature from Convex');
+      console.log('🔗 Calling claimVBMS on contract...');
+
+      const txHash = await claimVBMS(
+        claimResult.amount.toString(),
+        claimResult.nonce as `0x${string}`,
+        claimResult.signature as `0x${string}`
+      );
+      console.log('✅ Claim TX:', txHash);
+      alert(`Claimed ${claimResult.amount} VBMS! TX: ${txHash}`);
+    } catch (e: any) {
+      console.error('❌ Claim failed:', e);
+      if (claimResult?.amount) {
+        console.log('🔄 Restoring rewards after TX failure...');
+        try {
+          await restoreClaimOnTxFailure({ fid: userFid, amount: claimResult.amount });
+          console.log('✅ Rewards restored');
+        } catch (restoreErr) {
+          console.error('Failed to restore rewards:', restoreErr);
+        }
+      }
+      setClaimError(e.message || 'Claim failed');
+      setTimeout(() => setClaimError(null), 5000);
     }
+    setIsClaimingRewards(false);
   };
 
   return (

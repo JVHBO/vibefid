@@ -576,6 +576,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const setMusicEnabledWrapper = useCallback((enabled: boolean) => {
     setIsMusicEnabled(enabled);
 
+    // Persist to localStorage
+    try {
+      localStorage.setItem('musicEnabled', String(enabled));
+    } catch (error) {
+      console.warn('localStorage not available, cannot persist music enabled preference');
+    }
+
     if (!enabled) {
       // Stop YouTube player
       stopYouTubePlayer();
