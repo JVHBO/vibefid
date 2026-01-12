@@ -48,7 +48,7 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          path: 'farcasterCards:getScoreHistory',
+          path: 'neynarScore:getScoreHistory',
           args: { fid: parseInt(fid) },
           format: 'json',
         }),
