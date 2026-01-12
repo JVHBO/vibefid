@@ -19,7 +19,6 @@ const rarityColors: Record<string, string> = {
 export default async function Image({ params }: { params: Promise<{ fid: string }> }) {
   const { fid } = await params;
 
-  // Fetch card data from Convex
   let cardData: any = null;
   let scoreHistory: any = null;
 
@@ -51,31 +50,18 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
       const data = await cardResponse.json();
       cardData = data.value;
     }
-
     if (historyResponse.ok) {
       const historyData = await historyResponse.json();
       scoreHistory = historyData.value;
     }
-  } catch (e) {
-    console.error('[Score OG] Fetch error:', e);
+  } catch {
+    // Continue with fallback
   }
 
-  // Fallback for unminted cards
   if (!cardData) {
     return new ImageResponse(
       (
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#667eea',
-            color: 'white',
-            flexDirection: 'column',
-          }}
-        >
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#667eea', color: 'white', flexDirection: 'column' }}>
           <div style={{ fontSize: 48, fontWeight: 900 }}>VibeFID #{fid}</div>
           <div style={{ fontSize: 24, marginTop: 20 }}>Check your Neynar Score!</div>
         </div>
@@ -84,87 +70,42 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
     );
   }
 
-  // Calculate values
   const currentScore = cardData.neynarScore || 0;
   const mintScore = scoreHistory?.mintScore || currentScore;
   const scoreDiff = currentScore - mintScore;
   const diffSign = scoreDiff >= 0 ? '+' : '';
   const currentRarity = cardData.rarity || 'Common';
   const borderColor = rarityColors[currentRarity] || '#6B7280';
-
-  // Get card image URL
-  let cardImageSrc = '';
-  const cardImageUrl = cardData.cardImageUrl || cardData.imageUrl;
-  if (cardImageUrl) {
-    let cid = '';
-    if (cardImageUrl.startsWith('ipfs://')) {
-      cid = cardImageUrl.replace('ipfs://', '');
-    } else if (cardImageUrl.includes('/ipfs/')) {
-      cid = cardImageUrl.split('/ipfs/')[1];
-    }
-    if (cid) {
-      cardImageSrc = `https://ipfs.filebase.io/ipfs/${cid}`;
-    }
-  }
+  const suitColor = cardData.color === 'red' ? '#EF4444' : '#FFFFFF';
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          backgroundColor: '#1a1a2e',
-          padding: 40,
-        }}
-      >
-        {/* Left - Card Image */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 400,
-          }}
-        >
-          {cardImageSrc ? (
-            <img
-              src={cardImageSrc}
-              width={350}
-              height={490}
-              style={{ borderRadius: 12, border: `4px solid ${borderColor}` }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 350,
-                height: 490,
-                backgroundColor: '#2a2a4e',
-                borderRadius: 12,
-                border: `4px solid ${borderColor}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: 48,
-                fontWeight: 900,
-              }}
-            >
+      <div style={{ width: '100%', height: '100%', display: 'flex', backgroundColor: '#1a1a2e', padding: 40 }}>
+        {/* Left - Card placeholder */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 400 }}>
+          <div
+            style={{
+              width: 350,
+              height: 490,
+              backgroundColor: '#2a2a4e',
+              borderRadius: 16,
+              border: `6px solid ${borderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div style={{ color: suitColor, fontSize: 72, fontWeight: 900 }}>
               {cardData.rank || '?'}{cardData.suitSymbol || ''}
             </div>
-          )}
+            <div style={{ color: 'white', fontSize: 24, marginTop: 20 }}>@{cardData.username}</div>
+            <div style={{ color: borderColor, fontSize: 20, marginTop: 10 }}>{currentRarity}</div>
+          </div>
         </div>
 
         {/* Right - Score Info */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            flex: 1,
-            paddingLeft: 40,
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, paddingLeft: 40 }}>
           <div style={{ color: '#d4af37', fontSize: 36, fontWeight: 900 }}>NEYNAR SCORE</div>
           <div style={{ color: '#c9a961', fontSize: 22, marginTop: 10 }}>@{cardData.username}</div>
           <div style={{ color: 'white', fontSize: 80, fontWeight: 900, marginTop: 20 }}>{currentScore.toFixed(3)}</div>
