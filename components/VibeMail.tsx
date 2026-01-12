@@ -333,10 +333,11 @@ interface VibeMailInboxProps {
   cardFid: number;
   username?: string;
   onClose: () => void;
+  asPage?: boolean;
 }
 
 // VibeMail Inbox Component - Shows all messages for a card
-export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps) {
+export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailInboxProps) {
   const { lang } = useLanguage();
   const t = fidTranslations[lang];
   const messages = useQuery(api.cardVotes.getMessagesForCard, { cardFid, limit: 50 });
