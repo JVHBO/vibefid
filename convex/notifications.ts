@@ -1261,11 +1261,12 @@ export const sendVibemailNotification = internalAction({
     let warpcastSent = 0;
     let vibefidSent = 0;
 
-    // 1️⃣ NEYNAR API (Base App) - sends to all Neynar tokens
-    if (process.env.NEYNAR_API_KEY) {
+    // 1️⃣ NEYNAR API (VibeFID app) - VibeMail is a VibeFID feature
+    const VIBEFID_KEY = process.env.NEYNAR_API_KEY_VIBEFID;
+    if (VIBEFID_KEY) {
       try {
         const uuid = crypto.randomUUID();
-        // Use VBMS domain for Neynar (Base App users)
+        // VibeMail notifications should open VibeFID app
         const payload = {
           target_fids: [recipientFid],
           notification: { title, body, target_url: "https://vibefid.xyz", uuid }
@@ -1275,13 +1276,13 @@ export const sendVibemailNotification = internalAction({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": process.env.NEYNAR_API_KEY
+            "x-api-key": VIBEFID_KEY
           },
           body: JSON.stringify(payload)
         });
 
         if (response.ok) {
-          console.log(`📱 VibeMail notification sent via Neynar (Base App)`);
+          console.log(`📱 VibeMail notification sent via Neynar (VibeFID)`);
           neynarSent = true;
         } else {
           const errorText = await response.text();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useConvex } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { AudioManager } from '@/lib/audio-manager';
@@ -15,6 +15,7 @@ import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
 import { NFTGiftModal } from './NFTGiftModal';
 import haptics from '@/lib/haptics';
+import { AudioRecorder } from './AudioRecorder';
 
 const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
 
@@ -247,8 +248,57 @@ export const VIBEMAIL_IMAGES = [
   { id: 'suck-jones', name: '🏴‍☠️ Suck Jones', file: '/vibemail/suck-jones.mp4', isVideo: true },
 ] as const;
 
-// Get sound file from ID
+// Check if audio is a custom recording (vs predefined sound)
+export function isCustomAudio(audioId: string | undefined): boolean {
+  return audioId?.startsWith('custom:') || false;
+}
+
+// Get storage ID from custom audio ID
+export function getCustomAudioStorageId(audioId: string): string | null {
+  if (!isCustomAudio(audioId)) return null;
+  return audioId.replace('custom:', '');
+}
+
+// Play audio helper - handles both predefined and custom audio
+export async function playAudioById(
+  audioId: string,
+  audioRef: React.RefObject<HTMLAudioElement | null>,
+  convex: any,
+  setPlayingAudio: (id: string | null) => void
+): Promise<void> {
+  if (!audioRef.current) return;
+
+  // Try predefined sound first
+  const soundFile = getSoundFile(audioId);
+  if (soundFile) {
+    audioRef.current.src = soundFile;
+    audioRef.current.play().catch(console.error);
+    setPlayingAudio(audioId);
+    return;
+  }
+
+  // Try custom audio
+  const storageId = getCustomAudioStorageId(audioId);
+  if (storageId) {
+    try {
+      const url = await convex.query(api.audioStorage.getAudioUrl, {
+        storageId: storageId as any
+      });
+      if (url && audioRef.current) {
+        audioRef.current.src = url;
+        audioRef.current.play().catch(console.error);
+        setPlayingAudio(audioId);
+      }
+    } catch (err) {
+      console.error('Failed to fetch custom audio:', err);
+    }
+  }
+}
+
+// Get sound file from ID (only for predefined sounds)
 export function getSoundFile(audioId: string): string | null {
+  // Custom audio has no static file, needs to be fetched from Convex
+  if (isCustomAudio(audioId)) return null;
   const sound = VIBEMAIL_SOUNDS.find(s => s.id === audioId);
   return sound?.file || null;
 }
@@ -294,6 +344,7 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
   const [selectedMessage, setSelectedMessage] = useState<VibeMailMessage | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const convex = useConvex();
 
   // Get secretary for selected message
   const secretary = selectedMessage ? getSecretaryForMessage(selectedMessage._id) : VIBEMAIL_SECRETARIES[0];
@@ -307,14 +358,9 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
       await markAsRead({ messageId: msg._id });
     }
 
-    // Auto-play audio if exists
+    // Auto-play audio if exists (both predefined and custom)
     if (msg.audioId) {
-      const soundFile = getSoundFile(msg.audioId);
-      if (soundFile && audioRef.current) {
-        audioRef.current.src = soundFile;
-        audioRef.current.play().catch(console.error);
-        setPlayingAudio(msg.audioId);
-      }
+      playAudioById(msg.audioId, audioRef, convex, setPlayingAudio);
     }
   };
 
@@ -348,7 +394,7 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
               alt={secretary.name}
               className="w-12 h-12 rounded-full border-2 border-vintage-gold"
             />
-            <div>
+              <div>
               <h3 className="text-vintage-gold font-bold text-lg">{t.vibeMailTitle}</h3>
               <p className="text-vintage-ice/60 text-xs">
                 {messages?.length || 0} {t.messagesCount}
@@ -399,12 +445,7 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
                       if (playingAudio === selectedMessage.audioId) {
                         stopAudio();
                       } else {
-                        const soundFile = getSoundFile(selectedMessage.audioId!);
-                        if (soundFile && audioRef.current) {
-                          audioRef.current.src = soundFile;
-                          audioRef.current.play().catch(console.error);
-                          setPlayingAudio(selectedMessage.audioId!);
-                        }
+                        playAudioById(selectedMessage.audioId!, audioRef, convex, setPlayingAudio);
                       }
                     }}
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
@@ -417,7 +458,7 @@ export function VibeMailInbox({ cardFid, username, onClose }: VibeMailInboxProps
                   </button>
                   <div className="flex-1">
                     <p className="text-vintage-gold font-bold text-sm">
-                      {VIBEMAIL_SOUNDS.find(s => s.id === selectedMessage.audioId)?.name || t.memeSound}
+                      {isCustomAudio(selectedMessage.audioId) ? '🎤 Voice message' : (VIBEMAIL_SOUNDS.find(s => s.id === selectedMessage.audioId)?.name || t.memeSound)}
                     </p>
                     <p className="text-vintage-ice/50 text-xs">
                       {playingAudio === selectedMessage.audioId ? t.playing : t.tapToPlay}
@@ -557,6 +598,7 @@ export function VibeMailInboxWithClaim({
   const [selectedMessage, setSelectedMessage] = useState<VibeMailMessage | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const convex = useConvex();
   const [showComposer, setShowComposer] = useState(false);
   const [replyToMessageId, setReplyToMessageId] = useState<Id<'cardVotes'> | null>(null);
   const [replyToFid, setReplyToFid] = useState<number | null>(null); // FID of user we're replying to
@@ -704,12 +746,7 @@ export function VibeMailInboxWithClaim({
     }
 
     if (msg.audioId) {
-      const soundFile = getSoundFile(msg.audioId);
-      if (soundFile && audioRef.current) {
-        audioRef.current.src = soundFile;
-        audioRef.current.play().catch(console.error);
-        setPlayingAudio(msg.audioId);
-      }
+      playAudioById(msg.audioId, audioRef, convex, setPlayingAudio);
     }
   };
 
@@ -785,7 +822,7 @@ export function VibeMailInboxWithClaim({
               alt={secretary.name}
               className="w-12 h-12 rounded-full border-2 border-vintage-gold"
             />
-            <div>
+              <div>
               <h3 className="text-vintage-gold font-bold text-lg">{t.vibeMailTitle}</h3>
               <p className="text-vintage-ice/60 text-xs">
                 {messages?.length || 0} {t.messagesCount}
@@ -1024,7 +1061,7 @@ export function VibeMailInboxWithClaim({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">🎲</span>
-                        <div>
+                          <div>
                           <p className="text-vintage-gold font-bold text-xs">@{randomCard.username}</p>
                           <p className="text-vintage-ice/50 text-[10px]">FID: {randomCard.fid}</p>
                         </div>
@@ -1458,12 +1495,7 @@ export function VibeMailInboxWithClaim({
                       if (playingAudio === selectedMessage.audioId) {
                         stopAudio();
                       } else {
-                        const soundFile = getSoundFile(selectedMessage.audioId!);
-                        if (soundFile && audioRef.current) {
-                          audioRef.current.src = soundFile;
-                          audioRef.current.play().catch(console.error);
-                          setPlayingAudio(selectedMessage.audioId!);
-                        }
+                        playAudioById(selectedMessage.audioId!, audioRef, convex, setPlayingAudio);
                       }
                     }}
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
@@ -1476,7 +1508,7 @@ export function VibeMailInboxWithClaim({
                   </button>
                   <div className="flex-1">
                     <p className="text-vintage-gold font-bold text-xs">
-                      {VIBEMAIL_SOUNDS.find(s => s.id === selectedMessage.audioId)?.name || t.memeSound}
+                      {isCustomAudio(selectedMessage.audioId) ? '🎤 Voice message' : (VIBEMAIL_SOUNDS.find(s => s.id === selectedMessage.audioId)?.name || t.memeSound)}
                     </p>
                     <p className="text-vintage-ice/50 text-[10px]">
                       {playingAudio === selectedMessage.audioId ? t.playing : t.tapToPlay}
@@ -1814,8 +1846,16 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId, ima
         <p className="text-vintage-ice/40 text-xs">{message.length}/200</p>
       </div>
 
-      {/* Sound Picker */}
-      <div>
+      {/* Voice Recorder */}
+      <AudioRecorder
+        onAudioReady={(id) => setAudioId(id)}
+        onClear={() => setAudioId(null)}
+        currentAudioId={isCustomAudio(audioId || undefined) ? audioId : null}
+      />
+
+      {/* Meme Sound Picker - only show if no custom audio */}
+      {!isCustomAudio(audioId || undefined) && (
+        <div>
         <button
           onClick={() => {
             AudioManager.buttonClick();
@@ -1852,11 +1892,12 @@ export function VibeMailComposer({ message, setMessage, audioId, setAudioId, ima
             ))}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Image Picker */}
       {setImageId && (
-        <div>
+          <div>
           <button
             onClick={() => {
               AudioManager.buttonClick();
