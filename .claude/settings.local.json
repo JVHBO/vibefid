@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx convex deploy)",
+      "Bash(npx convex deploy:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add Neynar Score share image + fix iPhone share buttons\n\n- Create /share/score/[fid] route with OG image showing card + score info\n- Fix all share buttons to use shareToFarcaster\\(\\) for iPhone compatibility\n- Add paidTxHash field to rouletteSpins schema\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
