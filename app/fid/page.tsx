@@ -33,6 +33,7 @@ import { sdk } from "@farcaster/miniapp-sdk";
 import { DailyLeader } from "@/components/DailyLeader";
 import { useClaimVBMS } from "@/lib/hooks/useVBMSContracts";
 import { FloatingCardsBackground } from "@/components/FloatingCardsBackground";
+import { shareToFarcaster } from "@/lib/share-utils";
 import { LanguageSelectionModal } from "@/components/LanguageSelectionModal";
 import { VibeMailInboxWithClaim } from "@/components/VibeMail";
 
@@ -1432,9 +1433,11 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                   >
                     {t.back}
                   </button>
-                  <a
-                    href={(() => {
-                      const shareUrl = 'https://vibefid.xyz/fid';
+                  <button
+                    onClick={async () => {
+                      AudioManager.buttonClick();
+                      // Use score share page with OG image showing card + score
+                      const shareUrl = `https://vibefid.xyz/share/score/${myCard?.fid}?v=${Date.now()}`;
                       const scoreDiff = myCard && myCard.neynarScore ? neynarScoreData.score - myCard.neynarScore : 0;
                       const diffSign = scoreDiff >= 0 ? '+' : '';
                       const mintRarity = scoreHistory?.mintRarity || myCard?.rarity;
@@ -1446,15 +1449,12 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                         ? `${t.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${neynarScoreData.rarity}`
                         : neynarScoreData.rarity;
                       const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
-                      return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-                    })()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => AudioManager.buttonClick()}
+                      await shareToFarcaster(castText, shareUrl);
+                    }}
                     className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
                   >
                     Share
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1556,21 +1556,19 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                     </div>
 
                     <div className="flex gap-2 sm:gap-3">
-                      <a
-                        href={(() => {
+                      <button
+                        onClick={async () => {
+                          AudioManager.buttonClick();
                           const shareUrl = `https://vibefid.xyz/fid/${myCard?.fid}`;
                           const scoreDiff = evolutionData.newScore - evolutionData.oldScore;
                           const diffSign = scoreDiff >= 0 ? '+' : '';
                           const castText = `My VibeFID just EVOLVED!\n\n${evolutionData.oldRarity} → ${evolutionData.newRarity}\nPower: ${evolutionData.oldPower} → ${evolutionData.newPower}\nNeynar Score: ${diffSign}${scoreDiff.toFixed(4)}\nBounty: ${evolutionData.newBounty.toLocaleString()}\n\n@jvhbo`;
-                          return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-                        })()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => AudioManager.buttonClick()}
+                          await shareToFarcaster(castText, shareUrl);
+                        }}
                         className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-xs sm:text-base"
                       >
                         Share
-                      </a>
+                      </button>
                       <button
                         onClick={() => {
                           AudioManager.buttonClick();

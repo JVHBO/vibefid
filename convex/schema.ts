@@ -1666,9 +1666,10 @@ export default defineSchema({
     prizeIndex: v.number(),
     spunAt: v.number(),
     claimed: v.optional(v.boolean()),
-    isPaidSpin: v.optional(v.boolean()), // Whether prize was claimed
+    isPaidSpin: v.optional(v.boolean()), // Whether this was a paid spin
     claimedAt: v.optional(v.number()), // When claimed
     txHash: v.optional(v.string()), // Claim transaction hash
+    paidTxHash: v.optional(v.string()), // Payment transaction hash for paid spins
   })
     .index("by_address_date", ["address", "date"])
     .index("by_date", ["date"]),

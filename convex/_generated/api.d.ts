@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accessAnalytics from "../accessAnalytics.js";
 import type * as achievementDefinitions from "../achievementDefinitions.js";
 import type * as achievements from "../achievements.js";
 import type * as admin from "../admin.js";
@@ -19,6 +20,7 @@ import type * as bettingCredits from "../bettingCredits.js";
 import type * as blacklist from "../blacklist.js";
 import type * as blockchainVerify from "../blockchainVerify.js";
 import type * as cardPacks from "../cardPacks.js";
+import type * as cardSchema from "../cardSchema.js";
 import type * as cardValidation from "../cardValidation.js";
 import type * as cardVotes from "../cardVotes.js";
 import type * as castAuctions from "../castAuctions.js";
@@ -54,6 +56,7 @@ import type * as raidBoss from "../raidBoss.js";
 import type * as referrals from "../referrals.js";
 import type * as rewardsChoice from "../rewardsChoice.js";
 import type * as rooms from "../rooms.js";
+import type * as roulette from "../roulette.js";
 import type * as roundBetting from "../roundBetting.js";
 import type * as scheduledTips from "../scheduledTips.js";
 import type * as sessions from "../sessions.js";
@@ -61,6 +64,7 @@ import type * as shopAnnouncement from "../shopAnnouncement.js";
 import type * as socialQuests from "../socialQuests.js";
 import type * as stats from "../stats.js";
 import type * as testHelpers from "../testHelpers.js";
+import type * as txHistory from "../txHistory.js";
 import type * as utils from "../utils.js";
 import type * as vbmsClaim from "../vbmsClaim.js";
 import type * as vibeRewards from "../vibeRewards.js";
@@ -74,6 +78,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accessAnalytics: typeof accessAnalytics;
   achievementDefinitions: typeof achievementDefinitions;
   achievements: typeof achievements;
   admin: typeof admin;
@@ -85,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   blacklist: typeof blacklist;
   blockchainVerify: typeof blockchainVerify;
   cardPacks: typeof cardPacks;
+  cardSchema: typeof cardSchema;
   cardValidation: typeof cardValidation;
   cardVotes: typeof cardVotes;
   castAuctions: typeof castAuctions;
@@ -120,6 +126,7 @@ declare const fullApi: ApiFromModules<{
   referrals: typeof referrals;
   rewardsChoice: typeof rewardsChoice;
   rooms: typeof rooms;
+  roulette: typeof roulette;
   roundBetting: typeof roundBetting;
   scheduledTips: typeof scheduledTips;
   sessions: typeof sessions;
@@ -127,6 +134,7 @@ declare const fullApi: ApiFromModules<{
   socialQuests: typeof socialQuests;
   stats: typeof stats;
   testHelpers: typeof testHelpers;
+  txHistory: typeof txHistory;
   utils: typeof utils;
   vbmsClaim: typeof vbmsClaim;
   vibeRewards: typeof vibeRewards;

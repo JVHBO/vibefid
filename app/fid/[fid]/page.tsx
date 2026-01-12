@@ -27,6 +27,7 @@ import { DailyLeader } from '@/components/DailyLeader';
 import { useAccount } from 'wagmi';
 import { useVBMSBalance, useClaimVBMS } from '@/lib/hooks/useVBMSContracts';
 import { VibeMailInbox, VibeMailComposer } from '@/components/VibeMail';
+import { shareToFarcaster } from '@/lib/share-utils';
 
 // Helper to calculate rarity from score for display
 const getRarityFromScore = (score: number) => {
@@ -238,7 +239,7 @@ export default function FidCardPage() {
       const shareUrl = `https://vibefid.xyz/share/fid/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
 
       // Open Warpcast compose with share page (has miniapp button + OG image from Filebase)
-      window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`, '_blank');
+      await shareToFarcaster(castText, shareUrl);
       setRegenerationStatus('');
     } catch (error) {
       console.error('Share failed:', error);
@@ -977,32 +978,28 @@ export default function FidCardPage() {
                     {t.back}
                   </button>
                   {isOwnCard && (
-                    <a
-                      href={(() => {
-                        const shareUrl = 'https://vibefid.xyz/fid';
-                        // Calculate score diff from mint
-                      const scoreDiff = card && card.neynarScore ? neynarScoreData.score - card.neynarScore : 0;
-                      const diffSign = scoreDiff >= 0 ? '+' : '';
-                      // Check if rarity changed from ORIGINAL mint rarity (stored in scoreHistory)
-                      const mintRarity = scoreHistory?.mintRarity || card?.rarity;
-                      const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
-                      // Format: "0.950 +0.1000 since mint\nCard leveled up! Epic → Legendary"
-                      const scoreLine = card && card.neynarScore
-                        ? `${neynarScoreData.score.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${t.sinceMint || 'since mint'}`
-                        : `${neynarScoreData.score.toFixed(3)}`;
-                      const rarityLine = rarityChanged
-                        ? `${t.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${neynarScoreData.rarity}`
-                        : neynarScoreData.rarity;
-                      const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
-                      return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-                    })()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => AudioManager.buttonClick()}
-                    className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
-                  >
+                    <button
+                      onClick={async () => {
+                        AudioManager.buttonClick();
+                        // Use score share page with OG image showing card + score
+                        const shareUrl = `https://vibefid.xyz/share/score/${fid}?v=${Date.now()}`;
+                        const scoreDiff = card && card.neynarScore ? neynarScoreData.score - card.neynarScore : 0;
+                        const diffSign = scoreDiff >= 0 ? '+' : '';
+                        const mintRarity = scoreHistory?.mintRarity || card?.rarity;
+                        const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
+                        const scoreLine = card && card.neynarScore
+                          ? `${neynarScoreData.score.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${t.sinceMint || 'since mint'}`
+                          : `${neynarScoreData.score.toFixed(3)}`;
+                        const rarityLine = rarityChanged
+                          ? `${t.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${neynarScoreData.rarity}`
+                          : neynarScoreData.rarity;
+                        const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
+                        await shareToFarcaster(castText, shareUrl);
+                      }}
+                      className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
+                    >
                       Share
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
@@ -1106,21 +1103,19 @@ export default function FidCardPage() {
                     </div>
 
                     <div className="flex gap-2 sm:gap-3">
-                      <a
-                        href={(() => {
+                      <button
+                        onClick={async () => {
+                          AudioManager.buttonClick();
                           const shareUrl = `https://vibefid.xyz/fid/${fid}`;
                           const scoreDiff = evolutionData.newScore - evolutionData.oldScore;
                           const diffSign = scoreDiff >= 0 ? '+' : '';
                           const castText = `My VibeFID just EVOLVED!\n\n${evolutionData.oldRarity} → ${evolutionData.newRarity}\nPower: ${evolutionData.oldPower} → ${evolutionData.newPower}\nNeynar Score: ${diffSign}${scoreDiff.toFixed(4)}\nBounty: $${evolutionData.newBounty.toLocaleString()}\n\n@jvhbo`;
-                          return `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-                        })()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => AudioManager.buttonClick()}
+                          await shareToFarcaster(castText, shareUrl);
+                        }}
                         className="flex-1 px-3 py-3 sm:px-4 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-xs sm:text-base"
                       >
                         Share
-                      </a>
+                      </button>
                       <button
                         onClick={() => {
                           AudioManager.buttonClick();

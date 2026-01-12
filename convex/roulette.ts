@@ -529,58 +529,81 @@ export const adminResetAllSpins = internalMutation({
 });
 
 
-// Cost for paid spin (in VBMS coins - not tokens)
+// Cost for paid spin (in VBMS tokens - 500 VBMS)
 const PAID_SPIN_COST = 500;
+const MAX_PAID_SPINS_PER_DAY = 20;
 
 /**
- * Buy a paid spin using VBMS coins
- * Deducts coins and allows an extra spin
+ * Check if user can buy a paid spin
  */
-export const buyPaidSpin = mutation({
+export const canBuyPaidSpin = query({
   args: { address: v.string() },
   handler: async (ctx, { address }) => {
     const normalizedAddress = address.toLowerCase();
+    const today = getTodayKey();
 
-    // Get profile
-    const profile = await findProfileByAddress(ctx, normalizedAddress);
-    if (!profile) {
+    // Count paid spins today
+    const paidSpins = await ctx.db
+      .query("rouletteSpins")
+      .withIndex("by_address_date", (q) =>
+        q.eq("address", normalizedAddress).eq("date", today)
+      )
+      .collect();
+
+    const paidSpinsToday = paidSpins.filter(s => s.isPaidSpin === true).length;
+    const canBuy = paidSpinsToday < MAX_PAID_SPINS_PER_DAY;
+
+    return {
+      canBuy,
+      paidSpinsToday,
+      maxPaidSpins: MAX_PAID_SPINS_PER_DAY,
+      remaining: MAX_PAID_SPINS_PER_DAY - paidSpinsToday,
+      cost: PAID_SPIN_COST,
+    };
+  },
+});
+
+/**
+ * Record paid spin after TX is confirmed
+ * Called after user sends VBMS to pool
+ */
+export const recordPaidSpin = mutation({
+  args: {
+    address: v.string(),
+    txHash: v.string(),
+  },
+  handler: async (ctx, { address, txHash }) => {
+    const normalizedAddress = address.toLowerCase();
+    const today = getTodayKey();
+
+    // Check daily limit
+    const paidSpins = await ctx.db
+      .query("rouletteSpins")
+      .withIndex("by_address_date", (q) =>
+        q.eq("address", normalizedAddress).eq("date", today)
+      )
+      .collect();
+
+    const paidSpinsToday = paidSpins.filter(s => s.isPaidSpin === true).length;
+    if (paidSpinsToday >= MAX_PAID_SPINS_PER_DAY) {
       return {
         success: false,
-        error: "Profile not found",
+        error: `Daily limit reached (${MAX_PAID_SPINS_PER_DAY} paid spins)`,
       };
     }
 
-    // Check if user has enough coins
-    const currentCoins = profile.coins || 0;
-    if (currentCoins < PAID_SPIN_COST) {
+    // Check if txHash already used
+    const existingTx = await ctx.db
+      .query("rouletteSpins")
+      .filter((q) => q.eq(q.field("paidTxHash"), txHash))
+      .first();
+
+    if (existingTx) {
       return {
         success: false,
-        error: `Not enough coins. Need ${PAID_SPIN_COST}, have ${currentCoins}`,
-        required: PAID_SPIN_COST,
-        current: currentCoins,
+        error: "Transaction already used",
       };
     }
-
-    // Deduct coins
-    const balanceBefore = currentCoins;
-    const balanceAfter = currentCoins - PAID_SPIN_COST;
-
-    await ctx.db.patch(profile._id, {
-      coins: balanceAfter,
-    });
-
-    // Create audit log
-    await createAuditLog(
-      ctx,
-      normalizedAddress,
-      "spend",
-      PAID_SPIN_COST,
-      balanceBefore,
-      balanceAfter,
-      "paid_spin",
-      undefined,
-      { reason: "Purchased paid roulette spin" }
-    );
 
     // Determine prize
     const { amount, index } = determinePrize();
@@ -588,22 +611,21 @@ export const buyPaidSpin = mutation({
     // Record paid spin
     await ctx.db.insert("rouletteSpins", {
       address: normalizedAddress,
-      date: getTodayKey(),
+      date: today,
       prizeAmount: amount,
       prizeIndex: index,
       spunAt: Date.now(),
       claimed: false,
-      isPaidSpin: true, // Mark as paid spin
+      isPaidSpin: true,
+      paidTxHash: txHash,
     });
 
-    console.log(`🎰 Paid Spin: ${normalizedAddress} paid ${PAID_SPIN_COST} coins, won ${amount} VBMS`);
+    console.log(`🎰 Paid Spin (TX): ${normalizedAddress} paid 500 VBMS, won ${amount} VBMS (tx: ${txHash})`);
 
     return {
       success: true,
       prize: amount,
       prizeIndex: index,
-      coinsDeducted: PAID_SPIN_COST,
-      newBalance: balanceAfter,
     };
   },
 });
@@ -614,6 +636,9 @@ export const buyPaidSpin = mutation({
 export const getPaidSpinCost = query({
   args: {},
   handler: async () => {
-    return { cost: PAID_SPIN_COST };
+    return {
+      cost: PAID_SPIN_COST,
+      maxPerDay: MAX_PAID_SPINS_PER_DAY,
+    };
   },
 });
