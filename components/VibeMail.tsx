@@ -16,6 +16,7 @@ import { parseEther } from 'viem';
 import { NFTGiftModal } from './NFTGiftModal';
 import haptics from '@/lib/haptics';
 import { AudioRecorder } from './AudioRecorder';
+import { useMusic } from '@/contexts/MusicContext';
 import { openMarketplace } from '@/lib/marketplace-utils';
 
 const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
@@ -362,6 +363,7 @@ interface VibeMailInboxProps {
 export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailInboxProps) {
   const { lang } = useLanguage();
   const t = fidTranslations[lang];
+  const { isMusicEnabled, setIsMusicEnabled } = useMusic();
   const messages = useQuery(api.cardVotes.getMessagesForCard, { cardFid, limit: 50 });
   const markAsRead = useMutation(api.cardVotes.markMessageAsRead);
   const [selectedMessage, setSelectedMessage] = useState<VibeMailMessage | null>(null);
@@ -430,6 +432,16 @@ export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailIn
               </p>
             </div>
           </div>
+          <button
+            onClick={() => {
+              AudioManager.buttonClick();
+              setIsMusicEnabled(!isMusicEnabled);
+            }}
+            className="w-8 h-8 bg-vintage-black/50 border border-vintage-gold/30 rounded-full text-vintage-gold hover:bg-vintage-gold/20 transition-all flex items-center justify-center"
+            title={isMusicEnabled ? "Mute" : "Unmute"}
+          >
+            {isMusicEnabled ? "🔊" : "🔇"}
+          </button>
           <button
             onClick={() => {
               stopAudio();
@@ -626,6 +638,7 @@ export function VibeMailInboxWithClaim({
 }: VibeMailInboxWithClaimProps) {
   const { lang } = useLanguage();
   const t = fidTranslations[lang];
+  const { isMusicEnabled, setIsMusicEnabled } = useMusic();
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent'>('inbox');
   const messages = useQuery(api.cardVotes.getMessagesForCard, { cardFid, limit: 50 });
   const sentMessages = useQuery(
