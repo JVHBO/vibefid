@@ -11,6 +11,7 @@ import { CONTRACTS } from '@/lib/contracts';
 import { parseEther } from 'viem';
 import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from '@/lib/hooks/useWriteContractWithAttribution';
 import haptics from '@/lib/haptics';
+import { openMarketplace } from '@/lib/marketplace-utils';
 
 // ERC-721 ABI for safeTransferFrom
 const ERC721_ABI = [
@@ -336,16 +337,16 @@ export function NFTGiftModal({
               </div>
             </button>
             {MARKETPLACE_URLS[col.id] && (
-              <a
-                href={MARKETPLACE_URLS[col.id]}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMarketplace(MARKETPLACE_URLS[col.id], sdk, true);
+                }}
                 className="p-3 bg-vintage-gold/20 border border-vintage-gold/50 rounded-lg hover:bg-vintage-gold/30 transition-all"
                 title="Buy on Vibe Market"
               >
                 <span className="text-vintage-gold text-lg">🛒</span>
-              </a>
+              </button>
             )}
           </div>
         ))}

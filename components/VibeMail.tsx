@@ -16,6 +16,7 @@ import { parseEther } from 'viem';
 import { NFTGiftModal } from './NFTGiftModal';
 import haptics from '@/lib/haptics';
 import { AudioRecorder } from './AudioRecorder';
+import { openMarketplace } from '@/lib/marketplace-utils';
 
 const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
 
@@ -497,10 +498,11 @@ export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailIn
 
               {/* NFT Gift Display */}
               {selectedMessage.giftNftImageUrl && (
-                <a
-                  href={getMarketplaceUrl(selectedMessage.giftNftCollection) || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <div
+                  onClick={() => {
+                    const url = getMarketplaceUrl(selectedMessage.giftNftCollection);
+                    if (url) openMarketplace(url, sdk, true);
+                  }}
                   className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3 hover:border-vintage-gold/70 hover:from-vintage-gold/20 transition-all cursor-pointer"
                 >
                   <div className="relative flex-shrink-0">
@@ -519,7 +521,7 @@ export function VibeMailInbox({ cardFid, username, onClose, asPage }: VibeMailIn
                     <p className="text-vintage-ice/50 text-[10px]">{selectedMessage.giftNftCollection}</p>
                   </div>
                   <span className="text-vintage-gold text-lg">🛒</span>
-                </a>
+                </div>
               )}
 
               {/* Vote Info */}
@@ -1588,10 +1590,11 @@ export function VibeMailInboxWithClaim({
 
               {/* NFT Gift Display */}
               {selectedMessage.giftNftImageUrl && (
-                <a
-                  href={getMarketplaceUrl(selectedMessage.giftNftCollection) || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <div
+                  onClick={() => {
+                    const url = getMarketplaceUrl(selectedMessage.giftNftCollection);
+                    if (url) openMarketplace(url, sdk, true);
+                  }}
                   className="mt-3 bg-gradient-to-r from-vintage-gold/10 to-yellow-500/10 border border-vintage-gold/40 rounded-lg p-2 flex items-center gap-3 hover:border-vintage-gold/70 hover:from-vintage-gold/20 transition-all cursor-pointer"
                 >
                   <div className="relative flex-shrink-0">
@@ -1610,7 +1613,7 @@ export function VibeMailInboxWithClaim({
                     <p className="text-vintage-ice/50 text-[10px]">{selectedMessage.giftNftCollection}</p>
                   </div>
                   <span className="text-vintage-gold text-lg">🛒</span>
-                </a>
+                </div>
               )}
 
               <div className="mt-2 pt-2 border-t border-vintage-gold/20 flex items-center justify-between text-[10px]">
