@@ -920,6 +920,16 @@ export function VibeMailInboxWithClaim({
             )}
             <button
               onClick={() => {
+                AudioManager.buttonClick();
+                setIsMusicEnabled(!isMusicEnabled);
+              }}
+              className="w-8 h-8 bg-vintage-black/50 border border-vintage-gold/30 rounded-full text-vintage-gold hover:bg-vintage-gold/20 transition-all flex items-center justify-center"
+              title={isMusicEnabled ? "Mute" : "Unmute"}
+            >
+              {isMusicEnabled ? "🔊" : "🔇"}
+            </button>
+            <button
+              onClick={() => {
                 stopAudio();
                 onClose();
               }}
