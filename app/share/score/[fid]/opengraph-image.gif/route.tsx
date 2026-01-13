@@ -46,9 +46,9 @@ export async function GET(
       cardData = data.value;
     }
 
-    // If no card, fetch from Neynar API directly
+    // Always fetch current score from Neynar API
     let neynarData: any = null;
-    if (!cardData && neynarApiKey) {
+    if (neynarApiKey) {
       try {
         const neynarResponse = await fetch(
           `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
@@ -79,8 +79,9 @@ export async function GET(
 
     const hasMinted = !!cardData;
     const username = cardData?.username || neynarData?.username || `FID ${fid}`;
-    const rarity = cardData?.rarity || neynarData?.rarity || 'Common';
-    const score = cardData?.neynarScore ?? neynarData?.score ?? 0;
+    // Always use current Neynar score, fallback to card score if API fails
+    const score = neynarData?.score ?? cardData?.neynarScore ?? 0;
+    const rarity = neynarData?.rarity || cardData?.rarity || 'Common';
     const power = cardData?.power ?? 0;
 
     const rarityColors: Record<string, string> = {
