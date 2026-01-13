@@ -45,8 +45,8 @@ function CardMediaComponent({ src, alt, className, loading = "lazy", onClick }: 
         onClick={onClick}
         style={{ objectFit: 'cover' }}
         onError={() => {
-          if (isVibeFID) setError(true);
-          else setUseImage(true);
+          // Always try image fallback first before showing error
+          setUseImage(true);
         }}
       />
     );

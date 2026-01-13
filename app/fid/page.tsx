@@ -119,11 +119,24 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         );
 
         if (farcasterConnector) {
-          try {
-            await connect({ connector: farcasterConnector });
-            console.log('[FID] ✅ Wallet auto-connected!');
-          } catch (err) {
-            console.error('[FID] ❌ Failed to auto-connect wallet:', err);
+          // iOS: Retry connection up to 3 times with delay
+          let connected = false;
+          let retries = 0;
+          const maxRetries = 3;
+
+          while (!connected && retries < maxRetries) {
+            try {
+              await connect({ connector: farcasterConnector });
+              console.log('[FID] ✅ Wallet auto-connected!');
+              connected = true;
+            } catch (err) {
+              retries++;
+              console.error(`[FID] ❌ Connection attempt ${retries}/${maxRetries} failed:`, err);
+              if (retries < maxRetries) {
+                console.log('[FID] ⏳ Retrying in 1 second...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
           }
         } else {
           console.error('[FID] ❌ Farcaster connector not found. Available:', connectors.map(c => c.id));
