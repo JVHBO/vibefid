@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'VibeFID Neynar Score';
+export const alt = 'VibeFID Neynar Score Card';
 export const size = { width: 1200, height: 800 };
 export const contentType = 'image/png';
 
