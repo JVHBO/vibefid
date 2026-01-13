@@ -36,8 +36,9 @@ export async function GET(
     }
 
     const convexUrl = "https://agile-orca-761.convex.cloud";
+    const neynarApiKey = process.env.NEYNAR_API_KEY;
 
-    // Fetch card data
+    // Fetch card data from Convex
     let cardData: any = null;
     const cardResponse = await fetch(`${convexUrl}/api/query`, {
       method: 'POST',
@@ -54,9 +55,41 @@ export async function GET(
       cardData = data.value;
     }
 
-    const username = cardData?.username || `FID ${fid}`;
-    const rarity = cardData?.rarity || 'Common';
-    const score = cardData?.neynarScore ?? 0;
+    // If no card, fetch from Neynar API directly
+    let neynarData: any = null;
+    if (!cardData && neynarApiKey) {
+      try {
+        const neynarResponse = await fetch(
+          `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
+          { headers: { api_key: neynarApiKey } }
+        );
+        if (neynarResponse.ok) {
+          const data = await neynarResponse.json();
+          const user = data.users?.[0];
+          if (user) {
+            const neynarScore = user.experimental?.neynar_user_score || 0;
+            let neynarRarity = 'Common';
+            if (neynarScore >= 0.99) neynarRarity = 'Mythic';
+            else if (neynarScore >= 0.90) neynarRarity = 'Legendary';
+            else if (neynarScore >= 0.79) neynarRarity = 'Epic';
+            else if (neynarScore >= 0.70) neynarRarity = 'Rare';
+
+            neynarData = {
+              username: user.username,
+              score: neynarScore,
+              rarity: neynarRarity,
+            };
+          }
+        }
+      } catch (e) {
+        console.log('Neynar API fetch failed');
+      }
+    }
+
+    const hasMinted = !!cardData;
+    const username = cardData?.username || neynarData?.username || `FID ${fid}`;
+    const rarity = cardData?.rarity || neynarData?.rarity || 'Common';
+    const score = cardData?.neynarScore ?? neynarData?.score ?? 0;
     const power = cardData?.power ?? 0;
 
     const rarityColors: Record<string, string> = {
@@ -276,6 +309,13 @@ export async function GET(
                               children: `@${username}`,
                             },
                           },
+                          !hasMinted ? {
+                            type: 'div',
+                            props: {
+                              style: { color: '#ef4444', fontSize: 18, marginTop: 4 },
+                              children: 'Need Mint',
+                            },
+                          } : null,
                           {
                             type: 'div',
                             props: {
