@@ -87,7 +87,9 @@ export const metadata: Metadata = {
         "action": {
           "type": "launch_miniapp",
           "name": "VibeFID",
-          "url": "https://vibefid.xyz"
+          "url": "https://vibefid.xyz",
+          "splashImageUrl": "https://vibefid.xyz/images/splash-200.png",
+          "splashBackgroundColor": "#1a1a1a"
         }
       }
     }),
@@ -100,7 +102,9 @@ export const metadata: Metadata = {
         "action": {
           "type": "launch_miniapp",
           "name": "VibeFID",
-          "url": "https://vibefid.xyz"
+          "url": "https://vibefid.xyz",
+          "splashImageUrl": "https://vibefid.xyz/images/splash-200.png",
+          "splashBackgroundColor": "#1a1a1a"
         }
       }
     }),
