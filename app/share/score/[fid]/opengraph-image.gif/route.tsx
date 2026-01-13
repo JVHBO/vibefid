@@ -7,9 +7,9 @@ export const runtime = 'edge';
 let wasmInitialized = false;
 let fontData: ArrayBuffer | null = null;
 
-// Farcaster standard size
+// Farcaster Frames v2 size (3:2 aspect ratio)
 const width = 1200;
-const height = 630;
+const height = 800;
 
 export async function GET(
   request: Request,
@@ -92,8 +92,8 @@ export async function GET(
 
     // Generate frames - card rotation
     const frameCount = 12;
-    const cardBaseWidth = 280;
-    const cardHeight = 392;
+    const cardBaseWidth = 320;
+    const cardHeight = 448;
 
     for (let i = 0; i < frameCount; i++) {
       const angle = (i / frameCount) * Math.PI * 2;
