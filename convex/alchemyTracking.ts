@@ -39,31 +39,8 @@ export const trackAlchemyCall = mutation({
       hour,
     });
 
-    // Also update daily aggregates
-    const existingAggregate = await ctx.db
-      .query("alchemyDailyStats")
-      .withIndex("by_date_source", (q) =>
-        q.eq("date", today).eq("source", args.source)
-      )
-      .first();
-
-    if (existingAggregate) {
-      await ctx.db.patch(existingAggregate._id, {
-        totalCalls: existingAggregate.totalCalls + 1,
-        cachedCalls: existingAggregate.cachedCalls + (args.cached ? 1 : 0),
-        failedCalls: existingAggregate.failedCalls + (args.success === false ? 1 : 0),
-        lastCallAt: now,
-      });
-    } else {
-      await ctx.db.insert("alchemyDailyStats", {
-        date: today,
-        source: args.source,
-        totalCalls: 1,
-        cachedCalls: args.cached ? 1 : 0,
-        failedCalls: args.success === false ? 1 : 0,
-        lastCallAt: now,
-      });
-    }
+    // Note: Daily aggregates removed to avoid OCC conflicts
+    // Stats are calculated on-demand by getAlchemyDashboard query
 
     return { tracked: true };
   },
