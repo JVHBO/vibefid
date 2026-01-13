@@ -136,6 +136,7 @@ export async function GET(
       const showFront = scaleX >= 0;
 
       const svg = await satori(
+        // @ts-ignore - satori accepts this format
         {
           type: 'div',
           props: {
