@@ -342,6 +342,131 @@ export const getAchievementStats = query({
 });
 
 /**
+ * 🔔 GRANT SOCIAL ACHIEVEMENT
+ * Grants a social achievement (notifications, miniapp) when the user performs the action
+ * Unlike NFT achievements, these are triggered by specific user actions
+ */
+export const grantSocialAchievement = mutation({
+  args: {
+    playerAddress: v.string(),
+    achievementId: v.string(), // "enable_notifications" or "add_miniapp"
+  },
+  handler: async (ctx, args) => {
+    const { playerAddress, achievementId } = args;
+    const normalizedAddress = playerAddress.toLowerCase();
+
+    // Validate achievement exists and is social type
+    const definition = ALL_ACHIEVEMENTS.find(
+      (a) => a.id === achievementId && a.category === "social"
+    );
+
+    if (!definition) {
+      console.log(`[grantSocialAchievement] Invalid social achievement: ${achievementId}`);
+      return { success: false, reason: "invalid_achievement" };
+    }
+
+    // Check if achievement already exists
+    const existing = await ctx.db
+      .query("achievements")
+      .withIndex("by_player_achievement", (q) =>
+        q.eq("playerAddress", normalizedAddress).eq("achievementId", achievementId)
+      )
+      .first();
+
+    if (existing) {
+      // Already granted
+      console.log(`[grantSocialAchievement] Achievement ${achievementId} already exists for ${normalizedAddress}`);
+      return { success: true, alreadyGranted: true, completed: existing.completed };
+    }
+
+    // Grant the achievement (automatically completed since count is 1)
+    await ctx.db.insert("achievements", {
+      playerAddress: normalizedAddress,
+      achievementId,
+      category: "social",
+      completed: true,
+      progress: 1,
+      target: 1,
+      completedAt: Date.now(),
+    });
+
+    console.log(`[grantSocialAchievement] Granted ${achievementId} to ${normalizedAddress}`);
+    return { success: true, alreadyGranted: false, completed: true };
+  },
+});
+
+/**
+ * 🔔 GRANT SOCIAL ACHIEVEMENT BY FID
+ * Same as grantSocialAchievement but looks up address from profile by FID
+ * Used by components that have FID but not wallet address
+ */
+export const grantSocialAchievementByFid = mutation({
+  args: {
+    fid: v.string(),
+    achievementId: v.string(), // "enable_notifications" or "add_miniapp"
+  },
+  handler: async (ctx, args) => {
+    const { fid, achievementId } = args;
+
+    // Validate achievement exists and is social type
+    const definition = ALL_ACHIEVEMENTS.find(
+      (a) => a.id === achievementId && a.category === "social"
+    );
+
+    if (!definition) {
+      console.log(`[grantSocialAchievementByFid] Invalid social achievement: ${achievementId}`);
+      return { success: false, reason: "invalid_achievement" };
+    }
+
+    // Look up profile by FID (convert string to number for index)
+    const fidNumber = parseInt(fid, 10);
+    if (isNaN(fidNumber)) {
+      console.log(`[grantSocialAchievementByFid] Invalid FID format: ${fid}`);
+      return { success: false, reason: "invalid_fid" };
+    }
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_fid", (q) => q.eq("farcasterFid", fidNumber))
+      .first();
+
+    if (!profile) {
+      console.log(`[grantSocialAchievementByFid] No profile found for FID ${fid}`);
+      return { success: false, reason: "profile_not_found" };
+    }
+
+    const normalizedAddress = profile.address.toLowerCase();
+
+    // Check if achievement already exists
+    const existing = await ctx.db
+      .query("achievements")
+      .withIndex("by_player_achievement", (q) =>
+        q.eq("playerAddress", normalizedAddress).eq("achievementId", achievementId)
+      )
+      .first();
+
+    if (existing) {
+      console.log(`[grantSocialAchievementByFid] Achievement ${achievementId} already exists for FID ${fid}`);
+      return { success: true, alreadyGranted: true, completed: existing.completed };
+    }
+
+    // Grant the achievement
+    await ctx.db.insert("achievements", {
+      playerAddress: normalizedAddress,
+      achievementId,
+      category: "social",
+      completed: true,
+      progress: 1,
+      target: 1,
+      completedAt: Date.now(),
+    });
+
+    console.log(`[grantSocialAchievementByFid] Granted ${achievementId} to FID ${fid} (${normalizedAddress})`);
+    return { success: true, alreadyGranted: false, completed: true };
+  },
+});
+
+/**
  * 🔔 GET UNCLAIMED ACHIEVEMENTS
  * Returns completed but unclaimed achievements (for notifications)
  */
