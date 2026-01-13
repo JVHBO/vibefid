@@ -16,18 +16,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: 'Check your Neynar Score and mint your VibeFID card!',
       siteName: 'VibeFID',
       type: 'website',
-      images: [`https://vibefid.xyz/share/score/${fid}/opengraph-image.gif`],
+      images: [`https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?v=2`],
     },
     twitter: {
       card: 'summary_large_image',
       title: `VibeFID #${fid} - Neynar Score`,
       description: 'Check your Neynar Score and mint your VibeFID card!',
-      images: [`https://vibefid.xyz/share/score/${fid}/opengraph-image.gif`],
+      images: [`https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?v=2`],
     },
     other: {
       'fc:frame': JSON.stringify({
         version: 'next',
-        imageUrl: `https://vibefid.xyz/share/score/${fid}/opengraph-image.gif`,
+        imageUrl: `https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?v=2`,
         button: {
           title: 'Check Your Score',
           action: {
