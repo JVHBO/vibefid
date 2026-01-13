@@ -1,10 +1,10 @@
 import satori from 'satori';
-import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import { Resvg } from '@resvg/resvg-js';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
-let wasmInitialized = false;
 let fontData: ArrayBuffer | null = null;
 
 // Farcaster Frames v2 size (3:2 aspect ratio)
@@ -18,15 +18,6 @@ export async function GET(
   const { fid } = await params;
 
   try {
-    // Initialize resvg WASM
-    if (!wasmInitialized) {
-      const wasmResponse = await fetch(
-        'https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm'
-      );
-      await initWasm(await wasmResponse.arrayBuffer());
-      wasmInitialized = true;
-    }
-
     // Load font
     if (!fontData) {
       const fontResponse = await fetch(
