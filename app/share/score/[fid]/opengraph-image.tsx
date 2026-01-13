@@ -84,6 +84,15 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
 
     if (cardImageUrl) {
       try {
+        // Build list of URLs to try
+        const urlsToTry: string[] = [];
+
+        // If it's already an HTTP URL, use it directly
+        if (cardImageUrl.startsWith('http')) {
+          urlsToTry.push(cardImageUrl);
+        }
+
+        // Also try extracting CID and using other gateways as fallback
         let cid = '';
         if (cardImageUrl.startsWith('ipfs://')) {
           cid = cardImageUrl.replace('ipfs://', '');
@@ -92,28 +101,28 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
         }
 
         if (cid) {
-          const gateways = [
-            `https://ipfs.filebase.io/ipfs/${cid}`,
-            `https://cloudflare-ipfs.com/ipfs/${cid}`,
-          ];
+          urlsToTry.push(`https://cloudflare-ipfs.com/ipfs/${cid}`);
+          urlsToTry.push(`https://ipfs.io/ipfs/${cid}`);
+        }
 
-          for (const gatewayUrl of gateways) {
-            try {
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 5000);
+        console.log(`[Score OG] Trying URLs: ${urlsToTry.join(', ')}`);
 
-              const imgResponse = await fetch(gatewayUrl, { signal: controller.signal });
-              clearTimeout(timeoutId);
+        for (const url of urlsToTry) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-              if (imgResponse.ok) {
-                const buffer = await imgResponse.arrayBuffer();
-                cardImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
-                console.log(`[Score OG] Card image loaded from IPFS`);
-                break;
-              }
-            } catch (e) {
-              console.log(`[Score OG] Gateway failed: ${gatewayUrl}`);
+            const imgResponse = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (imgResponse.ok) {
+              const buffer = await imgResponse.arrayBuffer();
+              cardImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
+              console.log(`[Score OG] Card image loaded from: ${url}`);
+              break;
             }
+          } catch (e: any) {
+            console.log(`[Score OG] URL failed: ${url} - ${e.message}`);
           }
         }
       } catch (e) {
