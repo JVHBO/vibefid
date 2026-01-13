@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     other: {
       'fc:frame': JSON.stringify({
         version: 'next',
-        imageUrl: `https://vibefid.xyz/share/score/${fid}/opengraph-image`,
+        imageUrl: `https://vibefid.xyz/share/score/${fid}/opengraph-image.gif`,
         button: {
           title: 'Check Your Score',
           action: {
