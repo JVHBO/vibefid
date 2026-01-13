@@ -1,5 +1,5 @@
 import satori from 'satori';
-import { Resvg } from '@resvg/resvg-js';
+import sharp from 'sharp';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 
 export const runtime = 'nodejs';
@@ -402,12 +402,12 @@ export async function GET(
         }
       );
 
-      // Convert SVG to pixels
-      const resvg = new Resvg(svg, {
-        fitTo: { mode: 'width', value: width },
-      });
-      const pngData = resvg.render();
-      const pixels = pngData.pixels;
+      // Convert SVG to pixels using sharp
+      const pngBuffer = await sharp(Buffer.from(svg))
+        .resize(width, height)
+        .raw()
+        .toBuffer();
+      const pixels = new Uint8Array(pngBuffer);
 
       // Quantize and add frame
       const palette = quantize(pixels, 256);
