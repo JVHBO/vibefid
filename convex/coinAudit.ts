@@ -430,7 +430,7 @@ export const getFlaggedAccounts = query({
   handler: async (ctx) => {
     const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-    // 🚀 BANDWIDTH FIX: Limit to 10000 logs for weekly analysis
+    // Get recent audit logs
     const recentLogs = await ctx.db
       .query("coinAuditLog")
       .withIndex("by_timestamp")
@@ -446,65 +446,84 @@ export const getFlaggedAccounts = query({
       byPlayer[log.playerAddress].push(log);
     });
 
-    // Calculate risk scores
+    // Analyze each player
     const flagged: Array<{
       address: string;
+      username: string;
       riskScore: number;
-      totalClaimed: number;
-      totalEarned: number;
+      totalClaimedOnChain: number;
+      lifetimeEarned: number;
+      ratio: number;
       claimCount: number;
-      transactionCount: number;
       flags: string[];
     }> = [];
 
-    Object.entries(byPlayer).forEach(([address, logs]) => {
+    const addresses = Object.keys(byPlayer);
+
+    for (const address of addresses) {
+      const logs = byPlayer[address];
       let riskScore = 0;
       const flags: string[] = [];
 
-      const claims = logs.filter(l => l.type === "convert" || l.type === "claim");
-      const earns = logs.filter(l => l.type === "earn");
-      const totalClaimed = claims.reduce((sum, l) => sum + l.amount, 0);
-      const totalEarned = earns.reduce((sum, l) => sum + l.amount, 0);
+      // Get profile to check lifetimeEarned (complete history)
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_address", (q) => q.eq("address", address))
+        .first();
 
-      // Risk factors
-      if (claims.length > 50) {
-        riskScore += 30;
-        flags.push(`High claim count: ${claims.length}`);
-      }
+      if (!profile) continue;
 
-      if (totalClaimed > 1000000) {
-        riskScore += 40;
-        flags.push(`High total claimed: ${totalClaimed.toLocaleString()}`);
-      }
+      // Use profile data for accurate comparison
+      const totalClaimedOnChain = profile.claimedTokens || 0;
+      const lifetimeEarned = profile.lifetimeEarned || 0;
 
-      if (logs.length > 200) {
-        riskScore += 20;
-        flags.push(`High transaction count: ${logs.length}`);
-      }
+      // Calculate ratio: claimed vs earned
+      const ratio = lifetimeEarned > 0 ? totalClaimedOnChain / lifetimeEarned : (totalClaimedOnChain > 0 ? 999 : 0);
 
-      // Check for burst patterns
-      const sortedLogs = [...logs].sort((a, b) => a.timestamp - b.timestamp);
-      for (let i = 0; i < sortedLogs.length - 10; i++) {
-        const timeWindow = sortedLogs[i + 10].timestamp - sortedLogs[i].timestamp;
-        if (timeWindow < 60000) {
+      // Detect exploit patterns from logs
+      const doubleSpendBlocked = logs.filter(l => l.source === "clearPendingWithoutRestore");
+      const actualClaims = logs.filter(l => l.type === "claim" && l.source === "recordTESTVBMSConversion");
+
+      // 🚨 CRITICAL: Double-spend attempts = definitive exploit
+      if (doubleSpendBlocked.length > 0) {
+        riskScore += 100;
+        flags.push(`🚨 DOUBLE-SPEND: ${doubleSpendBlocked.length}x`);
+
+        // If they also have high ratio, it's even more suspicious
+        if (ratio > 5 && totalClaimedOnChain > 100000) {
           riskScore += 50;
-          flags.push("Burst pattern detected");
-          break;
+          flags.push(`⚠️ RATIO: ${ratio.toFixed(1)}x`);
         }
       }
 
-      if (riskScore >= 30) {
+      // High ratio WITHOUT double-spend = might be legitimate burns
+      // Only flag if ratio is EXTREMELY high (>100x) AND no burn history
+      // Note: We can't verify burn history before today, so be lenient
+      if (doubleSpendBlocked.length === 0 && ratio > 100 && totalClaimedOnChain > 500000) {
+        riskScore += 40;
+        flags.push(`⚠️ Very high ratio: ${ratio.toFixed(1)}x (might be burns)`);
+      }
+
+      // High claim count in one week
+      if (actualClaims.length > 20) {
+        riskScore += 20;
+        flags.push(`High claims this week: ${actualClaims.length}`);
+      }
+
+      // Only flag if real evidence (ratio-based or double-spend)
+      if (riskScore >= 50) {
         flagged.push({
           address,
+          username: profile.username || profile.farcasterDisplayName || "unknown",
           riskScore,
-          totalClaimed,
-          totalEarned,
-          claimCount: claims.length,
-          transactionCount: logs.length,
+          totalClaimedOnChain,
+          lifetimeEarned,
+          ratio: Math.round(ratio * 10) / 10,
+          claimCount: actualClaims.length,
           flags,
         });
       }
-    });
+    }
 
     return flagged.sort((a, b) => b.riskScore - a.riskScore);
   },

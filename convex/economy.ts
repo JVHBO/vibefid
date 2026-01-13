@@ -10,6 +10,7 @@
  */
 
 import { v } from "convex/values";
+import { deckCardValidator } from "./cardSchema";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { applyLanguageBoost } from "./languageBoost";
@@ -699,6 +700,19 @@ export const awardPvECoins = mutation({
         balanceAfter: currentBalance + totalReward,
       });
 
+      // 🔒 Security audit log
+      await createAuditLog(
+        ctx,
+        address,
+        "earn",
+        totalReward,
+        currentBalance,
+        currentBalance + totalReward,
+        "pve_reward",
+        difficulty,
+        { difficulty, reason: "PvE battle win" }
+      );
+
       console.log(`💰 PvE reward: ${totalReward} TESTVBMS + ${auraReward} aura for ${address}. Balance: ${currentBalance} → ${currentBalance + totalReward}, Aura: ${currentAura} → ${currentAura + auraReward}`);
     }
 
@@ -924,6 +938,19 @@ export const awardPvPCoins = mutation({
         balanceAfter: currentBalance + totalReward,
       });
 
+      // 🔒 Security audit log
+      await createAuditLog(
+        ctx,
+        address,
+        "earn",
+        totalReward,
+        currentBalance,
+        currentBalance + totalReward,
+        "pvp_reward",
+        `streak_${newStreak}`,
+        { reason: "PvP battle win" }
+      );
+
       console.log(`💰 PvP reward: ${totalReward} TESTVBMS + ${auraReward} aura for ${address}. Balance: ${currentBalance} → ${currentBalance + totalReward}, Aura: ${currentAura} → ${currentAura + auraReward}`);
 
       // 🎯 Track weekly quest progress (async, non-blocking)
@@ -979,6 +1006,18 @@ export const awardPvPCoins = mutation({
           ...dailyLimits,
           pvpMatches: dailyLimits.pvpMatches + 1,
         },
+      });
+
+      // 📊 Log transaction (PvP loss penalty)
+      await ctx.db.insert("coinTransactions", {
+        address: address.toLowerCase(),
+        amount: penalty, // negative
+        type: "spend",
+        source: "pvp_loss",
+        description: "PvP battle loss penalty",
+        timestamp: Date.now(),
+        balanceBefore: currentCoins,
+        balanceAfter: newCoins,
       });
 
       // 🎯 Track weekly quest progress (async, non-blocking)
@@ -1039,12 +1078,25 @@ export const chargeEntryFee = mutation({
     }
 
     // Deduct fee
+    const balanceBefore = profile.coins || 0;
+    const balanceAfter = balanceBefore - fee;
     await ctx.db.patch(profile._id, {
-      coins: (profile.coins || 0) - fee,
+      coins: balanceAfter,
       lifetimeSpent: (profile.lifetimeSpent || 0) + fee,
     });
+    // 📊 Log transaction for history
+    await ctx.db.insert("coinTransactions", {
+      address: address.toLowerCase(),
+      type: "spend",
+      amount: fee,
+      source: "battle",
+      description: "Battle entry fee",
+      balanceBefore,
+      balanceAfter,
+      timestamp: Date.now(),
+    });
 
-    return { success: true, charged: fee, newBalance: (profile.coins || 0) - fee };
+    return { success: true, charged: fee, newBalance: balanceAfter };
   },
 });
 
@@ -1173,6 +1225,31 @@ export const claimShareBonus = mutation({
       hasSharedProfile: true,
     });
 
+    // 📊 Log transaction
+    await ctx.db.insert("coinTransactions", {
+      address: address.toLowerCase(),
+      amount: shareReward,
+      type: "earn",
+      source: "daily_share",
+      description: "Daily share bonus",
+      timestamp: Date.now(),
+      balanceBefore: currentCoins,
+      balanceAfter: newCoins,
+    });
+
+    // 🔒 Security audit log
+    await createAuditLog(
+      ctx,
+      normalizedAddress,
+      "earn",
+      shareReward,
+      currentCoins,
+      newCoins,
+      "daily_share",
+      today,
+      { reason: "Daily share bonus" }
+    );
+
     return {
       success: true,
       message: `+${shareReward} coins for sharing! Share daily for more rewards!`,
@@ -1238,6 +1315,18 @@ export const payEntryFee = mutation({
     await ctx.db.patch(profile._id, {
       coins: currentCoins - fee,
       lifetimeSpent: (profile.lifetimeSpent || 0) + fee,
+    });
+
+    // 📊 Log transaction
+    await ctx.db.insert("coinTransactions", {
+      address: address.toLowerCase(),
+      amount: -fee,
+      type: "spend",
+      source: `${mode}_entry`,
+      description: `${mode.toUpperCase()} entry fee`,
+      timestamp: Date.now(),
+      balanceBefore: currentCoins,
+      balanceAfter: currentCoins - fee,
     });
 
     console.log(`💸 Entry fee paid: ${fee} $TESTVBMS for ${mode} mode by ${address}`);
@@ -1318,6 +1407,18 @@ export const addCoins = internalMutation({
       { reason }
     );
 
+    // 📊 Log transaction
+    await ctx.db.insert("coinTransactions", {
+      address: address.toLowerCase(),
+      amount,
+      type: "bonus",
+      source: "admin_add",
+      description: reason || "Admin added coins",
+      timestamp: Date.now(),
+      balanceBefore: currentCoins,
+      balanceAfter: newCoins,
+    });
+
     console.log(`💰 Added ${amount} coins to ${address}: ${reason}`);
 
     return {
@@ -1347,7 +1448,7 @@ export const recordAttackResult = mutation({
     // Player info
     playerAddress: v.string(),
     playerPower: v.number(),
-    playerCards: v.array(v.any()),
+    playerCards: v.array(deckCardValidator), // 🔒 SECURITY
     playerUsername: v.string(),
 
     // Match result
@@ -1361,7 +1462,7 @@ export const recordAttackResult = mutation({
     opponentAddress: v.string(),
     opponentUsername: v.string(),
     opponentPower: v.number(),
-    opponentCards: v.array(v.any()),
+    opponentCards: v.array(deckCardValidator), // 🔒 SECURITY
 
     // Economy
     entryFeePaid: v.optional(v.number()),
@@ -1803,6 +1904,19 @@ export const recordAttackResult = mutation({
           balanceAfter: updateData.coins,
           timestamp: Date.now(),
         });
+
+        // 🔒 Security audit log
+        await createAuditLog(
+          ctx,
+          normalizedPlayerAddress,
+          "earn",
+          totalReward,
+          currentBalance,
+          updateData.coins as number,
+          "attack_win",
+          args.opponentAddress,
+          { reason: `Attack win vs ${args.opponentUsername}` }
+        );
       } catch (txError) {
         console.error("⚠️ Failed to record attack transaction:", txError);
         // Continue - don't let transaction history failure break the attack

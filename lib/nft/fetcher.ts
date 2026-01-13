@@ -17,6 +17,32 @@ const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_VIBE_CONTRACT;
 const CHAIN = process.env.NEXT_PUBLIC_ALCHEMY_CHAIN;
 
+// 📊 ALCHEMY TRACKING: Identify which project makes calls
+const APP_SOURCE: "vbms" | "vibefid" | "unknown" = "vibefid"; // VibeFID project
+
+// Track Alchemy call (fire-and-forget to /api/track-alchemy)
+async function trackAlchemyCall(data: {
+  endpoint: string;
+  contractAddress?: string;
+  ownerAddress?: string;
+  pageNumber?: number;
+  cached?: boolean;
+  success?: boolean;
+  responseTime?: number;
+  errorMessage?: string;
+}) {
+  try {
+    // Fire-and-forget - don't await
+    fetch('/api/track-alchemy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, source: APP_SOURCE }),
+    }).catch(() => {}); // Silently ignore errors
+  } catch {
+    // Ignore tracking errors
+  }
+}
+
 // Image URL cache
 const imageUrlCache = new Map<string, { url: string; timestamp: number }>();
 const IMAGE_CACHE_TIME = 1000 * 60 * 60; // 1 hour
@@ -335,11 +361,19 @@ export async function fetchNFTs(
 
   if (cached && cached.nfts.length > 0 && cached.complete) {
     console.log(`📦 Using cached NFTs for ${contract.slice(0, 10)}...: ${cached.nfts.length} cards (pagination complete)`);
+    // Track cache hit
+    trackAlchemyCall({
+      endpoint: 'getNFTsForOwner',
+      contractAddress: contract,
+      ownerAddress: owner,
+      cached: true,
+      success: true,
+    });
     if (onProgress) onProgress(1, cached.nfts.length);
     return cached.nfts;
   }
 
-  console.log(`🔄 Fetching fresh NFTs for ${contract.slice(0, 10)}... (no cache)`)
+  console.log(`🔄 [${APP_SOURCE.toUpperCase()}] Fetching fresh NFTs for ${contract.slice(0, 10)}... (no cache)`)
 
   let allNfts: any[] = [];
   let pageKey: string | undefined = undefined;
@@ -349,6 +383,7 @@ export async function fetchNFTs(
   try {
     do {
       pageCount++;
+      const startTime = Date.now();
       const url: string = `https://${CHAIN}.g.alchemy.com/nft/v3/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${owner}&contractAddresses[]=${contract}&withMetadata=true&pageSize=100${pageKey ? `&pageKey=${pageKey}` : ''}`;
 
       // Retry logic for rate limiting (429) and temporary blocks
@@ -373,6 +408,17 @@ export async function fetchNFTs(
           alchemyBlocked = true;
           lastAlchemyError = `API Key bloqueada (403 Forbidden)`;
           console.error(`❌ Alchemy API blocked (403). Using fallback...`);
+          // Track failed call
+          trackAlchemyCall({
+            endpoint: 'getNFTsForOwner',
+            contractAddress: contract,
+            ownerAddress: owner,
+            pageNumber: pageCount,
+            cached: false,
+            success: false,
+            errorMessage: '403 Forbidden',
+            responseTime: Date.now() - startTime,
+          });
           throw new Error('ALCHEMY_BLOCKED');
         }
 
@@ -381,12 +427,34 @@ export async function fetchNFTs(
 
       if (!res!.ok) {
         lastAlchemyError = `API falhou: ${res!.status}`;
+        // Track failed call
+        trackAlchemyCall({
+          endpoint: 'getNFTsForOwner',
+          contractAddress: contract,
+          ownerAddress: owner,
+          pageNumber: pageCount,
+          cached: false,
+          success: false,
+          errorMessage: lastAlchemyError,
+          responseTime: Date.now() - startTime,
+        });
         throw new Error(lastAlchemyError);
       }
 
       // Success - reset blocked status
       alchemyBlocked = false;
       lastAlchemyError = null;
+
+      // 📊 Track successful Alchemy call
+      trackAlchemyCall({
+        endpoint: 'getNFTsForOwner',
+        contractAddress: contract,
+        ownerAddress: owner,
+        pageNumber: pageCount,
+        cached: false,
+        success: true,
+        responseTime: Date.now() - startTime,
+      });
 
       const json = await res!.json();
       const pageNfts = json.ownedNfts || [];

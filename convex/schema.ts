@@ -1281,6 +1281,9 @@ export default defineSchema({
       txHash: v.optional(v.string()),
       nonce: v.optional(v.string()),
       reason: v.optional(v.string()),
+      // Roulette fields
+      prizeIndex: v.optional(v.number()),
+      spinId: v.optional(v.string()),
     })),
 
     timestamp: v.number(),
@@ -1666,10 +1669,13 @@ export default defineSchema({
     prizeIndex: v.number(),
     spunAt: v.number(),
     claimed: v.optional(v.boolean()),
-    isPaidSpin: v.optional(v.boolean()), // Whether this was a paid spin
+    isPaidSpin: v.optional(v.boolean()),
+    paidTxHash: v.optional(v.string()), // Whether prize was claimed
     claimedAt: v.optional(v.number()), // When claimed
     txHash: v.optional(v.string()), // Claim transaction hash
-    paidTxHash: v.optional(v.string()), // Payment transaction hash for paid spins
+    // 🔒 SECURITY: Prevents infinite claim exploit
+    claimPending: v.optional(v.boolean()), // Signature generated, awaiting TX
+    claimPendingAt: v.optional(v.number()), // When signature was generated
   })
     .index("by_address_date", ["address", "date"])
     .index("by_date", ["date"]),
@@ -1703,4 +1709,86 @@ export default defineSchema({
   })
     .index("by_address", ["address"])
     .index("by_timestamp", ["timestamp"]),
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // ALCHEMY API TRACKING - Track which project makes API calls
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // Individual API call tracking
+  alchemyTracking: defineTable({
+    source: v.union(v.literal("vbms"), v.literal("vibefid"), v.literal("unknown")),
+    endpoint: v.string(), // e.g., "getNFTsForOwner"
+    contractAddress: v.optional(v.string()),
+    ownerAddress: v.optional(v.string()),
+    pageNumber: v.optional(v.number()),
+    cached: v.optional(v.boolean()),
+    responseTime: v.optional(v.number()),
+    success: v.optional(v.boolean()),
+    errorMessage: v.optional(v.string()),
+    timestamp: v.number(),
+    date: v.string(), // YYYY-MM-DD
+    hour: v.number(), // 0-23
+  })
+    .index("by_timestamp", ["timestamp"])
+    .index("by_date", ["date"])
+    .index("by_source", ["source", "timestamp"]),
+
+  // Daily aggregated stats
+  alchemyDailyStats: defineTable({
+    date: v.string(), // YYYY-MM-DD
+    source: v.union(v.literal("vbms"), v.literal("vibefid"), v.literal("unknown")),
+    totalCalls: v.number(),
+    cachedCalls: v.number(),
+    failedCalls: v.number(),
+    lastCallAt: v.number(),
+  })
+    .index("by_date", ["date"])
+    .index("by_date_source", ["date", "source"]),
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // NFT OWNERSHIP TRACKING (Source of Truth - updated via Alchemy Webhooks)
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // Tracks current ownership of all NFTs across all collections
+  // Updated in real-time by Alchemy webhooks on transfer events
+  // Eliminates need for Alchemy API calls on page load
+  nftOwnership: defineTable({
+    // Identity
+    contractAddress: v.string(),  // Collection contract (lowercase)
+    tokenId: v.string(),          // NFT token ID
+    ownerAddress: v.string(),     // Current owner (lowercase)
+    collectionId: v.string(),     // Collection ID ('vibe', 'vibefid', 'gmvbrs', etc.)
+
+    // Cached metadata (avoids additional Alchemy/IPFS calls)
+    name: v.string(),
+    imageUrl: v.string(),
+    rarity: v.string(),
+    wear: v.optional(v.string()),
+    foil: v.optional(v.string()),
+    power: v.number(),
+    character: v.optional(v.string()),
+
+    // Raw attributes for edge cases
+    attributes: v.optional(v.any()),
+
+    // Tracking timestamps
+    ownedSince: v.number(),           // When current owner received it
+    metadataFetchedAt: v.number(),    // When metadata was last fetched
+    lastWebhookAt: v.optional(v.number()), // Last webhook update
+  })
+    .index("by_owner", ["ownerAddress"])
+    .index("by_owner_collection", ["ownerAddress", "collectionId"])
+    .index("by_contract_token", ["contractAddress", "tokenId"])
+    .index("by_collection", ["collectionId"]),
+
+  // Webhook sync status - tracks last processed block per contract
+  // Used for reconciliation if webhooks miss events
+  webhookSyncStatus: defineTable({
+    contractAddress: v.string(),
+    collectionId: v.string(),
+    lastProcessedBlock: v.number(),
+    lastSyncAt: v.number(),
+    totalNftsTracked: v.number(),
+  })
+    .index("by_contract", ["contractAddress"]),
 });
