@@ -143,6 +143,11 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
     // Check for rarity upgrade
     const hasRarityUpgrade = mintRarity && mintRarity !== rarity;
 
+    // Vintage gold colors
+    const gold = '#d4af37';
+    const goldLight = '#f4d03f';
+    const goldDark = '#996515';
+
     return new ImageResponse(
       (
         <div
@@ -150,10 +155,136 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
             display: 'flex',
             width: '100%',
             height: '100%',
-            backgroundColor: '#1a1a2e',
-            padding: 40,
+            background: 'linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 50%, #1a1a2e 100%)',
+            position: 'relative',
           }}
         >
+          {/* Outer gold border */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              border: `4px solid ${gold}`,
+            }}
+          />
+          {/* Inner decorative border */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              right: 10,
+              bottom: 10,
+              border: `1px solid ${gold}50`,
+            }}
+          />
+          {/* Corner ornaments - Top Left */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              color: gold,
+              fontSize: 28,
+              fontFamily: 'serif',
+            }}
+          >
+            ♠
+          </div>
+          {/* Corner ornaments - Top Right */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              color: gold,
+              fontSize: 28,
+              fontFamily: 'serif',
+            }}
+          >
+            ♦
+          </div>
+          {/* Corner ornaments - Bottom Left */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              bottom: 16,
+              left: 16,
+              color: gold,
+              fontSize: 28,
+              fontFamily: 'serif',
+            }}
+          >
+            ♣
+          </div>
+          {/* Corner ornaments - Bottom Right */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              bottom: 16,
+              right: 16,
+              color: gold,
+              fontSize: 28,
+              fontFamily: 'serif',
+            }}
+          >
+            ♥
+          </div>
+          {/* Decorative line top */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              top: 22,
+              left: 60,
+              right: 60,
+              height: 1,
+              background: `linear-gradient(90deg, transparent 0%, ${gold}60 20%, ${gold}60 80%, transparent 100%)`,
+            }}
+          />
+          {/* Decorative line bottom */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              bottom: 22,
+              left: 60,
+              right: 60,
+              height: 1,
+              background: `linear-gradient(90deg, transparent 0%, ${gold}60 20%, ${gold}60 80%, transparent 100%)`,
+            }}
+          />
+          {/* Glow behind card */}
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              top: 100,
+              left: 80,
+              width: 400,
+              height: 600,
+              background: `radial-gradient(ellipse at center, ${borderColor}20 0%, transparent 70%)`,
+              filter: 'blur(40px)',
+            }}
+          />
+          {/* Main content */}
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              height: '100%',
+              padding: 50,
+            }}
+          >
           {/* Left side - Card */}
           <div
             style={{
@@ -279,24 +410,22 @@ export default async function Image({ params }: { params: Promise<{ fid: string 
               </div>
             </div>
 
-            {/* Bottom bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 60, width: 400 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  color: '#d4af37',
-                  fontSize: 20,
-                  padding: '10px 20px',
-                  border: '2px solid #d4af37',
-                  borderRadius: 8,
-                }}
-              >
-                FID #{fid}
-              </div>
-              <div style={{ display: 'flex', color: '#d4af37', fontSize: 24, fontWeight: 700 }}>
-                vibefid.xyz
-              </div>
+            {/* FID Badge */}
+            <div
+              style={{
+                display: 'flex',
+                marginTop: 50,
+                color: '#d4af37',
+                fontSize: 22,
+                padding: '12px 24px',
+                border: '2px solid #d4af37',
+                borderRadius: 8,
+                background: 'rgba(212, 175, 55, 0.1)',
+              }}
+            >
+              FID #{fid}
             </div>
+          </div>
           </div>
         </div>
       ),
