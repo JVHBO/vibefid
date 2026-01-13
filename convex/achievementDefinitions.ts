@@ -13,7 +13,7 @@ export interface AchievementDefinition {
   name: string;
   description: string;
   icon: string;
-  category: "rarity" | "wear" | "foil" | "progressive";
+  category: "rarity" | "wear" | "foil" | "progressive" | "social";
   requirement: {
     type: string; // "have_rarity", "have_wear", "have_foil", "collect_count"
     count: number;
