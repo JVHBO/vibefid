@@ -152,6 +152,8 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mintingStep, setMintingStep] = useState<string | null>(null);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const addDebug = (msg: string) => { console.log('🐛', msg); setDebugLog(prev => [...prev.slice(-5), msg]); };
   const [userData, setUserData] = useState<NeynarUser | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [generatedTraits, setGeneratedTraits] = useState<GeneratedTraits | null>(null);
@@ -951,15 +953,18 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   };
 
   const handleMintCard = async () => {
+    addDebug('handleMintCard called');
     console.log('♣ handleMintCard called!', { address, userData: !!userData, farcasterUser: farcasterContext.user });
 
     if (!address) {
+      addDebug('ERROR: No wallet');
       console.error('❌ No wallet address connected');
       setError("Please connect your wallet");
       return;
     }
 
     if (!userData) {
+      addDebug('ERROR: No userData');
       console.error('❌ No userData available');
       setError("No user data loaded");
       return;
@@ -980,10 +985,12 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
         if (balance < minRequired) {
           const balanceEth = Number(balance) / 1e18;
+          addDebug('ERROR: Insufficient ETH');
           console.error('❌ Insufficient ETH balance:', balanceEth.toFixed(6), 'ETH');
           setError(`Insufficient ETH. You have ${balanceEth.toFixed(4)} ETH but need at least ${MINT_PRICE} ETH for mint. Please deposit ETH first.`);
           return;
         }
+        addDebug('ETH balance OK');
         console.log('✅ ETH balance check passed:', (Number(balance) / 1e18).toFixed(6), 'ETH');
       } catch (balanceErr) {
         console.warn('⚠️ Could not check balance, proceeding anyway:', balanceErr);
@@ -991,6 +998,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       }
     }
 
+    addDebug('Starting mint...');
     console.log('✅ Starting mint process for FID:', userData.fid);
     setLoading(true);
     setError(null);
@@ -1374,6 +1382,13 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             </button>
           )}
 
+          {/* Debug display */}
+          {debugLog.length > 0 && (
+            <div className="mt-2 p-2 bg-blue-900/50 border border-blue-500 rounded text-blue-200 text-xs font-mono max-w-md">
+              {debugLog.map((log, i) => <div key={i}>{log}</div>)}
+            </div>
+          )}
+          
           {/* Error display */}
           {error && (
             <div className="mt-4 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm break-words max-w-md">
