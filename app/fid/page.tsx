@@ -151,6 +151,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mintingStep, setMintingStep] = useState<string | null>(null);
   const [userData, setUserData] = useState<NeynarUser | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [generatedTraits, setGeneratedTraits] = useState<GeneratedTraits | null>(null);
@@ -1048,7 +1049,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       });
 
       // Upload static card PNG to IPFS first (for sharing)
-      setError("Uploading card image to IPFS...");
+      setMintingStep("uploading_card");
       const cardPngBlob = await fetch(cardImageDataUrl).then(r => r.blob());
       const pngFormData = new FormData();
       pngFormData.append('image', cardPngBlob, `card-${userData.fid}.png`);
@@ -1070,7 +1071,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       }
 
       // Generate share image (card + criminal text for social sharing)
-      setError("Generating share image...");
+      setMintingStep("generating_share");
       const { generateShareImage } = await import('@/lib/generateShareImage');
 
       const shareImageDataUrl = await generateShareImage({
@@ -1091,7 +1092,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       });
 
       // Upload share image to IPFS
-      setError("Uploading share image to IPFS...");
+      setMintingStep("uploading_share");
       const shareImageBlob = await fetch(shareImageDataUrl).then(r => r.blob());
       const shareFormData = new FormData();
       shareFormData.append('image', shareImageBlob, `share-${userData.fid}.png`);
@@ -1113,7 +1114,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       }
 
       // Generate MP4 video with foil animation (3s static, 5s animated PFP)
-      setError("Generating video with foil animation...");
+      setMintingStep("generating_video");
       console.log('🎬 VIDEO DEBUG - About to generate video with foil:', foil);
       const videoBlob = await generateCardVideo({
         cardImageDataUrl,
@@ -1123,7 +1124,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       });
 
       // Upload video to IPFS
-      setError("Uploading video to IPFS...");
+      setMintingStep("uploading_video");
       const formData = new FormData();
       formData.append('video', videoBlob, `card-${userData.fid}.webm`);
 
@@ -1147,7 +1148,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       const metadataUrl = `https://vibefid.xyz/api/metadata/fid/${userData.fid}`;
 
       // Get signature from backend
-      setError("Verifying FID ownership and getting signature...");
+      setMintingStep("getting_signature");
       const signatureResponse = await fetch('/api/farcaster/mint-signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1196,7 +1197,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       console.log('💾 Saved pending mint data to localStorage:', userData.fid);
 
       // Mint NFT on smart contract
-      setError("Minting NFT on-chain (confirm transaction in wallet)...");
+      setMintingStep("confirming_tx");
       console.log('🚀 Preparing mint transaction:', {
         address: VIBEFID_CONTRACT_ADDRESS,
         functionName: 'presignedMint',

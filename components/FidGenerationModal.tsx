@@ -22,6 +22,8 @@ interface FidGenerationModalProps {
   onMint: () => void;
   isMinting: boolean;
   isMintedSuccessfully?: boolean;
+  mintingStep?: string | null;
+  mintError?: string | null;
   fid?: number;
   onShare?: (lang: SupportedLanguage) => void;
   username?: string;
@@ -39,6 +41,8 @@ export default function FidGenerationModal({
   onMint,
   isMinting,
   isMintedSuccessfully = false,
+  mintingStep,
+  mintError,
   fid,
   onShare,
   username,
@@ -122,6 +126,18 @@ ${shareT.shareTextMintYours}`;
 
   // Get translations for current language
   const t = fidTranslations[lang];
+
+  // Minting step labels  
+  const mintingSteps: Record<string, { label: string; progress: number }> = {
+    uploading_card: { label: 'Uploading card...', progress: 15 },
+    generating_share: { label: 'Generating share...', progress: 30 },
+    uploading_share: { label: 'Uploading share...', progress: 45 },
+    generating_video: { label: 'Generating video...', progress: 60 },
+    uploading_video: { label: 'Uploading video...', progress: 75 },
+    getting_signature: { label: 'Verifying...', progress: 85 },
+    confirming_tx: { label: 'Confirm wallet...', progress: 95 },
+  };
+  const currentStepInfo = mintingStep ? mintingSteps[mintingStep] : null;
 
   // Regenerate backstory whenever language changes
   const backstory = useMemo(() => {
