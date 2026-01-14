@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction, usePublicClient } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction } from "wagmi";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
 import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from "@/lib/hooks/useWriteContractWithAttribution";
 import { encodeFunctionData } from "viem";
 import { useMutation, useQuery, useAction } from "convex/react";
@@ -526,9 +528,6 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   // 🔒 FIX: Check for pending mint data on page load and try to save
   // This handles cases where user refreshed page or transaction was pending
-  // 🔒 CRITICAL FIX: Verify on-chain BEFORE saving to Convex (prevents orphan cards from failed txs)
-  const publicClient = usePublicClient();
-
   useEffect(() => {
     const checkPendingMint = async () => {
       const saved = localStorage.getItem('vibefid_pending_mint');
@@ -548,9 +547,14 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         setError("Verifying on-chain mint...");
 
         // 🔒 CRITICAL: Verify FID was actually minted on-chain before saving to Convex
-        if (publicClient) {
-          try {
-            const isMintedOnChain = await publicClient.readContract({
+        try {
+          const rpcClient = createPublicClient({
+            chain: base,
+            transport: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+              ? `https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+              : undefined),
+          });
+          const isMintedOnChain = await rpcClient.readContract({
               address: VIBEFID_CONTRACT_ADDRESS,
               abi: VIBEFID_ABI,
               functionName: 'fidMinted',
@@ -565,14 +569,13 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
               return;
             }
             console.log('✅ FID verified on-chain, proceeding to save to Convex...');
-          } catch (verifyErr) {
-            console.error('❌ Failed to verify on-chain:', verifyErr);
-            // Don't save to Convex if we can't verify on-chain
-            localStorage.removeItem('vibefid_pending_mint');
-            setPendingMintData(null);
-            setError('Could not verify mint on-chain. Please check transaction status.');
-            return;
-          }
+        } catch (verifyErr) {
+          console.error('❌ Failed to verify on-chain:', verifyErr);
+          // Don't save to Convex if we can't verify on-chain
+          localStorage.removeItem('vibefid_pending_mint');
+          setPendingMintData(null);
+          setError('Could not verify mint on-chain. Please check transaction status.');
+          return;
         }
 
         setError("Recovering unsaved mint data...");
@@ -646,7 +649,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
     // Run on mount
     checkPendingMint();
-  }, [mintCard, publicClient]);
+  }, [mintCard]);
 
   // Save to Convex after successful on-chain mint
   useEffect(() => {
@@ -962,9 +965,15 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
     }
 
     // 🔒 CRITICAL: Check ETH balance BEFORE starting mint (prevents failed AA txs)
-    if (publicClient && address) {
+    if (address) {
       try {
-        const balance = await publicClient.getBalance({ address: address as `0x${string}` });
+        const rpcClient = createPublicClient({
+          chain: base,
+          transport: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+            ? `https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+            : undefined),
+        });
+        const balance = await rpcClient.getBalance({ address: address as `0x${string}` });
         const mintPriceWei = BigInt(Math.floor(parseFloat(MINT_PRICE) * 1e18));
         const minRequired = mintPriceWei + BigInt(50000 * 1e9); // mint price + ~0.00005 ETH buffer for gas
 
