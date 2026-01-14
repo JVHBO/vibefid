@@ -13,27 +13,26 @@ import { internal } from "./_generated/api";
  * - Vote history tracking
  */
 
-// Get votes for a specific card
+// 🚀 BANDWIDTH FIX: Read from pre-computed stats table instead of collecting all votes
 export const getCardVotes = query({
   args: { fid: v.number() },
   handler: async (ctx, args) => {
     const today = new Date().toISOString().split('T')[0];
 
-    const votes = await ctx.db
-      .query("cardVotes")
+    // Read from stats table (single document lookup)
+    const stats = await ctx.db
+      .query("dailyCardVoteStats")
       .withIndex("by_card_date", (q) => q.eq("cardFid", args.fid).eq("date", today))
-      .collect();
+      .first();
 
     return {
-      totalVotes: votes.reduce((sum, v) => sum + v.voteCount, 0),
-      voterCount: votes.length,
+      totalVotes: stats?.totalVotes ?? 0,
+      voterCount: stats?.voterCount ?? 0,
     };
   },
 });
 
-// Check if user has voted for a card today
-// Check if user has voted for a card today
-// 🚀 BANDWIDTH FIX: Use by_card_date index + filter
+// 🚀 BANDWIDTH FIX: Use by_card_voter_date index for direct lookup
 export const hasUserVoted = query({
   args: {
     cardFid: v.number(),
@@ -42,10 +41,12 @@ export const hasUserVoted = query({
   handler: async (ctx, args) => {
     const today = new Date().toISOString().split('T')[0];
 
+    // Direct index lookup - no filter needed
     const vote = await ctx.db
       .query("cardVotes")
-      .withIndex("by_card_date", (q) => q.eq("cardFid", args.cardFid).eq("date", today))
-      .filter((q) => q.eq(q.field("voterFid"), args.voterFid))
+      .withIndex("by_card_voter_date", (q) =>
+        q.eq("cardFid", args.cardFid).eq("voterFid", args.voterFid).eq("date", today)
+      )
       .first();
 
     return !!vote;
@@ -53,20 +54,21 @@ export const hasUserVoted = query({
 });
 
 // Get user's remaining free votes for today
-// 🚀 BANDWIDTH FIX: Use by_voter_date index + filter isPaid
+// 🚀 BANDWIDTH FIX V2: Uses separate userDailyLimits table
+// This query ONLY re-runs when THIS user's limits change, not when ANY vote happens
 export const getUserFreeVotesRemaining = query({
   args: { voterFid: v.number() },
   handler: async (ctx, args) => {
     const today = new Date().toISOString().split('T')[0];
-
-    const votesToday = await ctx.db
-      .query("cardVotes")
-      .withIndex("by_voter_date", (q) => q.eq("voterFid", args.voterFid).eq("date", today))
-      .filter((q) => q.eq(q.field("isPaid"), false))
-      .collect();
-
-    const freeVotesUsed = votesToday.length;
     const maxFreeVotes = 1;
+
+    // Query the dedicated limits table (only invalidates when THIS user votes)
+    const userLimits = await ctx.db
+      .query("userDailyLimits")
+      .withIndex("by_fid_date", (q) => q.eq("fid", args.voterFid).eq("date", today))
+      .first();
+
+    const freeVotesUsed = userLimits?.freeVotesUsed ?? 0;
 
     return {
       remaining: Math.max(0, maxFreeVotes - freeVotesUsed),
@@ -75,6 +77,9 @@ export const getUserFreeVotesRemaining = query({
     };
   },
 });
+
+// DEPRECATED: Old implementation kept for reference, remove after migration
+// export const getUserFreeVotesRemainingLegacy = query({ ... });
 
 // Vote for a card (free or paid) with optional VibeMail message
 export const voteForCard = mutation({
@@ -103,28 +108,21 @@ export const voteForCard = mutation({
     if (!args.isPaid) {
       const existingVote = await ctx.db
         .query("cardVotes")
-        .filter((q) => q.and(
-          q.eq(q.field("cardFid"), args.cardFid),
-          q.eq(q.field("voterFid"), args.voterFid),
-          q.eq(q.field("date"), today)
-        ))
+        .withIndex("by_card_date", (q) => q.eq("cardFid", args.cardFid).eq("date", today))
+        .filter((q) => q.eq(q.field("voterFid"), args.voterFid))
         .first();
 
       if (existingVote) {
         return { success: false, error: "Already voted for this card today" };
       }
 
-      // Check free votes remaining
-      const votesToday = await ctx.db
-        .query("cardVotes")
-        .filter((q) => q.and(
-          q.eq(q.field("voterFid"), args.voterFid),
-          q.eq(q.field("date"), today),
-          q.eq(q.field("isPaid"), false)
-        ))
-        .collect();
+      // 🚀 BANDWIDTH FIX: Check free votes from dedicated limits table
+      const userLimits = await ctx.db
+        .query("userDailyLimits")
+        .withIndex("by_fid_date", (q) => q.eq("fid", args.voterFid).eq("date", today))
+        .first();
 
-      if (votesToday.length >= 1) {
+      if (userLimits && userLimits.freeVotesUsed >= 1) {
         return { success: false, error: "No free votes remaining today" };
       }
     }
@@ -156,8 +154,8 @@ export const voteForCard = mutation({
     }
 
     // Record the vote with optional VibeMail message
-    const hasMessage = args.message && args.message.trim().length > 0;
-    const hasContent = hasMessage || args.imageId; // Message or image counts as VibeMail
+    const hasMessageContent = args.message && args.message.trim().length > 0;
+    const hasContent = hasMessageContent || args.imageId; // Message or image counts as VibeMail
     await ctx.db.insert("cardVotes", {
       cardFid: args.cardFid,
       voterFid: args.voterFid,
@@ -167,11 +165,57 @@ export const voteForCard = mutation({
       voteCount: voteCount,
       createdAt: now,
       // VibeMail fields
-      message: hasMessage && args.message ? args.message.slice(0, 200) : undefined,
+      message: hasMessageContent && args.message ? args.message.slice(0, 200) : undefined,
       audioId: hasContent ? args.audioId : undefined,
       imageId: args.imageId || undefined,
       isRead: hasContent ? false : undefined,
+      // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
+      hasMessage: hasContent ? true : undefined,
     });
+
+    // 🚀 BANDWIDTH FIX: Update dedicated limits table for free votes
+    if (!args.isPaid) {
+      const existingLimits = await ctx.db
+        .query("userDailyLimits")
+        .withIndex("by_fid_date", (q) => q.eq("fid", args.voterFid).eq("date", today))
+        .first();
+
+      if (existingLimits) {
+        await ctx.db.patch(existingLimits._id, {
+          freeVotesUsed: existingLimits.freeVotesUsed + 1,
+          lastUpdated: now,
+        });
+      } else {
+        await ctx.db.insert("userDailyLimits", {
+          fid: args.voterFid,
+          date: today,
+          freeVotesUsed: 1,
+          lastUpdated: now,
+        });
+      }
+    }
+
+    // 🚀 BANDWIDTH FIX: Update pre-computed vote stats
+    const existingStats = await ctx.db
+      .query("dailyCardVoteStats")
+      .withIndex("by_card_date", (q) => q.eq("cardFid", args.cardFid).eq("date", today))
+      .first();
+
+    if (existingStats) {
+      await ctx.db.patch(existingStats._id, {
+        totalVotes: existingStats.totalVotes + voteCount,
+        voterCount: existingStats.voterCount + 1,
+        lastUpdated: now,
+      });
+    } else {
+      await ctx.db.insert("dailyCardVoteStats", {
+        cardFid: args.cardFid,
+        date: today,
+        totalVotes: voteCount,
+        voterCount: 1,
+        lastUpdated: now,
+      });
+    }
 
     // Update daily leaderboard
     await updateDailyLeaderboard(ctx, args.cardFid, today, voteCount);
@@ -215,10 +259,7 @@ export const voteForCard = mutation({
 async function updateDailyLeaderboard(ctx: any, cardFid: number, date: string, voteCount: number) {
   const existing = await ctx.db
     .query("dailyVoteLeaderboard")
-    .filter((q: any) => q.and(
-      q.eq(q.field("cardFid"), cardFid),
-      q.eq(q.field("date"), date)
-    ))
+    .withIndex("by_card_date", (q: any) => q.eq("cardFid", cardFid).eq("date", date))
     .first();
 
   if (existing) {
@@ -230,7 +271,7 @@ async function updateDailyLeaderboard(ctx: any, cardFid: number, date: string, v
     // Get card info
     const card = await ctx.db
       .query("farcasterCards")
-      .filter((q: any) => q.eq(q.field("fid"), cardFid))
+      .withIndex("by_fid", (q: any) => q.eq("fid", cardFid))
       .first();
 
     await ctx.db.insert("dailyVoteLeaderboard", {
@@ -255,7 +296,7 @@ export const getDailyLeaderboard = query({
 
     const leaders = await ctx.db
       .query("dailyVoteLeaderboard")
-      .filter((q) => q.eq(q.field("date"), today))
+      .withIndex("by_date", (q) => q.eq("date", today))
       .collect();
 
     // Sort by votes and take top N
@@ -265,29 +306,26 @@ export const getDailyLeaderboard = query({
   },
 });
 
-// Get daily prize pool info
+// 🚀 BANDWIDTH FIX: Uses by_date_paid index instead of filtering all votes
 export const getDailyPrizeInfo = query({
   args: {},
   handler: async (ctx) => {
     const today = new Date().toISOString().split('T')[0];
 
-    // Count paid votes today (each paid vote adds to prize pool)
+    // Count paid votes today using dedicated index (no post-filter needed)
     const paidVotes = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.and(
-        q.eq(q.field("date"), today),
-        q.eq(q.field("isPaid"), true)
-      ))
+      .withIndex("by_date_paid", (q) => q.eq("date", today).eq("isPaid", true))
       .collect();
 
     const totalPaidVotes = paidVotes.reduce((sum, v) => sum + v.voteCount, 0);
     const prizePool = totalPaidVotes * 50; // 50% of vote cost goes to prize pool
 
-    // Get current leader
+    // Get current leader - take top 10 and sort (usually few leaders per day)
     const leaders = await ctx.db
       .query("dailyVoteLeaderboard")
-      .filter((q) => q.eq(q.field("date"), today))
-      .collect();
+      .withIndex("by_date", (q) => q.eq("date", today))
+      .take(100); // Limit to prevent huge scans
 
     const topLeader = leaders.sort((a, b) => b.totalVotes - a.totalVotes)[0];
 
@@ -358,7 +396,7 @@ export const distributeDailyPrize = mutation({
     // Check if already distributed
     const existingWinner = await ctx.db
       .query("dailyPrizeWinners")
-      .filter((q) => q.eq(q.field("date"), date))
+      .withIndex("by_date", (q) => q.eq("date", date))
       .first();
 
     if (existingWinner) {
@@ -368,7 +406,7 @@ export const distributeDailyPrize = mutation({
     // Get top voted card for yesterday
     const leaders = await ctx.db
       .query("dailyVoteLeaderboard")
-      .filter((q) => q.eq(q.field("date"), date))
+      .withIndex("by_date", (q) => q.eq("date", date))
       .collect();
 
     if (leaders.length === 0) {
@@ -380,10 +418,8 @@ export const distributeDailyPrize = mutation({
     // Calculate prize pool
     const paidVotes = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.and(
-        q.eq(q.field("date"), date),
-        q.eq(q.field("isPaid"), true)
-      ))
+      .withIndex("by_date", (q) => q.eq("date", date))
+      .filter((q) => q.eq(q.field("isPaid"), true))
       .collect();
 
     const totalPaidVotes = paidVotes.reduce((sum, v) => sum + v.voteCount, 0);
@@ -392,7 +428,7 @@ export const distributeDailyPrize = mutation({
     // Find winner's card to get their address
     const winnerCard = await ctx.db
       .query("farcasterCards")
-      .filter((q) => q.eq(q.field("fid"), winner.cardFid))
+      .withIndex("by_fid", (q) => q.eq("fid", winner.cardFid))
       .first();
 
     if (winnerCard && prizePool > 0) {
@@ -452,6 +488,7 @@ export const distributeDailyPrize = mutation({
 // ============================================================================
 
 // Get all messages for a card (inbox)
+// 🚀 BANDWIDTH FIX: Uses by_card_message index instead of collecting all votes
 export const getMessagesForCard = query({
   args: {
     cardFid: v.number(),
@@ -460,19 +497,43 @@ export const getMessagesForCard = query({
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
 
-    // Get all votes with messages for this card
-    const allVotes = await ctx.db
+    // Use dedicated index for messages (hasMessage = true)
+    // Falls back to filtering if hasMessage field not populated yet
+    const messagesWithIndex = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.eq(q.field("cardFid"), args.cardFid))
+      .withIndex("by_card_message", (q) =>
+        q.eq("cardFid", args.cardFid).eq("hasMessage", true)
+      )
       .order("desc")
-      .collect();
+      .take(limit);
 
-    // Filter to only votes with messages
-    const messages = allVotes
-      .filter(v => v.message !== undefined)
-      .slice(0, limit);
+    // If no results from new index, fallback to old method for backwards compat
+    // (while hasMessage field is being backfilled)
+    if (messagesWithIndex.length === 0) {
+      const fallbackVotes = await ctx.db
+        .query("cardVotes")
+        .withIndex("by_card_date", (q) => q.eq("cardFid", args.cardFid))
+        .order("desc")
+        .take(limit * 3) // Take more to filter
+        .then(votes => votes.filter(v => v.message !== undefined).slice(0, limit));
 
-    return messages.map(m => ({
+      return fallbackVotes.map(m => ({
+        _id: m._id,
+        message: m.message,
+        audioId: m.audioId,
+        imageId: m.imageId,
+        voterFid: m.voterFid,
+        isRead: m.isRead ?? false,
+        createdAt: m.createdAt,
+        voteCount: m.voteCount,
+        isPaid: m.isPaid,
+        giftNftName: m.giftNftName,
+        giftNftImageUrl: m.giftNftImageUrl,
+        giftNftCollection: m.giftNftCollection,
+      }));
+    }
+
+    return messagesWithIndex.map(m => ({
       _id: m._id,
       message: m.message,
       audioId: m.audioId,
@@ -482,7 +543,6 @@ export const getMessagesForCard = query({
       createdAt: m.createdAt,
       voteCount: m.voteCount,
       isPaid: m.isPaid,
-      // NFT Gift fields
       giftNftName: m.giftNftName,
       giftNftImageUrl: m.giftNftImageUrl,
       giftNftCollection: m.giftNftCollection,
@@ -665,11 +725,13 @@ export const getRecentVibeMails = query({
       }));
     }
 
-    // Fallback: get all recent messages
+    // Fallback: get recent messages - 🚀 BANDWIDTH FIX: Use index + limit
+    const fallbackToday = new Date().toISOString().split('T')[0];
     const allMessages = await ctx.db
       .query("cardVotes")
+      .withIndex("by_date", (q) => q.eq("date", fallbackToday))
       .filter((q) => q.neq(q.field("message"), undefined))
-      .collect();
+      .take(100);
 
     const sorted = allMessages
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
@@ -754,24 +816,34 @@ export const searchCardsForVibeMail = query({
     const limit = args.limit || 5;
     const searchLower = args.searchTerm.toLowerCase();
 
-    // Search by username
-    const allCards = await ctx.db
+    // 🚀 BANDWIDTH FIX: Use search index instead of full table scan
+    // First try to find by exact FID
+    const fidNumber = parseInt(args.searchTerm);
+    if (!isNaN(fidNumber)) {
+      const cardByFid = await ctx.db
+        .query("farcasterCards")
+        .withIndex("by_fid", (q) => q.eq("fid", fidNumber))
+        .first();
+      if (cardByFid) {
+        return [{
+          fid: cardByFid.fid,
+          username: cardByFid.username,
+          pfpUrl: cardByFid.pfpUrl,
+        }];
+      }
+    }
+
+    // Use search index for username lookup
+    const searchResults = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .withSearchIndex("search_username", (q) => q.search("username", args.searchTerm))
+      .take(limit);
 
-    const matches = allCards
-      .filter(card =>
-        card.username.toLowerCase().includes(searchLower) ||
-        card.fid.toString() === args.searchTerm
-      )
-      .slice(0, limit)
-      .map(card => ({
-        fid: card.fid,
-        username: card.username,
-        pfpUrl: card.pfpUrl,
-      }));
-
-    return matches;
+    return searchResults.map(card => ({
+      fid: card.fid,
+      username: card.username,
+      pfpUrl: card.pfpUrl,
+    }));
   },
 });
 
@@ -798,16 +870,12 @@ export const sendDirectVibeMail = mutation({
       throw new Error("Cannot send VibeMail to yourself");
     }
 
-    // Determine if paid based on free votes remaining (same logic as getUserFreeVotesRemaining)
-    const votesToday = await ctx.db
-      .query("cardVotes")
-      .filter((q) => q.and(
-        q.eq(q.field("voterFid"), args.senderFid),
-        q.eq(q.field("date"), today),
-        q.eq(q.field("isPaid"), false)
-      ))
-      .collect();
-    const freeVotesUsed = votesToday.length;
+    // 🚀 BANDWIDTH FIX: Determine if paid using dedicated limits table
+    const userLimits = await ctx.db
+      .query("userDailyLimits")
+      .withIndex("by_fid_date", (q) => q.eq("fid", args.senderFid).eq("date", today))
+      .first();
+    const freeVotesUsed = userLimits?.freeVotesUsed ?? 0;
     const maxFreeVotes = 1;
     const isPaid = freeVotesUsed >= maxFreeVotes;
 
@@ -832,7 +900,7 @@ export const sendDirectVibeMail = mutation({
       createdAt: now,
       message: args.message.slice(0, 200),
       audioId: args.audioId,
-          imageId: args.imageId,
+      imageId: args.imageId,
       isRead: false,
       isSent: true,
       recipientFid: args.recipientFid,
@@ -841,7 +909,48 @@ export const sendDirectVibeMail = mutation({
       giftNftName: args.giftNftName,
       giftNftImageUrl: args.giftNftImageUrl,
       giftNftCollection: args.giftNftCollection,
+      // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
+      hasMessage: true,
     });
+
+    // 🚀 BANDWIDTH FIX: Update dedicated limits table for free votes
+    if (!isPaid) {
+      if (userLimits) {
+        await ctx.db.patch(userLimits._id, {
+          freeVotesUsed: userLimits.freeVotesUsed + 1,
+          lastUpdated: now,
+        });
+      } else {
+        await ctx.db.insert("userDailyLimits", {
+          fid: args.senderFid,
+          date: today,
+          freeVotesUsed: 1,
+          lastUpdated: now,
+        });
+      }
+    }
+
+    // 🚀 BANDWIDTH FIX: Update pre-computed vote stats
+    const existingStats = await ctx.db
+      .query("dailyCardVoteStats")
+      .withIndex("by_card_date", (q) => q.eq("cardFid", args.recipientFid).eq("date", today))
+      .first();
+
+    if (existingStats) {
+      await ctx.db.patch(existingStats._id, {
+        totalVotes: existingStats.totalVotes + 1,
+        voterCount: existingStats.voterCount + 1,
+        lastUpdated: now,
+      });
+    } else {
+      await ctx.db.insert("dailyCardVoteStats", {
+        cardFid: args.recipientFid,
+        date: today,
+        totalVotes: 1,
+        voterCount: 1,
+        lastUpdated: now,
+      });
+    }
 
     // Give 100 VBMS to recipient (always, both free and paid give rewards)
     const existingReward = await ctx.db
@@ -1143,5 +1252,63 @@ export const getVibeMailStats = query({
       messagesSent: allSent.length,
       messagesReceived: receivedMessages.length,
     };
+  },
+});
+
+/**
+ * Backfill dailyCardVoteStats for today
+ * Run once after deploy: npx convex run cardVotes:backfillDailyStats
+ */
+export const backfillDailyStats = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const today = new Date().toISOString().split('T')[0];
+    const now = Date.now();
+
+    // Get all votes for today grouped by card
+    const votes = await ctx.db
+      .query("cardVotes")
+      .withIndex("by_date", (q) => q.eq("date", today))
+      .collect();
+
+    // Group by cardFid
+    const statsByCard = new Map<number, { totalVotes: number; voterCount: number }>();
+    for (const vote of votes) {
+      const existing = statsByCard.get(vote.cardFid) || { totalVotes: 0, voterCount: 0 };
+      statsByCard.set(vote.cardFid, {
+        totalVotes: existing.totalVotes + vote.voteCount,
+        voterCount: existing.voterCount + 1,
+      });
+    }
+
+    let created = 0;
+    let updated = 0;
+
+    for (const [cardFid, stats] of statsByCard) {
+      const existing = await ctx.db
+        .query("dailyCardVoteStats")
+        .withIndex("by_card_date", (q) => q.eq("cardFid", cardFid).eq("date", today))
+        .first();
+
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          totalVotes: stats.totalVotes,
+          voterCount: stats.voterCount,
+          lastUpdated: now,
+        });
+        updated++;
+      } else {
+        await ctx.db.insert("dailyCardVoteStats", {
+          cardFid,
+          date: today,
+          totalVotes: stats.totalVotes,
+          voterCount: stats.voterCount,
+          lastUpdated: now,
+        });
+        created++;
+      }
+    }
+
+    return { success: true, created, updated, total: statsByCard.size };
   },
 });

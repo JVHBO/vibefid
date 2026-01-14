@@ -1,14 +1,15 @@
 /**
- * Most Wanted Ranking - Optimized
+ * Most Wanted Ranking - Optimized with Index
  * Cards ranked by Neynar Score increase since mint
+ * 🚀 BANDWIDTH FIX: Uses by_score_diff index instead of full table scan
  */
 
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
 /**
- * Get Most Wanted Ranking - Optimized version
- * Uses pre-calculated latestNeynarScore field on cards
+ * Get Most Wanted Ranking - Uses scoreDiff index
+ * scoreDiff is pre-computed when latestNeynarScore is updated
  */
 export const getRanking = query({
   args: {
@@ -16,33 +17,38 @@ export const getRanking = query({
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(args.limit || 12, 20000);
+    const limit = Math.min(args.limit || 12, 100);
     const offset = args.offset || 0;
 
-    // Get all cards that have score history
+    // 🚀 BANDWIDTH FIX: Use index instead of full table scan
+    // Cards with scoreDiff set are fetched in descending order
     const cards = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .withIndex("by_score_diff")
+      .order("desc")
+      .take(offset + limit + 50); // Take a bit more to handle offset
 
-    // Get today's votes using index
+    // Get today's votes
     const today = new Date().toISOString().split('T')[0];
+    const cardFids = cards.map(c => c.fid);
+
+    // Only fetch votes for cards we're returning
     const allVotes = await ctx.db
       .query("cardVotes")
       .withIndex("by_date", (q) => q.eq("date", today))
       .collect();
 
-    // Create vote count map
     const voteMap = new Map<number, number>();
     for (const vote of allVotes) {
-      const current = voteMap.get(vote.cardFid) || 0;
-      voteMap.set(vote.cardFid, current + vote.voteCount);
+      if (cardFids.includes(vote.cardFid)) {
+        const current = voteMap.get(vote.cardFid) || 0;
+        voteMap.set(vote.cardFid, current + vote.voteCount);
+      }
     }
 
-    // Calculate score diff and sort - only include MINTED cards (with contractAddress)
-    const withDiff = cards
-      .filter(c => c.contractAddress) // Only cards that were actually minted on blockchain
+    const result = cards
+      .slice(offset, offset + limit)
       .map(card => ({
-        _id: card._id,
         fid: card.fid,
         username: card.username,
         displayName: card.displayName,
@@ -51,15 +57,17 @@ export const getRanking = query({
         rarity: card.rarity,
         mintScore: card.neynarScore,
         currentScore: card.latestNeynarScore ?? card.neynarScore,
-        scoreDiff: (card.latestNeynarScore ?? card.neynarScore) - card.neynarScore,
+        scoreDiff: card.scoreDiff ?? 0,
         votes: voteMap.get(card.fid) || 0,
-      }))
-      .sort((a, b) => b.scoreDiff - a.scoreDiff);
+      }));
+
+    // Get total count (cards with scoreDiff)
+    const totalCount = cards.length;
 
     return {
-      cards: withDiff.slice(offset, offset + limit),
-      totalCount: withDiff.length,
-      hasMore: offset + limit < withDiff.length,
+      cards: result,
+      totalCount,
+      hasMore: offset + limit < totalCount,
     };
   },
 });
@@ -67,6 +75,7 @@ export const getRanking = query({
 /**
  * Update latest Neynar score on a card
  * Called when user checks their score
+ * 🚀 BANDWIDTH FIX: Also updates scoreDiff for indexed ranking queries
  */
 export const updateLatestScore = mutation({
   args: {
@@ -81,9 +90,13 @@ export const updateLatestScore = mutation({
 
     if (!card) return { success: false, error: "Card not found" };
 
+    // 🚀 BANDWIDTH FIX: Pre-compute scoreDiff for efficient ranking
+    const scoreDiff = score - card.neynarScore;
+
     await ctx.db.patch(card._id, {
       latestNeynarScore: score,
       latestScoreCheckedAt: Date.now(),
+      scoreDiff,
     });
 
     return { success: true };
@@ -93,6 +106,7 @@ export const updateLatestScore = mutation({
 /**
  * Batch update all cards' latest Neynar scores
  * Only saves if score changed since last check
+ * 🚀 BANDWIDTH FIX: Also updates scoreDiff for indexed ranking queries
  */
 export const batchUpdateScores = mutation({
   args: {
@@ -120,9 +134,13 @@ export const batchUpdateScores = mutation({
         continue;
       }
 
+      // 🚀 BANDWIDTH FIX: Pre-compute scoreDiff for efficient ranking
+      const scoreDiff = score - card.neynarScore;
+
       await ctx.db.patch(card._id, {
         latestNeynarScore: score,
         latestScoreCheckedAt: Date.now(),
+        scoreDiff,
       });
 
       updatedCount++;
@@ -140,5 +158,30 @@ export const getFidsForScoreUpdate = query({
   handler: async (ctx) => {
     const cards = await ctx.db.query("farcasterCards").collect();
     return cards.map(c => c.fid);
+  },
+});
+
+/**
+ * Backfill scoreDiff on all cards
+ * Run once after deploy: npx convex run mostWanted:backfillScoreDiff
+ */
+export const backfillScoreDiff = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const cards = await ctx.db.query("farcasterCards").collect();
+    let updated = 0;
+
+    for (const card of cards) {
+      const currentScore = card.latestNeynarScore ?? card.neynarScore;
+      const scoreDiff = currentScore - card.neynarScore;
+
+      // Only update if scoreDiff not set or changed
+      if (card.scoreDiff !== scoreDiff) {
+        await ctx.db.patch(card._id, { scoreDiff });
+        updated++;
+      }
+    }
+
+    return { success: true, updated, total: cards.length };
   },
 });

@@ -878,6 +878,8 @@ export default defineSchema({
     upgradedAt: v.optional(v.number()),
     previousRarity: v.optional(v.string()),
     previousNeynarScore: v.optional(v.number()),
+    // 🚀 BANDWIDTH FIX: Pre-computed score diff for efficient ranking queries
+    scoreDiff: v.optional(v.number()),
   })
     .index("by_fid", ["fid"])
     .index("by_address", ["address"])
@@ -885,6 +887,7 @@ export default defineSchema({
     .index("by_rarity", ["rarity"])
     .index("by_score", ["neynarScore"])
     .index("by_contract", ["contractAddress"])
+    .index("by_score_diff", ["scoreDiff"]) // 🚀 BANDWIDTH FIX: For Most Wanted ranking
     .searchIndex("search_username", {
       searchField: "username",
       filterFields: ["rarity"],
@@ -1554,6 +1557,17 @@ export default defineSchema({
     .index("by_code", ["code"])
     .index("by_profile", ["profileAddress"]),
 
+  // 🚀 BANDWIDTH FIX: Separate table for daily limits (avoids reactive recomputation)
+  // Instead of querying cardVotes table (which triggers on ANY vote), this table
+  // only triggers when THIS specific user's limits change
+  userDailyLimits: defineTable({
+    fid: v.number(),           // User's Farcaster ID
+    date: v.string(),          // "2026-01-14" format
+    freeVotesUsed: v.number(), // 0 or 1 (max 1 free vote per day)
+    lastUpdated: v.number(),   // Timestamp
+  })
+    .index("by_fid_date", ["fid", "date"]),
+
   // 🗳️ VibeFID Card Votes - Daily voting system
   cardVotes: defineTable({
     cardFid: v.number(),
@@ -1575,11 +1589,27 @@ export default defineSchema({
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
+    // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
+    hasMessage: v.optional(v.boolean()),
   })
     .index("by_card_date", ["cardFid", "date"])
     .index("by_voter_date", ["voterFid", "date"])
     .index("by_date", ["date"])
-    .index("by_card_unread", ["cardFid", "isRead"]),
+    .index("by_card_unread", ["cardFid", "isRead"])
+    .index("by_date_paid", ["date", "isPaid"]) // 🚀 BANDWIDTH FIX: For getDailyPrizeInfo
+    .index("by_card_message", ["cardFid", "hasMessage", "createdAt"]) // 🚀 BANDWIDTH FIX: For getMessagesForCard
+    .index("by_card_voter_date", ["cardFid", "voterFid", "date"]), // 🚀 BANDWIDTH FIX: For hasUserVoted
+
+  // 🚀 BANDWIDTH FIX: Pre-computed daily vote stats per card
+  // Avoids collecting all votes just to count them
+  dailyCardVoteStats: defineTable({
+    cardFid: v.number(),
+    date: v.string(),
+    totalVotes: v.number(),
+    voterCount: v.number(),
+    lastUpdated: v.number(),
+  })
+    .index("by_card_date", ["cardFid", "date"]),
 
   // 📊 Daily Vote Leaderboard
   dailyVoteLeaderboard: defineTable({
