@@ -1886,7 +1886,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
               <button
                 onClick={async () => {
                   AudioManager.buttonClick();
-                  const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms';
+                  const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast';
                   if (farcasterContext.isInMiniapp) {
                     try {
                       await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });

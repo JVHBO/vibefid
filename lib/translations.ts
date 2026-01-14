@@ -13,7 +13,7 @@ Sua carta **{rarity}** foi criada!
 
 📱 **VibeFID** → Seu perfil Farcaster virou uma carta colecionável! O poder é baseado no seu Neynar Score.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Batalhe com sua carta em Poker e PvP. Aposte VBMS no Mecha Arena e enfrente Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Batalhe com sua carta em Poker e PvP. Aposte VBMS no Mecha Arena e enfrente Raid Bosses!
 
 🃏 **Coleções Parceiras** → Cartas de projetos parceiros também funcionam nas batalhas!
 
@@ -1032,7 +1032,7 @@ Your **{rarity}** card has been created!
 
 📱 **VibeFID** → Your Farcaster profile became a collectible card! Power is based on your Neynar Score.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Battle with your card in Poker and PvP. Bet VBMS in Mecha Arena and fight Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Battle with your card in Poker and PvP. Bet VBMS in Mecha Arena and fight Raid Bosses!
 
 🃏 **Partner Collections** → Cards from partner projects also work in battles!
 
@@ -2009,7 +2009,7 @@ Good luck! 🚀`,
 
 📱 **VibeFID** → ¡Tu perfil de Farcaster se convirtió en una carta coleccionable! El poder se basa en tu Neynar Score.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → ¡Batalla con tu carta en Poker y PvP. Apuesta VBMS en Mecha Arena y enfrenta Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → ¡Batalla con tu carta en Poker y PvP. Apuesta VBMS en Mecha Arena y enfrenta Raid Bosses!
 
 🃏 **Colecciones Asociadas** → ¡Las cartas de proyectos asociados también funcionan en las batallas!
 
@@ -2989,7 +2989,7 @@ Aapka **{rarity}** card ban gaya hai!
 
 📱 **VibeFID** → Aapka Farcaster profile ek collectible card ban gaya! Power aapke Neynar Score par based hai.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Apne card se Poker aur PvP mein battle karein. Mecha Arena mein VBMS lagayein aur Raid Bosses se ladein!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Apne card se Poker aur PvP mein battle karein. Mecha Arena mein VBMS lagayein aur Raid Bosses se ladein!
 
 🃏 **Partner Collections** → Partner projects ke cards bhi battles mein kaam karte hain!
 
@@ -3970,7 +3970,7 @@ Vasha karta **{rarity}** sozdana!
 
 📱 **VibeFID** → Vash profil Farcaster stal kollektsionnoy kartoy! Sila osnovana na vashem Neynar Score.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Srazhaysya kartoy v Poker i PvP. Stavte VBMS v Mecha Arena i srazhaysya s Raid Bossami!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Srazhaysya kartoy v Poker i PvP. Stavte VBMS v Mecha Arena i srazhaysya s Raid Bossami!
 
 🃏 **Partnerskie Kollektsii** → Karty partnerskih proektov tozhe rabotayut v bitvah!
 
@@ -4947,7 +4947,7 @@ Udachi! 🚀`,
 
 📱 **VibeFID** → 你的 Farcaster 个人资料变成了收藏卡!力量基于你的 Neynar Score。
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → 用你的卡片在 Poker 和 PvP 中战斗。在 Mecha Arena 下注 VBMS 并挑战 Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → 用你的卡片在 Poker 和 PvP 中战斗。在 Mecha Arena 下注 VBMS 并挑战 Raid Bosses!
 
 🃏 **合作系列** → 合作项目的卡片也可以在战斗中使用!
 
@@ -5932,7 +5932,7 @@ Kartu **{rarity}** kamu sudah dibuat!
 
 📱 **VibeFID** → Profil Farcaster kamu jadi kartu koleksi! Kekuatan berdasarkan Neynar Score kamu.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Bertarung dengan kartumu di Poker dan PvP. Taruh VBMS di Mecha Arena dan lawan Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Bertarung dengan kartumu di Poker dan PvP. Taruh VBMS di Mecha Arena dan lawan Raid Bosses!
 
 🃏 **Koleksi Partner** → Kartu dari proyek partner juga bisa dipakai di pertempuran!
 
@@ -6883,7 +6883,7 @@ Votre carte **{rarity}** a été créée!
 
 📱 **VibeFID** → Votre profil Farcaster est devenu une carte de collection! La puissance est basée sur votre Neynar Score.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combattez avec votre carte au Poker et PvP. Pariez des VBMS dans Mecha Arena et affrontez les Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Combattez avec votre carte au Poker et PvP. Pariez des VBMS dans Mecha Arena et affrontez les Raid Bosses!
 
 🃏 **Collections Partenaires** → Les cartes des projets partenaires fonctionnent aussi dans les batailles!
 
@@ -7834,7 +7834,7 @@ Bonne chance! 🚀`,
 
 📱 **VibeFID** → あなたの Farcaster プロフィールがコレクタブルカードになりました! パワーは Neynar Score に基づいています。
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → カードでポーカーと PvP でバトル。Mecha Arena で VBMS を賭けて Raid Bosses と戦おう!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → カードでポーカーと PvP でバトル。Mecha Arena で VBMS を賭けて Raid Bosses と戦おう!
 
 🃏 **パートナーコレクション** → パートナープロジェクトのカードもバトルで使えます!
 
@@ -8784,7 +8784,7 @@ La tua carta **{rarity}** è stata creata!
 
 📱 **VibeFID** → Il tuo profilo Farcaster è diventato una carta collezionabile! Il potere si basa sul tuo Neynar Score.
 
-🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Combatti con la tua carta in Poker e PvP. Scommetti VBMS in Mecha Arena e affronta i Raid Bosses!
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast) → Combatti con la tua carta in Poker e PvP. Scommetti VBMS in Mecha Arena e affronta i Raid Bosses!
 
 🃏 **Collezioni Partner** → Anche le carte dei progetti partner funzionano nelle battaglie!
 

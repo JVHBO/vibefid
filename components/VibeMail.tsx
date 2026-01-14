@@ -1027,7 +1027,7 @@ export function VibeMailInboxWithClaim({
                 <button
                   onClick={async () => {
                     AudioManager.buttonClick();
-                    window.open('https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms/dex', '_blank');
+                    window.open('https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast/dex', '_blank');
                   }}
                   className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
                 >

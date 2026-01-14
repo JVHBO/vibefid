@@ -1261,7 +1261,7 @@ export default function FidCardPage() {
                 <button
                   onClick={async () => {
                     AudioManager.buttonClick();
-                    const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms';
+                    const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast';
                     if (farcasterContext.isInMiniapp) {
                       try {
                         await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });
@@ -1345,7 +1345,7 @@ export default function FidCardPage() {
                   <button
                     onClick={async () => {
                       AudioManager.buttonClick();
-                      window.open('https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms/dex', '_blank');
+                      window.open('https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast/dex', '_blank');
                     }}
                     className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
                   >
