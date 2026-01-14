@@ -1387,6 +1387,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           onMint={handleMintCard}
           isMinting={loading || isContractPending || isSendPending || isConfirming}
           isMintedSuccessfully={mintedSuccessfully}
+          mintError={error}
           fid={userData?.fid}
           onShare={handleShare}
           username={userData?.username}

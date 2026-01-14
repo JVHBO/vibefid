@@ -368,6 +368,13 @@ ${shareT.shareTextMintYours}`;
                       </button>
                     )}
                   </div>
+
+                  {/* Error Display */}
+                  {mintError && !isMinting && (
+                    <div className="mt-3 p-3 bg-red-900/50 border border-red-500 rounded-lg">
+                      <p className="text-red-300 text-sm text-center">{mintError}</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3 w-full">
