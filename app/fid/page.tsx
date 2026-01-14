@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction } from "wagmi";
 import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from "@/lib/hooks/useWriteContractWithAttribution";
-import { encodeFunctionData } from "viem";
+import { encodeFunctionData, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getUserByFid, calculateRarityFromScore, getBasePowerFromRarity, generateRandomSuit, getSuitFromFid, generateRankFromRarity, getSuitSymbol, getSuitColor } from "@/lib/neynar";
@@ -636,6 +637,30 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
     if (txActuallySucceeded && pendingMintData) {
       const saveToConvex = async () => {
         try {
+          // 🔒 CRITICAL: Verify on-chain that NFT was actually minted before saving
+          const rpcClient = createPublicClient({
+            chain: base,
+            transport: http('https://mainnet.base.org'),
+          });
+
+          const fidMintedResult = await rpcClient.readContract({
+            address: VIBEFID_CONTRACT_ADDRESS as `0x${string}`,
+            abi: [{ name: 'fidMinted', type: 'function', stateMutability: 'view', inputs: [{ name: 'fid', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }],
+            functionName: 'fidMinted',
+            args: [BigInt(pendingMintData.fid)],
+          });
+
+          if (!fidMintedResult) {
+            console.error('❌ FID not minted on-chain despite tx confirmation');
+            setError('Mint failed on-chain. Please check your ETH balance and try again.');
+            setLoading(false);
+            localStorage.removeItem('vibefid_pending_mint');
+            setPendingMintData(null);
+            return;
+          }
+
+          console.log('✅ On-chain verification passed - FID is minted');
+
           // Play victory sound on successful mint
           AudioManager.win();
           haptics.mint(); // Haptic on successful mint
