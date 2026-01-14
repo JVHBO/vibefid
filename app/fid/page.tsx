@@ -503,9 +503,12 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   // Use whichever hash is available
   const hash = writeHash || sendHash;
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess: isConfirmed, data: txReceipt } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // 🔒 CRITICAL: Check if transaction ACTUALLY succeeded (not just receipt fetched)
+  const txActuallySucceeded = isConfirmed && txReceipt?.status === 'success';
 
   // Handle contract errors
   useEffect(() => {
@@ -615,9 +618,22 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
     checkPendingMint();
   }, [mintCard]);
 
+  
+  // 🔒 Handle REVERTED transactions - show error and clear pending state
+  useEffect(() => {
+    if (isConfirmed && txReceipt?.status === 'reverted' && pendingMintData) {
+      console.error('❌ Transaction REVERTED on-chain');
+      setError('Transaction failed on-chain. Please check your ETH balance and try again.');
+      setLoading(false);
+      // Clear pending mint data since tx failed
+      localStorage.removeItem('vibefid_pending_mint');
+      setPendingMintData(null);
+    }
+  }, [isConfirmed, txReceipt, pendingMintData]);
+
   // Save to Convex after successful on-chain mint
   useEffect(() => {
-    if (isConfirmed && pendingMintData) {
+    if (txActuallySucceeded && pendingMintData) {
       const saveToConvex = async () => {
         try {
           // Play victory sound on successful mint
@@ -689,7 +705,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       };
       saveToConvex();
     }
-  }, [isConfirmed, pendingMintData, hash]);
+  }, [txActuallySucceeded, pendingMintData, hash]);
 
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(1);
