@@ -638,21 +638,33 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       const saveToConvex = async () => {
         try {
           // 🔒 CRITICAL: Verify on-chain that NFT was actually minted before saving
-          const rpcClient = createPublicClient({
-            chain: base,
-            transport: http('https://mainnet.base.org'),
-          });
+          console.log('🔍 Verifying on-chain mint for FID:', pendingMintData.fid);
+          setError('Verifying mint on-chain...');
 
-          const fidMintedResult = await rpcClient.readContract({
-            address: VIBEFID_CONTRACT_ADDRESS as `0x${string}`,
-            abi: [{ name: 'fidMinted', type: 'function', stateMutability: 'view', inputs: [{ name: 'fid', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }],
-            functionName: 'fidMinted',
-            args: [BigInt(pendingMintData.fid)],
-          });
+          let fidMintedResult = false;
+          try {
+            const rpcClient = createPublicClient({
+              chain: base,
+              transport: http('https://mainnet.base.org'),
+            });
+
+            fidMintedResult = await rpcClient.readContract({
+              address: VIBEFID_CONTRACT_ADDRESS as `0x${string}`,
+              abi: [{ name: 'fidMinted', type: 'function', stateMutability: 'view', inputs: [{ name: 'fid', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] }],
+              functionName: 'fidMinted',
+              args: [BigInt(pendingMintData.fid)],
+            });
+            console.log('🔍 fidMinted result:', fidMintedResult);
+          } catch (verifyErr) {
+            console.error('❌ On-chain verification failed:', verifyErr);
+            setError('Failed to verify mint. Please try again.');
+            setLoading(false);
+            return;
+          }
 
           if (!fidMintedResult) {
             console.error('❌ FID not minted on-chain despite tx confirmation');
-            setError('Mint failed on-chain. Please check your ETH balance and try again.');
+            setError('Mint failed - insufficient ETH. Please add funds and try again.');
             setLoading(false);
             localStorage.removeItem('vibefid_pending_mint');
             setPendingMintData(null);
