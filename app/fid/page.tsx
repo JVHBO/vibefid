@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction } from "wagmi";
-import { createPublicClient, http } from "viem";
-import { base } from "viem/chains";
 import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from "@/lib/hooks/useWriteContractWithAttribution";
 import { encodeFunctionData } from "viem";
 import { useMutation, useQuery, useAction } from "convex/react";
@@ -151,9 +149,6 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mintingStep, setMintingStep] = useState<string | null>(null);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const addDebug = (msg: string) => { console.log('🐛', msg); setDebugLog(prev => [...prev.slice(-5), msg]); };
   const [userData, setUserData] = useState<NeynarUser | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [generatedTraits, setGeneratedTraits] = useState<GeneratedTraits | null>(null);
@@ -546,41 +541,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           return;
         }
 
-        console.log('🔄 Found pending mint data, verifying on-chain...');
-        setError("Verifying on-chain mint...");
-
-        // 🔒 CRITICAL: Verify FID was actually minted on-chain before saving to Convex
-        try {
-          const rpcClient = createPublicClient({
-            chain: base,
-            transport: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
-              ? `https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-              : undefined),
-          });
-          const isMintedOnChain = await rpcClient.readContract({
-              address: VIBEFID_CONTRACT_ADDRESS,
-              abi: VIBEFID_ABI,
-              functionName: 'fidMinted',
-              args: [BigInt(data.fid)],
-            }) as boolean;
-
-            if (!isMintedOnChain) {
-              console.error('❌ FID not minted on-chain! Transaction likely failed.');
-              localStorage.removeItem('vibefid_pending_mint');
-              setPendingMintData(null);
-              setError('Mint transaction failed. FID not minted on-chain. Please try again.');
-              return;
-            }
-            console.log('✅ FID verified on-chain, proceeding to save to Convex...');
-        } catch (verifyErr) {
-          console.error('❌ Failed to verify on-chain:', verifyErr);
-          // Don't save to Convex if we can't verify on-chain
-          localStorage.removeItem('vibefid_pending_mint');
-          setPendingMintData(null);
-          setError('Could not verify mint on-chain. Please check transaction status.');
-          return;
-        }
-
+        console.log('🔄 Found pending mint data, attempting to save to Convex...');
         setError("Recovering unsaved mint data...");
 
         const validatedData: any = {
@@ -953,52 +914,20 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   };
 
   const handleMintCard = async () => {
-    addDebug('handleMintCard called');
     console.log('♣ handleMintCard called!', { address, userData: !!userData, farcasterUser: farcasterContext.user });
 
     if (!address) {
-      addDebug('ERROR: No wallet');
       console.error('❌ No wallet address connected');
       setError("Please connect your wallet");
       return;
     }
 
     if (!userData) {
-      addDebug('ERROR: No userData');
       console.error('❌ No userData available');
       setError("No user data loaded");
       return;
     }
 
-    // 🔒 CRITICAL: Check ETH balance BEFORE starting mint (prevents failed AA txs)
-    if (address) {
-      try {
-        const rpcClient = createPublicClient({
-          chain: base,
-          transport: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
-            ? `https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-            : undefined),
-        });
-        const balance = await rpcClient.getBalance({ address: address as `0x${string}` });
-        const mintPriceWei = BigInt(Math.floor(parseFloat(MINT_PRICE) * 1e18));
-        const minRequired = mintPriceWei + BigInt(50000 * 1e9); // mint price + ~0.00005 ETH buffer for gas
-
-        if (balance < minRequired) {
-          const balanceEth = Number(balance) / 1e18;
-          addDebug('ERROR: Insufficient ETH');
-          console.error('❌ Insufficient ETH balance:', balanceEth.toFixed(6), 'ETH');
-          setError(`Insufficient ETH. You have ${balanceEth.toFixed(4)} ETH but need at least ${MINT_PRICE} ETH for mint. Please deposit ETH first.`);
-          return;
-        }
-        addDebug('ETH balance OK');
-        console.log('✅ ETH balance check passed:', (Number(balance) / 1e18).toFixed(6), 'ETH');
-      } catch (balanceErr) {
-        console.warn('⚠️ Could not check balance, proceeding anyway:', balanceErr);
-        // Don't block mint if balance check fails - let the transaction fail naturally
-      }
-    }
-
-    addDebug('Starting mint...');
     console.log('✅ Starting mint process for FID:', userData.fid);
     setLoading(true);
     setError(null);
@@ -1057,7 +986,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       });
 
       // Upload static card PNG to IPFS first (for sharing)
-      setMintingStep("uploading_card");
+      setError("Uploading card image to IPFS...");
       const cardPngBlob = await fetch(cardImageDataUrl).then(r => r.blob());
       const pngFormData = new FormData();
       pngFormData.append('image', cardPngBlob, `card-${userData.fid}.png`);
@@ -1079,7 +1008,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       }
 
       // Generate share image (card + criminal text for social sharing)
-      setMintingStep("generating_share");
+      setError("Generating share image...");
       const { generateShareImage } = await import('@/lib/generateShareImage');
 
       const shareImageDataUrl = await generateShareImage({
@@ -1100,7 +1029,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       });
 
       // Upload share image to IPFS
-      setMintingStep("uploading_share");
+      setError("Uploading share image to IPFS...");
       const shareImageBlob = await fetch(shareImageDataUrl).then(r => r.blob());
       const shareFormData = new FormData();
       shareFormData.append('image', shareImageBlob, `share-${userData.fid}.png`);
@@ -1122,7 +1051,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       }
 
       // Generate MP4 video with foil animation (3s static, 5s animated PFP)
-      setMintingStep("generating_video");
+      setError("Generating video with foil animation...");
       console.log('🎬 VIDEO DEBUG - About to generate video with foil:', foil);
       const videoBlob = await generateCardVideo({
         cardImageDataUrl,
@@ -1132,7 +1061,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       });
 
       // Upload video to IPFS
-      setMintingStep("uploading_video");
+      setError("Uploading video to IPFS...");
       const formData = new FormData();
       formData.append('video', videoBlob, `card-${userData.fid}.webm`);
 
@@ -1156,7 +1085,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       const metadataUrl = `https://vibefid.xyz/api/metadata/fid/${userData.fid}`;
 
       // Get signature from backend
-      setMintingStep("getting_signature");
+      setError("Verifying FID ownership and getting signature...");
       const signatureResponse = await fetch('/api/farcaster/mint-signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1205,7 +1134,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       console.log('💾 Saved pending mint data to localStorage:', userData.fid);
 
       // Mint NFT on smart contract
-      setMintingStep("confirming_tx");
+      setError("Minting NFT on-chain (confirm transaction in wallet)...");
       console.log('🚀 Preparing mint transaction:', {
         address: VIBEFID_CONTRACT_ADDRESS,
         functionName: 'presignedMint',
@@ -1382,13 +1311,6 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
             </button>
           )}
 
-          {/* Debug display */}
-          {debugLog.length > 0 && (
-            <div className="mt-2 p-2 bg-blue-900/50 border border-blue-500 rounded text-blue-200 text-xs font-mono max-w-md">
-              {debugLog.map((log, i) => <div key={i}>{log}</div>)}
-            </div>
-          )}
-          
           {/* Error display */}
           {error && (
             <div className="mt-4 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-sm break-words max-w-md">
