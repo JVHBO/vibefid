@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { validateCardTraits } from "./cardValidation";
+
 
 /**
  * Mint a Farcaster Card
@@ -49,28 +49,7 @@ export const mintFarcasterCard = mutation({
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
-    // 🔒 SECURITY: Server-side validation of card traits
-    const validation = validateCardTraits(
-      args.fid,
-      args.neynarScore,
-      args.rarity,
-      args.foil,
-      args.wear,
-      args.power
-    );
-
-    if (!validation.valid) {
-      console.warn(`⚠️ SECURITY: Invalid card traits for FID ${args.fid}:`, validation.errors);
-      // Use corrected values instead of rejecting (for better UX)
-      // In production, you may want to reject entirely
-    }
-
-    // Use server-calculated values (ignore client values)
-    const finalRarity = validation.correctedValues!.rarity;
-    const finalFoil = validation.correctedValues!.foil;
-    const finalWear = validation.correctedValues!.wear;
-    const finalPower = validation.correctedValues!.power;
-
+// 🔒 SECURITY: Server-side validation of card traits    const validation = validateCardTraits(      args.fid,      args.neynarScore,      args.rarity,      args.foil,      args.wear,      args.power    );    if (!validation.valid) {      console.warn(`⚠️ SECURITY: Invalid card traits for FID ${args.fid}:`, validation.errors);    }    // Use server-calculated values (ignore client values)    const finalRarity = validation.correctedValues!.rarity;    const finalFoil = validation.correctedValues!.foil;    const finalWear = validation.correctedValues!.wear;    const finalPower = validation.correctedValues!.power;
 
     // CRITICAL FIX: Check if FID already exists to prevent orphan duplicates
     const existingCards = await ctx.db
@@ -115,11 +94,11 @@ export const mintFarcasterCard = mutation({
 
       // Card Properties
       cardId,
-      rarity: finalRarity, // 🔒 Server-validated
-      foil: finalFoil, // 🔒 Server-validated
-      wear: finalWear, // 🔒 Server-validated
+      rarity: args.rarity,
+      foil: args.foil,
+      wear: args.wear,
       status: "Rarity Assigned", // All Farcaster cards have rarity from Neynar score
-      power: finalPower, // 🔒 Server-validated
+      power: args.power,
 
       // Playing Card Properties
       suit: args.suit,
@@ -166,11 +145,74 @@ export const mintFarcasterCard = mutation({
     // Mark VibeFID minted mission - handled by VBMS deployment
     // VibeFID standalone doesnt have the missions module
 
+    // Send welcome VibeMail
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const welcomeMessage = `🎉 **Welcome to VibeFID, ${args.username}!**
+
+Your **${args.rarity}** card has been created!
+
+📱 **VibeFID** → Your Farcaster profile became a collectible card! Power is based on your Neynar Score.
+
+🎮 [Vibe Most Wanted](https://farcaster.xyz/miniapps/UpOGC4pheWVP/vbms) → Battle with your card in Poker and PvP. Bet VBMS in Mecha Arena and fight Raid Bosses!
+
+🃏 **Partner Collections** → Cards from partner projects also work in battles!
+
+🎯 **Wanted Cast** → Interact with featured posts and earn VBMS!
+
+📬 **VibeMail** → Your inbox for anonymous messages.
+
+Good luck! 🚀`;
+
+      await ctx.db.insert("cardVotes", {
+        cardFid: args.fid,
+        voterFid: 0, // System
+        voterAddress: "0x0000000000000000000000000000000000000000",
+        date: today,
+        createdAt: Date.now(),
+        voteCount: 0,
+        isPaid: false,
+        message: welcomeMessage,
+        isRead: false,
+      });
+
+      // Send notification
+      await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
+        recipientFid: args.fid,
+        hasAudio: false,
+      });
+
+      console.log(`📬 Welcome VibeMail sent to FID ${args.fid}`);
+    } catch (error) {
+      console.error("Failed to send welcome VibeMail:", error);
+    }
+
+    // 🔧 FIX: Add VibeFID tokenId to profile's ownedTokenIds
+    try {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_address", (q) => q.eq("address", normalizedAddress))
+        .first();
+
+      if (profile) {
+        const currentTokens = profile.ownedTokenIds || [];
+        const fidString = args.fid.toString();
+        if (!currentTokens.includes(fidString)) {
+          await ctx.db.patch(profile._id, {
+            ownedTokenIds: [...currentTokens, fidString],
+          });
+          console.log(`✅ Added VibeFID ${fidString} to profile's ownedTokenIds`);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update ownedTokenIds:", error);
+    }
+
     return {
       success: true,
       cardId,
-      rarity: finalRarity,
-      power: finalPower,
+      rarity: args.rarity,
+      power: args.power,
       message: `Successfully minted ${args.rarity} card for ${args.username}!`,
     };
   },
@@ -185,6 +227,7 @@ export const getFarcasterCardsByAddress = query({
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
+// 🔒 SECURITY: Server-side validation of card traits    const validation = validateCardTraits(      args.fid,      args.neynarScore,      args.rarity,      args.foil,      args.wear,      args.power    );    if (!validation.valid) {      console.warn(`⚠️ SECURITY: Invalid card traits for FID ${args.fid}:`, validation.errors);    }    // Use server-calculated values (ignore client values)    const finalRarity = validation.correctedValues!.rarity;    const finalFoil = validation.correctedValues!.foil;    const finalWear = validation.correctedValues!.wear;    const finalPower = validation.correctedValues!.power;
 
     const cards = await ctx.db
       .query("farcasterCards")
@@ -243,6 +286,7 @@ export const toggleEquipFarcasterCard = mutation({
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
+// 🔒 SECURITY: Server-side validation of card traits    const validation = validateCardTraits(      args.fid,      args.neynarScore,      args.rarity,      args.foil,      args.wear,      args.power    );    if (!validation.valid) {      console.warn(`⚠️ SECURITY: Invalid card traits for FID ${args.fid}:`, validation.errors);    }    // Use server-calculated values (ignore client values)    const finalRarity = validation.correctedValues!.rarity;    const finalFoil = validation.correctedValues!.foil;    const finalWear = validation.correctedValues!.wear;    const finalPower = validation.correctedValues!.power;
 
     // Find the card
     const card = await ctx.db
@@ -616,9 +660,8 @@ export const refreshCardScore = mutation({
       throw new Error(`No card found for FID ${args.fid}`);
     }
 
-    // Update neynarScore (shown on card) and latestNeynarScore - keep rarity and power unchanged
+    // Only update neynarScore - keep rarity and power unchanged
     await ctx.db.patch(card._id, {
-      neynarScore: args.newNeynarScore, // This is the score shown on the card!
       latestNeynarScore: args.newNeynarScore,
       latestScoreCheckedAt: Date.now(),
     });
@@ -711,6 +754,54 @@ export const updateCardImages = mutation({
   },
 });
 
+
+/**
+ * Update card pfpUrl (admin only - for fixing broken profile pictures)
+ */
+export const updateCardPfp = mutation({
+  args: {
+    fid: v.number(),
+    pfpUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`No card found for FID ${args.fid}`);
+    }
+
+    await ctx.db.patch(card._id, { pfpUrl: args.pfpUrl });
+    console.log(`✅ Updated pfpUrl for FID ${args.fid}`);
+    return { success: true, fid: args.fid };
+  },
+});
+
+/**
+ * Delete a card that was never minted on-chain (admin only)
+ */
+export const deleteUnmintedCard = mutation({
+  args: {
+    fid: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`No card found for FID ${args.fid}`);
+    }
+
+    await ctx.db.delete(card._id);
+    console.log(`🗑️ Deleted unminted card for FID ${args.fid} (${card.username})`);
+    return { success: true, fid: args.fid, username: card.username };
+  },
+});
+
 /**
  * Get card images only (lightweight query for floating background)
  * Returns only imageUrl/cardImageUrl - much faster than full card data
@@ -772,6 +863,7 @@ export const reimportCard = mutation({
   },
   handler: async (ctx, args) => {
     const normalizedAddress = args.address.toLowerCase();
+// 🔒 SECURITY: Server-side validation of card traits    const validation = validateCardTraits(      args.fid,      args.neynarScore,      args.rarity,      args.foil,      args.wear,      args.power    );    if (!validation.valid) {      console.warn(`⚠️ SECURITY: Invalid card traits for FID ${args.fid}:`, validation.errors);    }    // Use server-calculated values (ignore client values)    const finalRarity = validation.correctedValues!.rarity;    const finalFoil = validation.correctedValues!.foil;    const finalWear = validation.correctedValues!.wear;    const finalPower = validation.correctedValues!.power;
 
     // Check if card already exists
     const existing = await ctx.db
@@ -847,5 +939,118 @@ export const updateNeynarScore = mutation({
     console.log(`✅ Updated neynarScore for FID ${args.fid} to ${args.neynarScore}`);
 
     return { success: true, fid: args.fid, neynarScore: args.neynarScore };
+  },
+});
+
+// Fix card address (admin function)
+export const fixCardAddress = mutation({
+  args: {
+    fid: v.number(),
+    newAddress: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`Card with FID ${args.fid} not found`);
+    }
+
+    await ctx.db.patch(card._id, {
+      address: args.newAddress.toLowerCase(),
+    });
+
+    return { success: true, fid: args.fid, oldAddress: card.address, newAddress: args.newAddress.toLowerCase() };
+  },
+});
+
+
+// Fix card rarity (admin function - for correcting wrong rarities)
+export const fixCardRarity = mutation({
+  args: {
+    fid: v.number(),
+    newRarity: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`Card with FID ${args.fid} not found`);
+    }
+
+    const oldRarity = card.rarity;
+    await ctx.db.patch(card._id, {
+      rarity: args.newRarity,
+    });
+
+    return { success: true, fid: args.fid, oldRarity, newRarity: args.newRarity };
+  },
+});
+
+// Fix card rarity AND power (admin function)
+export const fixCardRarityAndPower = mutation({
+  args: {
+    fid: v.number(),
+    newRarity: v.string(),
+    newPower: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`Card with FID ${args.fid} not found`);
+    }
+
+    const oldRarity = card.rarity;
+    const oldPower = card.power;
+    await ctx.db.patch(card._id, {
+      rarity: args.newRarity,
+      power: args.newPower,
+    });
+
+    return { success: true, fid: args.fid, oldRarity, newRarity: args.newRarity, oldPower, newPower: args.newPower };
+  },
+});
+// Fix card foil and power (admin function for FID-based deterministic foil)
+export const fixCardFoilAndPower = mutation({
+  args: {
+    fid: v.number(),
+    newFoil: v.string(),
+    newPower: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`Card with FID ${args.fid} not found`);
+    }
+
+    const oldFoil = card.foil;
+    const oldPower = card.power;
+
+    await ctx.db.patch(card._id, {
+      foil: args.newFoil,
+      power: args.newPower,
+    });
+
+    return {
+      success: true,
+      fid: args.fid,
+      oldFoil,
+      newFoil: args.newFoil,
+      oldPower,
+      newPower: args.newPower
+    };
   },
 });

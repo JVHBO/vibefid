@@ -56,11 +56,11 @@ export const getRewards = query({
       .withIndex("by_fid", (q) => q.eq("fid", fid))
       .first();
 
-    return rewards || {
-      fid,
-      pendingVbms: 0,
-      claimedVbms: 0,
-      totalVotes: 0
+    return rewards || { 
+      fid, 
+      pendingVbms: 0, 
+      claimedVbms: 0, 
+      totalVotes: 0 
     };
   },
 });
@@ -93,8 +93,8 @@ export const claimRewards = mutation({
       lastClaimAt: Date.now(),
     });
 
-    return {
-      success: true,
+    return { 
+      success: true, 
       claimAmount,
       claimerAddress,
       fid,
@@ -259,7 +259,8 @@ export const restoreRewardsOnFailure = internalMutation({
  * Public mutation to restore rewards when TX is cancelled/fails
  * Called from frontend when user cancels or TX fails
  */
-export const restoreClaimOnTxFailure = mutation({
+// 🔒 SECURITY FIX (2026-01-01): Changed from mutation to internalMutation
+export const restoreClaimOnTxFailure = internalMutation({
   args: {
     fid: v.number(),
     amount: v.number(),

@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { createAuditLog } from "./coinAudit";
+
 import { internal } from "./_generated/api";
 
 /**
@@ -417,7 +417,7 @@ export const distributeDailyPrize = mutation({
           lifetimeEarned: (profile.lifetimeEarned || 0) + prizePool,
         });
         // 🔒 AUDIT LOG
-        await createAuditLog(ctx, profile.address, "earn", prizePool, balanceBefore, balanceAfter, "cardVotes:distributeDailyPrize");
+        
         // 📊 Log transaction for history
         await ctx.db.insert("coinTransactions", {
           address: profile.address.toLowerCase(),
@@ -510,20 +510,70 @@ export const markMessageAsRead = mutation({
   },
 });
 
+// Delete a message from inbox (only owner can delete)
+export const deleteMessage = mutation({
+  args: {
+    messageId: v.id("cardVotes"),
+    ownerFid: v.number(), // FID of the inbox owner
+  },
+  handler: async (ctx, args) => {
+    const vote = await ctx.db.get(args.messageId);
+    if (!vote || vote.message === undefined) {
+      return { success: false, error: "Message not found" };
+    }
+
+    // Only inbox owner can delete messages
+    if (vote.cardFid !== args.ownerFid) {
+      return { success: false, error: "Not authorized" };
+    }
+
+    await ctx.db.delete(args.messageId);
+    return { success: true };
+  },
+});
+
+// Delete multiple messages from inbox
+export const deleteMessages = mutation({
+  args: {
+    messageIds: v.array(v.id("cardVotes")),
+    ownerFid: v.number(),
+  },
+  handler: async (ctx, args) => {
+    let deleted = 0;
+    let errors = 0;
+
+    for (const messageId of args.messageIds) {
+      const vote = await ctx.db.get(messageId);
+      if (!vote || vote.message === undefined) {
+        errors++;
+        continue;
+      }
+
+      if (vote.cardFid !== args.ownerFid) {
+        errors++;
+        continue;
+      }
+
+      await ctx.db.delete(messageId);
+      deleted++;
+    }
+
+    return { success: true, deleted, errors };
+  },
+});
+
 // Get unread message count for a card
 export const getUnreadMessageCount = query({
   args: { cardFid: v.number() },
   handler: async (ctx, args) => {
-    // Get all votes for this card
-    const allVotes = await ctx.db
+    // Use index to get only unread for this card
+    const unread = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.eq(q.field("cardFid"), args.cardFid))
+      .withIndex("by_card_unread", (q) => 
+        q.eq("cardFid", args.cardFid).eq("isRead", false)
+      )
+      .filter((q) => q.neq(q.field("message"), undefined))
       .collect();
-
-    // Count unread messages
-    const unread = allVotes.filter(v =>
-      v.message !== undefined && v.isRead === false
-    );
 
     return unread.length;
   },
@@ -540,8 +590,8 @@ export const broadcastVibeMail = mutation({
     message: v.string(),
     audioId: v.optional(v.string()),
     imageId: v.optional(v.string()), // Meme image
-    senderFid: v.optional(v.number()), // Sender FID
     senderAddress: v.optional(v.string()), // Sender address
+    senderFid: v.optional(v.number()), // Admin sender FID (default: 0 for system)
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -560,9 +610,9 @@ export const broadcastVibeMail = mutation({
           voterAddress: senderAddress,
           date: today,
           createdAt: now,
-          voteCount: 1,
-          isPaid: true,
-          message: args.message.slice(0, 200),
+          voteCount: 0, // No vote, just message
+          isPaid: false,
+          message: args.message.slice(0, 1000), // Increased limit for system messages
           audioId: args.audioId,
           imageId: args.imageId,
           isRead: false,
@@ -739,7 +789,7 @@ export const sendDirectVibeMail = mutation({
     senderAddress: v.string(),
     message: v.string(),
     audioId: v.optional(v.string()),
-    imageId: v.optional(v.string()),
+    imageId: v.optional(v.string()), // Meme image
     // NFT Gift fields
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
@@ -788,7 +838,7 @@ export const sendDirectVibeMail = mutation({
       createdAt: now,
       message: args.message.slice(0, 200),
       audioId: args.audioId,
-      imageId: args.imageId,
+          imageId: args.imageId,
       isRead: false,
       isSent: true,
       recipientFid: args.recipientFid,
@@ -842,8 +892,8 @@ export const replyToMessage = mutation({
     senderAddress: v.string(),
     message: v.string(),
     audioId: v.optional(v.string()),
-    imageId: v.optional(v.string()),
-    // NFT Gift fields
+    imageId: v.optional(v.string()), // Meme image
+    // NFT Gift fields (optional)
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
@@ -860,6 +910,11 @@ export const replyToMessage = mutation({
 
     // Reply goes to the original sender (voterFid)
     const recipientFid = originalMessage.voterFid;
+
+    // Cannot reply to system messages (voterFid = 0)
+    if (recipientFid === 0) {
+      throw new Error("Cannot reply to system messages");
+    }
 
     // Cannot reply to yourself
     if (args.senderFid === recipientFid) {
@@ -913,15 +968,6 @@ export const replyToMessage = mutation({
         claimedVbms: 0,
         totalVotes: 1,
         lastVoteAt: now,
-      });
-    }
-
-    // Send notification
-    const hasContent = args.message?.trim() || args.imageId;
-    if (hasContent) {
-      await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
-        recipientFid: recipientFid,
-        hasAudio: !!args.audioId,
       });
     }
 
@@ -1030,6 +1076,7 @@ export const getRandomCardMutation = mutation({
       username: card.username,
       pfpUrl: card.pfpUrl,
       displayName: card.displayName,
+      address: card.address,
     };
   },
 });
@@ -1064,88 +1111,43 @@ export const getRandomCardsMutation = mutation({
   },
 });
 
-// ============================================================================
-// DELETE MESSAGES FROM INBOX
-// ============================================================================
-
-// Delete a single message from inbox (only owner can delete)
-export const deleteMessage = mutation({
-  args: {
-    messageId: v.id("cardVotes"),
-    ownerFid: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const vote = await ctx.db.get(args.messageId);
-    if (!vote || vote.message === undefined) {
-      return { success: false, error: "Message not found" };
-    }
-    if (vote.cardFid !== args.ownerFid) {
-      return { success: false, error: "Not authorized" };
-    }
-    await ctx.db.delete(args.messageId);
-    return { success: true };
-  },
-});
-
-// Delete multiple messages from inbox
-export const deleteMessages = mutation({
-  args: {
-    messageIds: v.array(v.id("cardVotes")),
-    ownerFid: v.number(),
-  },
-  handler: async (ctx, args) => {
-    let deleted = 0;
-    let errors = 0;
-
-    for (const messageId of args.messageIds) {
-      const vote = await ctx.db.get(messageId);
-      if (!vote || vote.message === undefined) {
-        errors++;
-        continue;
-      }
-      if (vote.cardFid !== args.ownerFid) {
-        errors++;
-        continue;
-      }
-      await ctx.db.delete(messageId);
-      deleted++;
-    }
-
-    return { success: true, deleted, errors };
-  },
-});
-
-// ============================================================================
-// VIBEMAIL STATS - Track VBMS sent/received
-// ============================================================================
-
 // Get VibeMail stats for a user (VBMS sent to others, VBMS received from others)
 export const getVibeMailStats = query({
   args: { fid: v.number() },
   handler: async (ctx, args) => {
-    // Get all paid VibeMails SENT by this user (voterFid = fid, isPaid = true, has message)
+    // Get all VibeMails SENT by this user (any message sent, paid or not)
     const sentMessages = await ctx.db
       .query("cardVotes")
       .withIndex("by_voter_date", (q) => q.eq("voterFid", args.fid))
       .collect();
 
-    const paidSent = sentMessages.filter(v => v.isPaid && v.message !== undefined);
-    const totalVbmsSent = paidSent.reduce((sum, v) => sum + (v.voteCount || 1) * 100, 0);
+    // Count ALL messages sent (with message field) - each costs 100 VBMS
+    // Include both paid votes and replies/broadcasts
+    const allSent = sentMessages.filter(v => v.message !== undefined && v.message !== "");
+    const totalVbmsSent = allSent.length * 100; // Each VibeMail costs 100 VBMS
 
-    // Get all paid VibeMails RECEIVED by this user (cardFid = fid, isPaid = true, has message)
+    // Get vibeRewards for RECEIVED - this is the actual earned VBMS
+    const vibeRewards = await ctx.db
+      .query("vibeRewards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    // Total received = pending + already claimed
+    const totalVbmsReceived = vibeRewards
+      ? vibeRewards.pendingVbms + vibeRewards.claimedVbms
+      : 0;
+
+    // Count all messages received (for stats)
     const receivedMessages = await ctx.db
       .query("cardVotes")
       .withIndex("by_card_date", (q) => q.eq("cardFid", args.fid))
       .collect();
 
-    const paidReceived = receivedMessages.filter(v => v.isPaid && v.message !== undefined);
-    const totalVbmsReceived = paidReceived.reduce((sum, v) => sum + (v.voteCount || 1) * 100, 0);
-
     return {
-      totalVbmsSent,           // Total VBMS spent on VibeMails
-      totalVbmsReceived,       // Total VBMS earned from VibeMails
-      paidMessagesSent: paidSent.length,
-      paidMessagesReceived: paidReceived.length,
+      totalVbmsSent,           // Total VBMS spent on ALL VibeMails sent
+      totalVbmsReceived,       // Total VBMS earned from ALL votes (pending + claimed)
+      messagesSent: allSent.length,
+      messagesReceived: receivedMessages.length,
     };
   },
 });
