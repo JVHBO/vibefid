@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt, useConnect, useSendTransaction, usePublicClient } from "wagmi";
 import { useWriteContractWithAttribution, dataSuffix, BUILDER_CODE } from "@/lib/hooks/useWriteContractWithAttribution";
 import { encodeFunctionData } from "viem";
 import { useMutation, useQuery, useAction } from "convex/react";
@@ -526,6 +526,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
   // 🔒 FIX: Check for pending mint data on page load and try to save
   // This handles cases where user refreshed page or transaction was pending
+  // 🔒 CRITICAL FIX: Verify on-chain BEFORE saving to Convex (prevents orphan cards from failed txs)
+  const publicClient = usePublicClient();
+
   useEffect(() => {
     const checkPendingMint = async () => {
       const saved = localStorage.getItem('vibefid_pending_mint');
@@ -541,7 +544,37 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           return;
         }
 
-        console.log('🔄 Found pending mint data, attempting to save to Convex...');
+        console.log('🔄 Found pending mint data, verifying on-chain...');
+        setError("Verifying on-chain mint...");
+
+        // 🔒 CRITICAL: Verify FID was actually minted on-chain before saving to Convex
+        if (publicClient) {
+          try {
+            const isMintedOnChain = await publicClient.readContract({
+              address: VIBEFID_CONTRACT_ADDRESS,
+              abi: VIBEFID_ABI,
+              functionName: 'fidMinted',
+              args: [BigInt(data.fid)],
+            }) as boolean;
+
+            if (!isMintedOnChain) {
+              console.error('❌ FID not minted on-chain! Transaction likely failed.');
+              localStorage.removeItem('vibefid_pending_mint');
+              setPendingMintData(null);
+              setError('Mint transaction failed. FID not minted on-chain. Please try again.');
+              return;
+            }
+            console.log('✅ FID verified on-chain, proceeding to save to Convex...');
+          } catch (verifyErr) {
+            console.error('❌ Failed to verify on-chain:', verifyErr);
+            // Don't save to Convex if we can't verify on-chain
+            localStorage.removeItem('vibefid_pending_mint');
+            setPendingMintData(null);
+            setError('Could not verify mint on-chain. Please check transaction status.');
+            return;
+          }
+        }
+
         setError("Recovering unsaved mint data...");
 
         const validatedData: any = {
@@ -613,7 +646,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
     // Run on mount
     checkPendingMint();
-  }, [mintCard]);
+  }, [mintCard, publicClient]);
 
   // Save to Convex after successful on-chain mint
   useEffect(() => {
@@ -926,6 +959,26 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       console.error('❌ No userData available');
       setError("No user data loaded");
       return;
+    }
+
+    // 🔒 CRITICAL: Check ETH balance BEFORE starting mint (prevents failed AA txs)
+    if (publicClient && address) {
+      try {
+        const balance = await publicClient.getBalance({ address: address as `0x${string}` });
+        const mintPriceWei = BigInt(Math.floor(parseFloat(MINT_PRICE) * 1e18));
+        const minRequired = mintPriceWei + BigInt(50000 * 1e9); // mint price + ~0.00005 ETH buffer for gas
+
+        if (balance < minRequired) {
+          const balanceEth = Number(balance) / 1e18;
+          console.error('❌ Insufficient ETH balance:', balanceEth.toFixed(6), 'ETH');
+          setError(`Insufficient ETH. You have ${balanceEth.toFixed(4)} ETH but need at least ${MINT_PRICE} ETH for mint. Please deposit ETH first.`);
+          return;
+        }
+        console.log('✅ ETH balance check passed:', (Number(balance) / 1e18).toFixed(6), 'ETH');
+      } catch (balanceErr) {
+        console.warn('⚠️ Could not check balance, proceeding anyway:', balanceErr);
+        // Don't block mint if balance check fails - let the transaction fail naturally
+      }
     }
 
     console.log('✅ Starting mint process for FID:', userData.fid);
