@@ -21,10 +21,7 @@ export const getCardVotes = query({
 
     const votes = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.and(
-        q.eq(q.field("cardFid"), args.fid),
-        q.eq(q.field("date"), today)
-      ))
+      .withIndex("by_card_date", (q) => q.eq("cardFid", args.fid).eq("date", today))
       .collect();
 
     return {
@@ -35,6 +32,8 @@ export const getCardVotes = query({
 });
 
 // Check if user has voted for a card today
+// Check if user has voted for a card today
+// 🚀 BANDWIDTH FIX: Use by_card_date index + filter
 export const hasUserVoted = query({
   args: {
     cardFid: v.number(),
@@ -45,11 +44,8 @@ export const hasUserVoted = query({
 
     const vote = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.and(
-        q.eq(q.field("cardFid"), args.cardFid),
-        q.eq(q.field("voterFid"), args.voterFid),
-        q.eq(q.field("date"), today)
-      ))
+      .withIndex("by_card_date", (q) => q.eq("cardFid", args.cardFid).eq("date", today))
+      .filter((q) => q.eq(q.field("voterFid"), args.voterFid))
       .first();
 
     return !!vote;
@@ -57,6 +53,7 @@ export const hasUserVoted = query({
 });
 
 // Get user's remaining free votes for today
+// 🚀 BANDWIDTH FIX: Use by_voter_date index + filter isPaid
 export const getUserFreeVotesRemaining = query({
   args: { voterFid: v.number() },
   handler: async (ctx, args) => {
@@ -64,11 +61,8 @@ export const getUserFreeVotesRemaining = query({
 
     const votesToday = await ctx.db
       .query("cardVotes")
-      .filter((q) => q.and(
-        q.eq(q.field("voterFid"), args.voterFid),
-        q.eq(q.field("date"), today),
-        q.eq(q.field("isPaid"), false)
-      ))
+      .withIndex("by_voter_date", (q) => q.eq("voterFid", args.voterFid).eq("date", today))
+      .filter((q) => q.eq(q.field("isPaid"), false))
       .collect();
 
     const freeVotesUsed = votesToday.length;

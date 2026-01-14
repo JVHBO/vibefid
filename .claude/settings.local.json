@@ -14,7 +14,21 @@
       "Bash(git commit:*)",
       "Bash(findstr:*)",
       "Bash(npm install:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(ls:*)",
+      "WebFetch(domain:docs.farcaster.xyz)",
+      "WebFetch(domain:miniapps.farcaster.xyz)",
+      "Bash(ffmpeg:*)",
+      "Bash(ffprobe:*)",
+      "Bash(git reset:*)",
+      "Bash(npx convex dev:*)",
+      "WebFetch(domain:basescan.org)",
+      "Bash(npx convex run:*)",
+      "Bash(dir /B \"C:\\\\Users\\\\zoboo\\\\vibe-most-wanted\\\\convex\\\\*.ts\")",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\zoboo\\\\vibe-most-wanted\\\\convex\\\\*.ts\" -Name)",
+      "Bash(xargs:*)",
+      "Bash(dir /b \"C:\\\\Users\\\\zoboo\\\\vibe-most-wanted\\\\convex\\\\*.ts\")",
+      "Bash(dir /b \"C:\\\\Users\\\\zoboo\\\\vibefid\\\\convex\\\\*.ts\")"
     ]
   }
 }

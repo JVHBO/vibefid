@@ -343,7 +343,12 @@ ${shareT.shareTextMintYours}`;
                       {t.back}
                     </button>
 
-                    {/* Show Connect Wallet button if not connected, otherwise show Mint */}
+                    {/* DEBUG INFO */}
+                  <div className="text-xs text-yellow-400 bg-yellow-900/30 p-2 rounded mb-2">
+                    DEBUG: wallet={walletAddress ? 'YES' : 'NO'} | minting={isMinting ? 'YES' : 'NO'} | step={mintingStep || 'none'}
+                  </div>
+                  
+                  {/* Show Connect Wallet button if not connected, otherwise show Mint */}
                     {!walletAddress && onConnectWallet ? (
                       <button
                         onClick={() => {
@@ -357,6 +362,8 @@ ${shareT.shareTextMintYours}`;
                     ) : (
                       <button
                         onClick={() => {
+                          console.log('🔴 MINT BUTTON CLICKED');
+                          alert('Mint clicked! walletAddress=' + walletAddress);
                           AudioManager.buttonClick();
                           onMint();
                         }}
