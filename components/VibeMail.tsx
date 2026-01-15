@@ -1027,7 +1027,16 @@ export function VibeMailInboxWithClaim({
                 <button
                   onClick={async () => {
                     AudioManager.buttonClick();
-                    window.open('https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast/dex', '_blank');
+                    const DEX_URL = 'https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast/dex';
+                    if (farcasterContext?.isInMiniapp) {
+                      try {
+                        await sdk.actions.openMiniApp({ url: DEX_URL });
+                      } catch (err) {
+                        window.open(DEX_URL, '_blank');
+                      }
+                    } else {
+                      window.open(DEX_URL, '_blank');
+                    }
                   }}
                   className="text-vintage-burnt-gold text-xs hover:text-vintage-gold transition-colors"
                 >
