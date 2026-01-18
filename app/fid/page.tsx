@@ -720,22 +720,55 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
           console.log('💾 Saving to Convex:', validatedData);
 
-          await mintCard(validatedData);
-          setError(null);
+          // 🔧 FIX: Retry logic with exponential backoff (3 attempts)
+          const MAX_RETRIES = 3;
+          let lastError: any = null;
 
-          // Mark as successfully minted (show share buttons in modal)
-          setMintedSuccessfully(true);
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              setError(`Saving card data... (attempt ${attempt}/${MAX_RETRIES})`);
+              await mintCard(validatedData);
+              setError(null);
 
-          // 🔒 FIX: Clear pending mint data from localStorage (successfully saved to Convex)
-          localStorage.removeItem('vibefid_pending_mint');
-          setPendingMintData(null);
-          console.log('✅ Cleared pending mint data - successfully saved to Convex');
+              // Success! Clear pending data
+              setMintedSuccessfully(true);
+              localStorage.removeItem('vibefid_pending_mint');
+              setPendingMintData(null);
+              console.log('✅ Cleared pending mint data - successfully saved to Convex');
+              clearGeneratedCard();
+              lastError = null;
+              break; // Exit retry loop on success
+            } catch (retryErr: any) {
+              lastError = retryErr;
+              console.error(`❌ Convex save attempt ${attempt} failed:`, retryErr);
 
-          // Clear localStorage (card has been minted)
-          clearGeneratedCard();
+              // Check if it's a duplicate error (card already exists) - don't retry
+              if (retryErr.message?.includes('already minted') || retryErr.message?.includes('already exists')) {
+                console.log('ℹ️ Card already exists, treating as success');
+                setMintedSuccessfully(true);
+                localStorage.removeItem('vibefid_pending_mint');
+                setPendingMintData(null);
+                lastError = null;
+                break;
+              }
+
+              if (attempt < MAX_RETRIES) {
+                const delay = Math.pow(2, attempt) * 1000; // 2s, 4s
+                console.log(`⏳ Retrying in ${delay/1000}s...`);
+                setError(`Save failed, retrying in ${delay/1000}s...`);
+                await new Promise(r => setTimeout(r, delay));
+              }
+            }
+          }
+
+          if (lastError) {
+            console.error('❌ All Convex save attempts failed');
+            setError(`NFT minted but failed to save. Reload page to retry automatically.`);
+            // DON'T clear localStorage - keep it for retry on page reload
+          }
         } catch (err: any) {
           console.error('❌ Convex save error:', err);
-          setError(`NFT minted but failed to save metadata: ${err.message}`);
+          setError(`NFT minted but failed to save. Reload page to retry.`);
         } finally {
           setLoading(false);
         }
