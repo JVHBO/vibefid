@@ -16,6 +16,7 @@ import type * as mostWanted from "../mostWanted.js";
 import type * as neynarScore from "../neynarScore.js";
 import type * as nftGifts from "../nftGifts.js";
 import type * as notifications from "../notifications.js";
+import type * as pendingMints from "../pendingMints.js";
 import type * as vibeRewards from "../vibeRewards.js";
 
 import type {
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   neynarScore: typeof neynarScore;
   nftGifts: typeof nftGifts;
   notifications: typeof notifications;
+  pendingMints: typeof pendingMints;
   vibeRewards: typeof vibeRewards;
 }>;
 
