@@ -904,6 +904,55 @@ export default defineSchema({
     .index("by_fid", ["fid"])
     .index("by_fid_time", ["fid", "checkedAt"]),
 
+  // 🔧 FIX: Pending Mints - Save IPFS URLs BEFORE on-chain mint
+  // Prevents orphan cards when Convex save fails after on-chain mint
+  pendingMints: defineTable({
+    fid: v.number(),
+    address: v.string(), // Minter address
+
+    // User data (from Neynar)
+    username: v.string(),
+    displayName: v.string(),
+    pfpUrl: v.string(),
+    bio: v.string(),
+    neynarScore: v.number(),
+    followerCount: v.number(),
+    followingCount: v.number(),
+    powerBadge: v.boolean(),
+
+    // Card traits
+    rarity: v.string(),
+    foil: v.string(),
+    wear: v.string(),
+    power: v.number(),
+    suit: v.string(),
+    rank: v.string(),
+    suitSymbol: v.string(),
+    color: v.string(),
+
+    // IPFS URLs (the important part!)
+    imageUrl: v.string(), // Video
+    cardImageUrl: v.string(), // PNG
+    shareImageUrl: v.optional(v.string()),
+
+    // Status
+    status: v.union(
+      v.literal("pending"), // URLs saved, waiting for on-chain mint
+      v.literal("minted"), // On-chain mint confirmed, ready to finalize
+      v.literal("completed"), // Saved to farcasterCards
+      v.literal("failed") // Something went wrong
+    ),
+
+    // Timestamps
+    createdAt: v.number(),
+    mintedAt: v.optional(v.number()), // When on-chain mint was confirmed
+    completedAt: v.optional(v.number()), // When saved to farcasterCards
+    expiresAt: v.number(), // Auto-cleanup after 24h
+  })
+    .index("by_fid", ["fid"])
+    .index("by_address", ["address"])
+    .index("by_status", ["status"]),
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // WEBRTC VOICE CHAT SIGNALING
   // ═══════════════════════════════════════════════════════════════════════════════

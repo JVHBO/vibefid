@@ -524,30 +524,57 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   // Mutations
   const mintCard = useMutation(api.farcasterCards.mintFarcasterCard);
   const saveScoreCheck = useMutation(api.neynarScore.saveScoreCheck);
+  const savePendingMint = useMutation(api.pendingMints.savePendingMint);
+  const completePendingMint = useMutation(api.pendingMints.completePendingMint);
 
-  // Score history query - use user's fid if available  
+  // Score history query - use user's fid if available
   const scoreHistory = useQuery(api.neynarScore.getScoreHistory, farcasterContext.user?.fid ? { fid: farcasterContext.user.fid } : "skip");
+
+  // Query for pendingMints (backup recovery)
+  const pendingMintFromConvex = useQuery(
+    api.pendingMints.getPendingMint,
+    farcasterContext.user?.fid ? { fid: farcasterContext.user.fid } : "skip"
+  );
 
   // 🔒 FIX: Check for pending mint data on page load and try to save
   // This handles cases where user refreshed page or transaction was pending
+  // Priority: localStorage first, then Convex pendingMints as fallback
   useEffect(() => {
     const checkPendingMint = async () => {
+      // First check localStorage
       const saved = localStorage.getItem('vibefid_pending_mint');
-      if (!saved) return;
+      let data: any = null;
+      let source = '';
+
+      if (saved) {
+        try {
+          data = JSON.parse(saved);
+          source = 'localStorage';
+          // Only use if recent (less than 1 hour old)
+          const age = Date.now() - (data.timestamp || 0);
+          if (age > 60 * 60 * 1000) {
+            console.log('⏰ localStorage pending mint expired, checking Convex...');
+            localStorage.removeItem('vibefid_pending_mint');
+            data = null;
+          }
+        } catch (e) {
+          localStorage.removeItem('vibefid_pending_mint');
+        }
+      }
+
+      // If no localStorage data, check Convex pendingMints
+      if (!data && pendingMintFromConvex && pendingMintFromConvex.status === 'pending') {
+        console.log('📦 Found pending mint in Convex, using as recovery source');
+        data = pendingMintFromConvex;
+        source = 'convex';
+      }
+
+      if (!data) return;
+
+      console.log(`🔄 Found pending mint data from ${source}, attempting to save to Convex...`);
+      setError("Recovering unsaved mint data...");
 
       try {
-        const data = JSON.parse(saved);
-        // Only try to save if data is recent (less than 1 hour old)
-        const age = Date.now() - (data.timestamp || 0);
-        if (age > 60 * 60 * 1000) {
-          console.log('⏰ Pending mint data expired, clearing...');
-          localStorage.removeItem('vibefid_pending_mint');
-          return;
-        }
-
-        console.log('🔄 Found pending mint data, attempting to save to Convex...');
-        setError("Recovering unsaved mint data...");
-
         const validatedData: any = {
           fid: Number(data.fid),
           username: String(data.username),
@@ -577,12 +604,19 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
         await mintCard(validatedData);
 
-        // Success! Clear localStorage
+        // Success! Clear localStorage and Convex pendingMints
         localStorage.removeItem('vibefid_pending_mint');
         setPendingMintData(null);
         setError(null);
         setMintedSuccessfully(true);
         console.log('✅ Successfully recovered and saved mint data!');
+
+        // Clean up Convex pendingMints
+        try {
+          await completePendingMint({ fid: validatedData.fid });
+        } catch (cleanupErr) {
+          console.warn('⚠️ Failed to clean up pendingMints:', cleanupErr);
+        }
       } catch (err: any) {
         // 🔧 IMPROVED: Better error extraction from Convex errors
         const errorMsg = err?.message || err?.data?.message || err?.data || String(err);
@@ -603,21 +637,26 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
           setPendingMintData(null);
           setError(null);
           setMintedSuccessfully(true); // Show success since card exists
+
+          // Clean up Convex pendingMints
+          try {
+            await completePendingMint({ fid: data.fid });
+          } catch (cleanupErr) {
+            console.warn('⚠️ Failed to clean up pendingMints:', cleanupErr);
+          }
         } else {
           const cleanError = errorStr.slice(0, 100);
           setError(`Failed to save mint data: ${cleanError}`);
-          // Clear localStorage after 5s to prevent stuck state
-          setTimeout(() => {
-            localStorage.removeItem('vibefid_pending_mint');
-            setPendingMintData(null);
-          }, 5000);
+          // DON'T clear pendingMints - keep for manual recovery
         }
       }
     };
 
-    // Run on mount
-    checkPendingMint();
-  }, [mintCard]);
+    // Run when pendingMintFromConvex is loaded
+    if (pendingMintFromConvex !== undefined) {
+      checkPendingMint();
+    }
+  }, [mintCard, completePendingMint, pendingMintFromConvex, lang]);
 
   
   // 🔒 Handle REVERTED transactions - show error and clear pending state
@@ -736,6 +775,15 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
               setPendingMintData(null);
               console.log('✅ Cleared pending mint data - successfully saved to Convex');
               clearGeneratedCard();
+
+              // Also clean up pendingMints in Convex
+              try {
+                await completePendingMint({ fid: validatedData.fid });
+                console.log('✅ Cleaned up pendingMints in Convex');
+              } catch (cleanupErr) {
+                console.warn('⚠️ Failed to clean up pendingMints (not critical):', cleanupErr);
+              }
+
               lastError = null;
               break; // Exit retry loop on success
             } catch (retryErr: any) {
@@ -1189,8 +1237,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
 
       const { signature } = await signatureResponse.json();
 
-      // Store mint data for later (after on-chain confirmation)
-      // 🔒 FIX: Also save to localStorage to survive page refresh
+      // 🔧 FIX: Save to Convex FIRST (before on-chain mint)
+      // This ensures we have the IPFS URLs even if final save fails
+      setError("Saving card data to backup...");
       const mintData = {
         fid: userData.fid,
         username: userData.username,
@@ -1215,6 +1264,39 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         shareImageUrl: shareImageIpfsUrl, // Share image with card + criminal text
         timestamp: Date.now(), // Track when mint was initiated
       };
+
+      // Save to Convex pendingMints table (backup with IPFS URLs)
+      try {
+        await savePendingMint({
+          fid: userData.fid,
+          address,
+          username: userData.username,
+          displayName: userData.display_name,
+          pfpUrl: userData.pfp_url,
+          bio: userData.profile?.bio?.text || "",
+          neynarScore: score,
+          followerCount: userData.follower_count,
+          followingCount: userData.following_count,
+          powerBadge: userData.power_badge || false,
+          rarity,
+          foil,
+          wear,
+          power,
+          suit,
+          rank,
+          suitSymbol,
+          color,
+          imageUrl: ipfsUrl,
+          cardImageUrl: cardImageIpfsUrl,
+          shareImageUrl: shareImageIpfsUrl,
+        });
+        console.log('💾 Saved pending mint to Convex:', userData.fid);
+      } catch (pendingErr) {
+        console.error('⚠️ Failed to save pending mint to Convex (continuing anyway):', pendingErr);
+        // Don't fail - localStorage will still work as backup
+      }
+
+      // Also save to localStorage as additional backup
       setPendingMintData(mintData);
       localStorage.setItem('vibefid_pending_mint', JSON.stringify(mintData));
       console.log('💾 Saved pending mint data to localStorage:', userData.fid);
