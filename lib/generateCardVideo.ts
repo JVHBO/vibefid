@@ -113,6 +113,10 @@ export async function generateCardVideo({
       // Start recording
       mediaRecorder.start();
 
+      // Track start time for accurate duration
+      const startTime = performance.now();
+      const targetDurationMs = actualDuration * 1000;
+
       // Render animation frames
       const totalFrames = actualDuration * fps;
       let frame = 0;
@@ -187,16 +191,28 @@ export async function generateCardVideo({
 
         frame++;
 
-        if (frame >= totalFrames) {
+        // Check both frame count AND elapsed time to prevent runaway recording
+        const elapsedMs = performance.now() - startTime;
+        if (frame >= totalFrames || elapsedMs >= targetDurationMs + 500) {
           // Stop the interval and recording
           clearInterval(intervalId);
           mediaRecorder.stop();
+          console.log(`Video recording stopped: ${frame} frames in ${elapsedMs.toFixed(0)}ms`);
         }
       };
 
       // Use setInterval instead of requestAnimationFrame to ensure consistent timing
       // even when the browser tab is not in focus (requestAnimationFrame is throttled)
       const intervalId = setInterval(renderFrame, msPerVideoFrame);
+
+      // Safety timeout - force stop if recording goes too long
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          console.warn(`Safety timeout triggered! Forcing stop after ${targetDurationMs + 1000}ms`);
+          clearInterval(intervalId);
+          mediaRecorder.stop();
+        }
+      }, targetDurationMs + 1000);
 
     } catch (error) {
       reject(error);
