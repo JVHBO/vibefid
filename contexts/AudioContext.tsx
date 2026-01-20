@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { getAssetUrl } from '@/lib/ipfs-assets';
 
 interface AudioContextType {
   musicEnabled: boolean;
@@ -55,8 +56,8 @@ class AudioManager {
       this.musicGain.gain.value = this.currentVolume;
       this.soundGain.gain.value = 0.3;
 
-      // Load background music
-      const musicResponse = await fetch('/music/background.mp3');
+      // Load background music (from IPFS in production)
+      const musicResponse = await fetch(getAssetUrl('/music/background.mp3'));
       const musicArrayBuffer = await musicResponse.arrayBuffer();
       this.musicBuffer = await this.audioContext.decodeAudioData(musicArrayBuffer);
 
