@@ -18,6 +18,7 @@ import haptics from '@/lib/haptics';
 import { AudioRecorder } from './AudioRecorder';
 import { useMusic } from '@/contexts/MusicContext';
 import { openMarketplace } from '@/lib/marketplace-utils';
+import { getAssetUrl } from '@/lib/ipfs-assets';
 
 const VIBEMAIL_COST_VBMS = "100"; // Cost for paid VibeMail
 
@@ -326,10 +327,10 @@ export function getSoundFile(audioId: string): string | null {
   return sound?.file || null;
 }
 
-// Get image file from ID
+// Get image file from ID (uses IPFS in production)
 export function getImageFile(imageId: string): { file: string; isVideo: boolean } | null {
   const image = VIBEMAIL_IMAGES.find(i => i.id === imageId);
-  return image ? { file: image.file, isVideo: image.isVideo } : null;
+  return image ? { file: getAssetUrl(image.file), isVideo: image.isVideo } : null;
 }
 
 interface VibeMailMessage {

@@ -8,6 +8,11 @@
 const USE_IPFS = process.env.NODE_ENV === 'production';
 
 export const IPFS_ASSETS: Record<string, string> = {
+  // GIFs and videos
+  "/images/share-vibefid.gif": "https://ipfs.filebase.io/ipfs/QmYXLY6s18PZjdGMZALFmgaEHf7qa5DErK7rcSpArvp2Te",
+  "/images/vibefid-card-og.gif": "https://ipfs.filebase.io/ipfs/QmWbJ6JveX56Bse2L55PtDq5pkqfR9GLNoa1U41FNTNtwt",
+  "/vibemail/suck-jones.mp4": "https://ipfs.filebase.io/ipfs/QmcQ2mSo2gXQgkAjLHFCu6DMLRFjehp2Aes58UWr3xxgaR",
+
   // Music files (same as vibe-most-wanted)
   "/music/default.mp3": "https://ipfs.filebase.io/ipfs/QmcdrajJ9vUk8kivw35ZVfEvn2nLh3moZQbhsUDHntPYaQ",
   "/music/background.mp3": "https://ipfs.filebase.io/ipfs/QmcdrajJ9vUk8kivw35ZVfEvn2nLh3moZQbhsUDHntPYaQ",
