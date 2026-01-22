@@ -756,6 +756,37 @@ export const updateCardImages = mutation({
 
 
 /**
+ * Update card profile (username, displayName, pfpUrl)
+ */
+export const updateCardProfile = mutation({
+  args: {
+    fid: v.number(),
+    username: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+    pfpUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!card) {
+      throw new Error(`No card found for FID ${args.fid}`);
+    }
+
+    const updates: Record<string, string> = {};
+    if (args.username) updates.username = args.username;
+    if (args.displayName) updates.displayName = args.displayName;
+    if (args.pfpUrl) updates.pfpUrl = args.pfpUrl;
+
+    await ctx.db.patch(card._id, updates);
+    console.log(`✅ Updated profile for FID ${args.fid}:`, Object.keys(updates));
+    return { success: true, fid: args.fid, updated: Object.keys(updates) };
+  },
+});
+
+/**
  * Update card pfpUrl (admin only - for fixing broken profile pictures)
  */
 export const updateCardPfp = mutation({
