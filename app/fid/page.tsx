@@ -1730,7 +1730,7 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
         {showShareModal && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-vintage-dark border-2 border-vintage-gold rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-vintage-gold text-xl font-bold mb-4 text-center">{t.selectLanguage || 'Select Language'}</h3>
+              <h3 className="text-vintage-gold text-xl font-bold mb-4 text-center">{t.selectLanguageForShare || 'Select Language'}</h3>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { code: 'en', label: '🇺🇸 English' },

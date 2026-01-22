@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Neynar API key for posting replies
+// Neynar API key for posting
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY!;
-const BOT_SIGNER_UUID = process.env.BOT_SIGNER_UUID!; // You'll need to create this
+const BOT_SIGNER_UUID = process.env.BOT_SIGNER_UUID!;
+
+// Channel to post quotes
+const CHANNEL_ID = 'vibe-most-wanted';
 
 // Keywords that trigger the bot
 const TRIGGER_KEYWORDS = [
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
         else if (score >= 0.79) rarity = 'Epic';
         else if (score >= 0.70) rarity = 'Rare';
 
-        scoreText = `@${authorUsername} your Neynar Score is ${score.toFixed(3)} (${rarity})! 🎴`;
+        scoreText = `@${authorUsername} your Neynar Score is ${score.toFixed(3)} (${rarity})! 🎴\n\nMint your VibeFID card:`;
       }
     }
 
@@ -83,11 +86,15 @@ export async function POST(request: NextRequest) {
       scoreText = `@${authorUsername} I couldn't fetch your score. Try again later!`;
     }
 
-    // GIF URL with the user's FID
-    const gifUrl = `https://vibefid.xyz/share/score/${authorFid}/opengraph-image.gif?v=${Date.now()}`;
+    // Share page URL (not the GIF, the actual page)
+    const shareUrl = `https://vibefid.xyz/share/score/${authorFid}`;
 
-    // Post reply using Neynar
-    const replyResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
+    // Original cast URL for quote embed
+    const originalCastUrl = `https://warpcast.com/${authorUsername}/${castHash.substring(0, 10)}`;
+
+    // Post quote in channel using Neynar
+    // For a quote cast: include the original cast URL as an embed
+    const quoteResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,18 +103,21 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         signer_uuid: BOT_SIGNER_UUID,
         text: scoreText,
-        parent: castHash,
-        embeds: [{ url: gifUrl }],
+        channel_id: CHANNEL_ID,
+        embeds: [
+          { url: shareUrl },           // Share page link
+          { cast_id: { fid: authorFid, hash: castHash } }  // Quote the original cast
+        ],
       }),
     });
 
-    if (replyResponse.ok) {
-      console.log(`✅ Bot replied to @${authorUsername}`);
-      return NextResponse.json({ ok: true, message: 'Reply sent' });
+    if (quoteResponse.ok) {
+      console.log(`✅ Bot quoted @${authorUsername} in /${CHANNEL_ID}`);
+      return NextResponse.json({ ok: true, message: 'Quote posted' });
     } else {
-      const error = await replyResponse.text();
-      console.error('Failed to post reply:', error);
-      return NextResponse.json({ error: 'Failed to post reply' }, { status: 500 });
+      const error = await quoteResponse.text();
+      console.error('Failed to post quote:', error);
+      return NextResponse.json({ error: 'Failed to post quote' }, { status: 500 });
     }
 
   } catch (error) {
@@ -116,11 +126,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Verify webhook signature (optional but recommended)
+// Health check endpoint
 export async function GET(request: NextRequest) {
-  // Health check endpoint
   return NextResponse.json({
     status: 'VibeFID Bot is running',
+    channel: CHANNEL_ID,
     triggers: TRIGGER_KEYWORDS,
   });
 }
