@@ -1729,19 +1729,28 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
         {/* Language Selection Modal for Share */}
         {showShareModal && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-vintage-dark border-2 border-vintage-gold rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-vintage-gold text-xl font-bold mb-4 text-center">{t.selectLanguageForShare || 'Select Language'}</h3>
-              <div className="grid grid-cols-3 gap-3">
+            <div className="bg-vintage-charcoal rounded-xl border-2 border-vintage-gold/50 p-6 max-w-sm w-full">
+              <h2 className="text-xl font-bold text-vintage-gold mb-4 text-center">
+                {t.shareToFarcaster || 'Share to Farcaster'}
+              </h2>
+
+              <p className="text-vintage-ice text-xs mb-4 text-center">
+                {t.selectLanguageForShare || 'Select language for share image:'}
+              </p>
+
+              {/* Language Options */}
+              <div className="grid grid-cols-3 gap-2 mb-6">
                 {[
-                  { code: 'en', label: '🇺🇸 English' },
-                  { code: 'pt-BR', label: '🇧🇷 Português' },
-                  { code: 'es', label: '🇪🇸 Español' },
-                  { code: 'ja', label: '🇯🇵 日本語' },
-                  { code: 'zh-CN', label: '🇨🇳 中文' },
-                  { code: 'ru', label: '🇷🇺 Русский' },
-                  { code: 'hi', label: '🇮🇳 हिन्दी' },
-                  { code: 'fr', label: '🇫🇷 Français' },
-                  { code: 'id', label: '🇮🇩 Indonesia' },
+                  { code: 'en', flag: '🇺🇸', name: 'English' },
+                  { code: 'pt-BR', flag: '🇧🇷', name: 'Português' },
+                  { code: 'es', flag: '🇪🇸', name: 'Español' },
+                  { code: 'ja', flag: '🇯🇵', name: '日本語' },
+                  { code: 'zh-CN', flag: '🇨🇳', name: '中文' },
+                  { code: 'ru', flag: '🇷🇺', name: 'Русский' },
+                  { code: 'hi', flag: '🇮🇳', name: 'हिन्दी' },
+                  { code: 'fr', flag: '🇫🇷', name: 'Français' },
+                  { code: 'id', flag: '🇮🇩', name: 'Bahasa' },
+                  { code: 'it', flag: '🇮🇹', name: 'Italiano' },
                 ].map((langOption) => (
                   <button
                     key={langOption.code}
@@ -1749,20 +1758,23 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
                       AudioManager.buttonClick();
                       handleShareWithLanguage(langOption.code as typeof lang);
                     }}
-                    className="p-3 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg hover:bg-vintage-gold/20 transition-colors text-center text-sm"
+                    className="p-3 rounded-lg border-2 transition-all hover:border-vintage-gold hover:bg-vintage-gold/10 border-vintage-gold/30 bg-vintage-black/50"
                   >
-                    {langOption.label}
+                    <span className="text-2xl block mb-1">{langOption.flag}</span>
+                    <span className="text-vintage-gold text-xs font-semibold">{langOption.name}</span>
                   </button>
                 ))}
               </div>
+
+              {/* Cancel Button */}
               <button
                 onClick={() => {
                   AudioManager.buttonClick();
                   setShowShareModal(false);
                 }}
-                className="w-full mt-4 p-3 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10"
+                className="w-full px-3 py-2 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10 transition-colors"
               >
-                {t.back || 'Back'}
+                {t.cancel || 'Cancel'}
               </button>
             </div>
           </div>

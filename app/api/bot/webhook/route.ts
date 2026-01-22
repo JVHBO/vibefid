@@ -91,14 +91,13 @@ export async function POST(request: NextRequest) {
       scoreText = `@${authorUsername} I couldn't fetch your score. Try again later!`;
     }
 
-    // Share page URL (not the GIF, the actual page)
+    // Share page URL (the actual page with OG image)
     const shareUrl = `https://vibefid.xyz/share/score/${authorFid}`;
 
-    // Original cast URL for quote embed
-    const originalCastUrl = `https://warpcast.com/${authorUsername}/${castHash.substring(0, 10)}`;
+    // Original cast URL for quote (warpcast format)
+    const quoteCastUrl = `https://warpcast.com/${authorUsername}/${castHash}`;
 
     // Post quote in channel using Neynar
-    // For a quote cast: include the original cast URL as an embed
     const quoteResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
       method: 'POST',
       headers: {
@@ -110,8 +109,8 @@ export async function POST(request: NextRequest) {
         text: scoreText,
         channel_id: CHANNEL_ID,
         embeds: [
-          { url: shareUrl },           // Share page link
-          { cast_id: { fid: authorFid, hash: castHash } }  // Quote the original cast
+          { url: shareUrl },      // Share page link with OG image
+          { url: quoteCastUrl }   // Quote the original cast via URL
         ],
       }),
     });
