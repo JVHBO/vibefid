@@ -161,8 +161,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
   const [mintedSuccessfully, setMintedSuccessfully] = useState(false);
 
   // Neynar score state
-  const [neynarScoreData, setNeynarScoreData] = useState<{ score: number; rarity: string; fid: number; username: string } | null>(null);
+  const [neynarScoreData, setNeynarScoreData] = useState<{ score: number; rarity: string; fid: number; username: string; displayName: string; pfpUrl: string } | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // VBMS modal
   const [showVBMSModal, setShowVBMSModal] = useState(false);
@@ -487,6 +488,8 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         rarity,
         fid: user.fid,
         username: user.username,
+        displayName: user.display_name,
+        pfpUrl: user.pfp_url,
       });
       setShowScoreModal(true);
       setLoading(false);
@@ -866,6 +869,100 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
     api.cardVotes.getUnreadMessageCount,
     userFid ? { cardFid: userFid } : "skip"
   );
+
+  // Handle share with selected language - uses score GIF (same as card page)
+  const handleShareWithLanguage = async (selectedLang: typeof lang) => {
+    if (!myCard) return;
+
+    try {
+      setShowShareModal(false);
+      setShowScoreModal(false);
+
+      // Get translations for selected language
+      const shareT = translations[selectedLang];
+
+      // Fetch VibeFID rank from Convex
+      let vibefidRankText = '';
+      try {
+        const convexUrl = "https://scintillating-mandrill-101.convex.cloud";
+        const rankResponse = await fetch(`${convexUrl}/api/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: 'farcasterCards:getVibeFIDRank',
+            args: { fid: myCard.fid },
+            format: 'json',
+          }),
+        });
+        if (rankResponse.ok) {
+          const rankData = await rankResponse.json();
+          if (rankData.value?.rank) {
+            vibefidRankText = `🏆 VibeFID Rank: #${rankData.value.rank} / ${rankData.value.totalCards}`;
+          }
+        }
+      } catch (e) {
+        console.log('Failed to fetch VibeFID rank');
+      }
+
+      // Fetch global rank from OpenRank
+      let globalRankText = '';
+      const currentScore = neynarScoreData?.score ?? myCard.neynarScore ?? 0;
+      try {
+        const openRankResponse = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([myCard.fid]),
+        });
+        if (openRankResponse.ok) {
+          const openRankData = await openRankResponse.json();
+          const results = openRankData.result || openRankData;
+          if (Array.isArray(results) && results.length > 0 && results[0].rank) {
+            globalRankText = `🌍 Global Rank: #${results[0].rank.toLocaleString()}`;
+          }
+        }
+      } catch (e) {
+        console.log('OpenRank failed, using estimate');
+      }
+
+      // Fallback estimate if OpenRank failed
+      if (!globalRankText) {
+        let estimate = 'Top 50%';
+        if (currentScore >= 1.00) estimate = 'Top 50';
+        else if (currentScore >= 0.99) estimate = 'Top 200';
+        else if (currentScore >= 0.95) estimate = 'Top 1k';
+        else if (currentScore >= 0.90) estimate = 'Top 2.5k';
+        else if (currentScore >= 0.85) estimate = 'Top 5k';
+        else if (currentScore >= 0.80) estimate = 'Top 10k';
+        else if (currentScore >= 0.70) estimate = 'Top 25k';
+        globalRankText = `🌍 Global: ${estimate}`;
+      }
+
+      // Build cast text
+      const foilText = myCard.foil !== 'None' ? ` | ${myCard.foil} Foil` : '';
+      const mintScore = myCard.neynarScore ?? currentScore;
+      const scoreDiff = currentScore - mintScore;
+      const diffSign = scoreDiff >= 0 ? '+' : '';
+      const currentRarity = neynarScoreData?.rarity || myCard.rarity;
+      const rankingSection = [vibefidRankText, globalRankText].filter(Boolean).join('\n');
+
+      const castText = `${shareT.yourVibeFidCard || 'My VibeFID Card'} 🎴
+
+${currentRarity}${foilText}
+⚡ ${myCard.power} Power
+📊 Score: ${currentScore.toFixed(3)} (${diffSign}${scoreDiff.toFixed(4)})
+
+${rankingSection}
+
+FID #${myCard.fid}
+
+${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
+
+      const shareUrl = `https://vibefid.xyz/share/score/${myCard.fid}?lang=${selectedLang}&v=${Date.now()}`;
+      await shareToFarcaster(castText, shareUrl);
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+  };
 
   // Check if upgrade is available for own card
   const canUpgrade = () => {
@@ -1616,22 +1713,9 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                     {t.back}
                   </button>
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                       AudioManager.buttonClick();
-                      // Use score share page with OG image showing card + score
-                      const shareUrl = `https://vibefid.xyz/share/score/${myCard?.fid}?v=${Date.now()}`;
-                      const scoreDiff = myCard && myCard.neynarScore ? neynarScoreData.score - myCard.neynarScore : 0;
-                      const diffSign = scoreDiff >= 0 ? '+' : '';
-                      const mintRarity = scoreHistory?.mintRarity || myCard?.rarity;
-                      const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
-                      const scoreLine = myCard && myCard.neynarScore
-                        ? `${neynarScoreData.score.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${t.sinceMint || 'since mint'}`
-                        : `${neynarScoreData.score.toFixed(3)}`;
-                      const rarityLine = rarityChanged
-                        ? `${t.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${neynarScoreData.rarity}`
-                        : neynarScoreData.rarity;
-                      const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
-                      await shareToFarcaster(castText, shareUrl);
+                      setShowShareModal(true);
                     }}
                     className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
                   >
@@ -1639,6 +1723,48 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Language Selection Modal for Share */}
+        {showShareModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-vintage-dark border-2 border-vintage-gold rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-vintage-gold text-xl font-bold mb-4 text-center">{t.selectLanguage || 'Select Language'}</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { code: 'en', label: '🇺🇸 English' },
+                  { code: 'pt-BR', label: '🇧🇷 Português' },
+                  { code: 'es', label: '🇪🇸 Español' },
+                  { code: 'ja', label: '🇯🇵 日本語' },
+                  { code: 'zh-CN', label: '🇨🇳 中文' },
+                  { code: 'ru', label: '🇷🇺 Русский' },
+                  { code: 'hi', label: '🇮🇳 हिन्दी' },
+                  { code: 'fr', label: '🇫🇷 Français' },
+                  { code: 'id', label: '🇮🇩 Indonesia' },
+                ].map((langOption) => (
+                  <button
+                    key={langOption.code}
+                    onClick={() => {
+                      AudioManager.buttonClick();
+                      handleShareWithLanguage(langOption.code as typeof lang);
+                    }}
+                    className="p-3 bg-vintage-charcoal border border-vintage-gold/30 rounded-lg hover:bg-vintage-gold/20 transition-colors text-center text-sm"
+                  >
+                    {langOption.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  AudioManager.buttonClick();
+                  setShowShareModal(false);
+                }}
+                className="w-full mt-4 p-3 bg-vintage-charcoal border border-vintage-gold/30 text-vintage-gold rounded-lg hover:bg-vintage-gold/10"
+              >
+                {t.back || 'Back'}
+              </button>
             </div>
           </div>
         )}
