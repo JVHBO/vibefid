@@ -7,6 +7,7 @@ export const maxDuration = 30;
 
 let fontData: ArrayBuffer | null = null;
 let backgroundImageBase64: string | null = null;
+let cardBackImageBase64: string | null = null;
 
 // Farcaster Frames v2 size (3:2 aspect ratio)
 const width = 1200;
@@ -130,6 +131,19 @@ export async function GET(
         }
       } catch (e) {
         console.log('Failed to load background image');
+      }
+    }
+
+    // Load card back image
+    if (!cardBackImageBase64) {
+      try {
+        const cardBackResponse = await fetch('https://vibefid.xyz/images/card-back.png');
+        if (cardBackResponse.ok) {
+          const buffer = await cardBackResponse.arrayBuffer();
+          cardBackImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
+        }
+      } catch (e) {
+        console.log('Failed to load card back image');
       }
     }
 
@@ -418,7 +432,7 @@ export async function GET(
                                 borderRadius: 12,
                                 border: `4px solid ${borderColor}`,
                                 overflow: 'hidden',
-                                backgroundColor: showFront ? '#1a1a2e' : borderColor,
+                                backgroundColor: '#1a1a2e',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 boxShadow: `0 0 30px ${borderColor}40`,
@@ -445,6 +459,18 @@ export async function GET(
                                       fontSize: 24,
                                     },
                                     children: `@${username}`,
+                                  },
+                                },
+                              ] : !showFront && absScale > 0.15 && cardBackImageBase64 ? [
+                                {
+                                  type: 'img',
+                                  props: {
+                                    src: cardBackImageBase64,
+                                    width: Math.max(Math.floor(cardW - 8), 1),
+                                    height: cardHeight - 8,
+                                    style: {
+                                      objectFit: 'cover',
+                                    },
                                   },
                                 },
                               ] : undefined,
