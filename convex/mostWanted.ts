@@ -17,7 +17,7 @@ export const getRanking = query({
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = Math.min(args.limit || 12, 100);
+    const limit = Math.min(args.limit || 12, 2000);
     const offset = args.offset || 0;
 
     // 🚀 BANDWIDTH FIX: Use index instead of full table scan
