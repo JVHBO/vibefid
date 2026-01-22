@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ wallet: string }> }
 ) {
-    const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+    const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY;
   try {
     if (!ALCHEMY_KEY) {
       return NextResponse.json({ verified: false });
