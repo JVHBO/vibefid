@@ -145,6 +145,7 @@ export async function GET(
     const score = neynarData?.score ?? cardData?.neynarScore ?? 0;
     const rarity = neynarData?.rarity || cardData?.rarity || 'Common';
     const power = cardData?.power ?? 0;
+    const foil = cardData?.foil || 'None';
 
     // Fallback for global rank estimate if still empty
     if (!globalRankDisplay) {
@@ -405,6 +406,22 @@ export async function GET(
                                     children: rarity,
                                   },
                                 },
+                                // Show foil if not None
+                                foil !== 'None' ? {
+                                  type: 'div',
+                                  props: {
+                                    style: {
+                                      color: foil === 'Prize' ? '#fbbf24' : '#a78bfa',
+                                      fontSize: 18,
+                                      fontWeight: 700,
+                                      marginLeft: 16,
+                                      padding: '2px 8px',
+                                      backgroundColor: foil === 'Prize' ? '#fbbf2420' : '#a78bfa20',
+                                      borderRadius: 4,
+                                    },
+                                    children: foil === 'Prize' ? 'PRIZE FOIL' : 'FOIL',
+                                  },
+                                } : null,
                               ],
                             },
                           },
