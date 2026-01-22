@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     if (isLookingUpOther) {
       scoreText = `@${authorUsername} asked about @${targetUsername}:\n\n`;
     }
-    scoreText += `${targetDisplayName} (@${targetUsername})\n\n`;
+    scoreText += `${targetDisplayName} @${targetUsername}\n\n`;
     scoreText += `Neynar Score: ${score.toFixed(3)} (${rarity})\n`;
     if (vibefidRank) {
       scoreText += `VibeFID Rank: ${vibefidRank}\n`;
