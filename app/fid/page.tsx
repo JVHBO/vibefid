@@ -879,7 +879,7 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
       setShowScoreModal(false);
 
       // Get translations for selected language
-      const shareT = translations[selectedLang];
+      const shareT = fidTranslations[selectedLang];
 
       // Fetch VibeFID rank from Convex
       let vibefidRankText = '';
