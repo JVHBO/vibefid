@@ -904,20 +904,19 @@ const searchParams = useSearchParams();  const testFid = searchParams.get("testF
         console.log('Failed to fetch VibeFID rank');
       }
 
-      // Fetch global rank from OpenRank
+      // Fetch global rank from OpenRank (via proxy to avoid CORS)
       let globalRankText = '';
       const currentScore = neynarScoreData?.score ?? myCard.neynarScore ?? 0;
       try {
-        const openRankResponse = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+        const openRankResponse = await fetch('/api/openrank', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([myCard.fid]),
+          body: JSON.stringify({ fid: myCard.fid }),
         });
         if (openRankResponse.ok) {
           const openRankData = await openRankResponse.json();
-          const results = openRankData.result || openRankData;
-          if (Array.isArray(results) && results.length > 0 && results[0].rank) {
-            globalRankText = `🌍 Global Rank: #${results[0].rank.toLocaleString()}`;
+          if (openRankData.rank) {
+            globalRankText = `🌍 Global Rank: #${openRankData.rank.toLocaleString()}`;
           }
         }
       } catch (e) {
