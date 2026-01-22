@@ -472,7 +472,7 @@ export async function GET(
                         ],
                       },
                     },
-                    // Right side - Score info
+                    // Right side - Score info with dark background for contrast
                     {
                       type: 'div',
                       props: {
@@ -481,154 +481,117 @@ export async function GET(
                           flexDirection: 'column',
                           justifyContent: 'center',
                           flex: 1,
-                          paddingLeft: 60,
+                          paddingLeft: 40,
+                          paddingRight: 40,
                         },
                         children: [
-                          {
-                            type: 'div',
-                            props: {
-                              style: { color: gold, fontSize: 36, fontWeight: 700 },
-                              children: t.neynarScore,
-                            },
-                          },
-                          {
-                            type: 'div',
-                            props: {
-                              style: {
-                                width: 350,
-                                height: 3,
-                                backgroundColor: gold,
-                                marginTop: 12,
-                                marginBottom: 20,
-                              },
-                            },
-                          },
-                          {
-                            type: 'div',
-                            props: {
-                              style: { color: '#c9a961', fontSize: 24 },
-                              children: `@${username}`,
-                            },
-                          },
-                          !hasMinted ? {
-                            type: 'div',
-                            props: {
-                              style: { color: '#ef4444', fontSize: 18, marginTop: 4 },
-                              children: t.needMint,
-                            },
-                          } : null,
-                          {
-                            type: 'div',
-                            props: {
-                              style: { color: 'white', fontSize: 72, fontWeight: 700, marginTop: 8 },
-                              children: score.toFixed(3),
-                            },
-                          },
+                          // Dark background panel for readability
                           {
                             type: 'div',
                             props: {
                               style: {
                                 display: 'flex',
-                                marginTop: 20,
+                                flexDirection: 'column',
+                                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                borderRadius: 16,
+                                padding: '30px 40px',
+                                border: `2px solid ${gold}`,
                               },
                               children: [
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
-                                    children: t.rarity,
+                                    style: { color: gold, fontSize: 32, fontWeight: 700, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' },
+                                    children: 'NEYNAR SCORE',
                                   },
                                 },
                                 {
-                                  type: 'div',
-                                  props: {
-                                    style: { color: borderColor, fontSize: 20, fontWeight: 700 },
-                                    children: rarity,
-                                  },
-                                },
-                                // Show foil if not None
-                                foil !== 'None' ? {
                                   type: 'div',
                                   props: {
                                     style: {
-                                      color: foil === 'Prize' ? '#fbbf24' : '#a78bfa',
-                                      fontSize: 18,
-                                      fontWeight: 700,
-                                      marginLeft: 16,
-                                      padding: '2px 8px',
-                                      backgroundColor: foil === 'Prize' ? '#fbbf2420' : '#a78bfa20',
-                                      borderRadius: 4,
+                                      width: '100%',
+                                      height: 2,
+                                      backgroundColor: gold,
+                                      marginTop: 10,
+                                      marginBottom: 16,
                                     },
-                                    children: foil === 'Prize' ? t.prizeFoil : t.foil,
+                                  },
+                                },
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: { color: '#ffffff', fontSize: 22, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
+                                    children: `@${username}`,
+                                  },
+                                },
+                                !hasMinted ? {
+                                  type: 'div',
+                                  props: {
+                                    style: { color: '#ff6b6b', fontSize: 16, marginTop: 4, fontWeight: 700 },
+                                    children: 'NOT MINTED',
                                   },
                                 } : null,
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: { color: '#ffffff', fontSize: 64, fontWeight: 700, marginTop: 12, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' },
+                                    children: score.toFixed(3),
+                                  },
+                                },
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: {
+                                      display: 'flex',
+                                      marginTop: 16,
+                                      alignItems: 'center',
+                                    },
+                                    children: [
+                                      {
+                                        type: 'div',
+                                        props: {
+                                          style: { color: borderColor, fontSize: 24, fontWeight: 700, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
+                                          children: rarity,
+                                        },
+                                      },
+                                      // Show foil if not None
+                                      foil !== 'None' ? {
+                                        type: 'div',
+                                        props: {
+                                          style: {
+                                            color: foil === 'Prize' ? '#fbbf24' : '#a78bfa',
+                                            fontSize: 16,
+                                            fontWeight: 700,
+                                            marginLeft: 16,
+                                            padding: '4px 10px',
+                                            backgroundColor: foil === 'Prize' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(167, 139, 250, 0.3)',
+                                            borderRadius: 4,
+                                          },
+                                          children: foil === 'Prize' ? 'PRIZE FOIL' : 'FOIL',
+                                        },
+                                      } : null,
+                                    ],
+                                  },
+                                },
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: {
+                                      marginTop: 20,
+                                      color: gold,
+                                      fontSize: 18,
+                                      fontWeight: 700,
+                                      padding: '8px 16px',
+                                      border: `2px solid ${gold}`,
+                                      borderRadius: 8,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    },
+                                    children: `FID #${fid}`,
+                                  },
+                                },
                               ],
-                            },
-                          },
-                          // VibeFID Rank row
-                          hasMinted && vibefidRank ? {
-                            type: 'div',
-                            props: {
-                              style: {
-                                display: 'flex',
-                                marginTop: 12,
-                              },
-                              children: [
-                                {
-                                  type: 'div',
-                                  props: {
-                                    style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
-                                    children: t.vibefidRank,
-                                  },
-                                },
-                                {
-                                  type: 'div',
-                                  props: {
-                                    style: { color: '#22c55e', fontSize: 20, fontWeight: 700 },
-                                    children: `#${vibefidRank} / ${totalCards}`,
-                                  },
-                                },
-                              ],
-                            },
-                          } : null,
-                          // Global Rank row
-                          {
-                            type: 'div',
-                            props: {
-                              style: {
-                                display: 'flex',
-                                marginTop: 12,
-                              },
-                              children: [
-                                {
-                                  type: 'div',
-                                  props: {
-                                    style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
-                                    children: t.globalRank,
-                                  },
-                                },
-                                {
-                                  type: 'div',
-                                  props: {
-                                    style: { color: '#60a5fa', fontSize: 20, fontWeight: 700 },
-                                    children: globalRankDisplay,
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            type: 'div',
-                            props: {
-                              style: {
-                                marginTop: 25,
-                                color: gold,
-                                fontSize: 18,
-                                padding: '8px 20px',
-                                border: `2px solid ${gold}`,
-                                borderRadius: 8,
-                              },
-                              children: `FID #${fid}`,
                             },
                           },
                         ],

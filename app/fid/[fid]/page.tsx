@@ -183,8 +183,63 @@ export default function FidCardPage() {
       // Get translations for selected language
       const shareT = fidTranslations[selectedLang];
 
+      // Fetch VibeFID rank from Convex
+      let vibefidRankText = '';
+      try {
+        const convexUrl = "https://scintillating-mandrill-101.convex.cloud";
+        const rankResponse = await fetch(`${convexUrl}/api/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: 'farcasterCards:getVibeFIDRank',
+            args: { fid: card.fid },
+            format: 'json',
+          }),
+        });
+        if (rankResponse.ok) {
+          const rankData = await rankResponse.json();
+          if (rankData.value?.rank) {
+            vibefidRankText = `🏆 VibeFID Rank: #${rankData.value.rank} / ${rankData.value.totalCards}`;
+          }
+        }
+      } catch (e) {
+        console.log('Failed to fetch VibeFID rank');
+      }
+
+      // Fetch global rank from OpenRank (with fallback estimate)
+      let globalRankText = '';
+      const currentScore = neynarScoreData?.score ?? card.neynarScore ?? 0;
+      try {
+        const openRankResponse = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([card.fid]),
+        });
+        if (openRankResponse.ok) {
+          const openRankData = await openRankResponse.json();
+          if (Array.isArray(openRankData) && openRankData.length > 0 && openRankData[0].rank) {
+            globalRankText = `🌍 Global Rank: #${openRankData[0].rank.toLocaleString()}`;
+          }
+        }
+      } catch (e) {
+        console.log('OpenRank failed, using estimate');
+      }
+
+      // Fallback estimate if OpenRank failed
+      if (!globalRankText) {
+        let estimate = 'Top 50%';
+        if (currentScore >= 1.00) estimate = 'Top 50';
+        else if (currentScore >= 0.99) estimate = 'Top 200';
+        else if (currentScore >= 0.95) estimate = 'Top 1k';
+        else if (currentScore >= 0.90) estimate = 'Top 2.5k';
+        else if (currentScore >= 0.85) estimate = 'Top 5k';
+        else if (currentScore >= 0.80) estimate = 'Top 10k';
+        else if (currentScore >= 0.70) estimate = 'Top 25k';
+        globalRankText = `🌍 Global: ${estimate}`;
+      }
+
       // Build cast text
-      const foilText = currentTraits?.foil !== 'None' ? ` ${currentTraits?.foil} Foil` : '';
+      const foilText = currentTraits?.foil !== 'None' ? ` | ${currentTraits?.foil} Foil` : '';
 
       // Calculate score diff from mint
       const currentScore = neynarScoreData?.score ?? card.neynarScore ?? 0;
@@ -192,20 +247,31 @@ export default function FidCardPage() {
       const scoreDiff = currentScore - mintScore;
       const diffSign = scoreDiff >= 0 ? '+' : '';
 
-      const scoreText = `Neynar Score: ${currentScore.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${shareT.sinceMint || 'since mint'}`;
-
       // Check for rarity upgrade
       const mintRarity = scoreHistory?.mintRarity || card.rarity;
       const currentRarity = neynarScoreData?.rarity || card.rarity;
       const rarityChanged = mintRarity && mintRarity !== currentRarity;
-      const rarityText = rarityChanged
-        ? `${shareT.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${currentRarity}`
-        : currentRarity;
+      const upgradeText = rarityChanged
+        ? `\n⬆️ ${mintRarity} → ${currentRarity}`
+        : '';
 
-      const castText = `${shareT.yourVibeFidCard || 'My VibeFID Card'}\n\n${rarityText}${foilText}\n${correctPower} ${shareT.shareTextPower || 'Power'}\n${scoreText}\nFID #${card.fid}\n\n${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
+      // Build ranking section
+      const rankingSection = [vibefidRankText, globalRankText].filter(Boolean).join('\n');
 
-      // Share URL with language param - uses animated GIF
-      const shareUrl = `https://vibefid.xyz/share/score/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
+      const castText = `${shareT.yourVibeFidCard || 'My VibeFID Card'} 🎴
+
+${currentRarity}${foilText}
+⚡ ${correctPower} Power
+📊 Score: ${currentScore.toFixed(3)} (${diffSign}${scoreDiff.toFixed(4)})${upgradeText}
+
+${rankingSection}
+
+FID #${card.fid}
+
+${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
+
+      // Share URL - uses animated GIF
+      const shareUrl = `https://vibefid.xyz/share/score/${card.fid}?v=${Date.now()}`;
 
       await shareToFarcaster(castText, shareUrl);
     } catch (error) {
