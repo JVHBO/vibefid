@@ -200,8 +200,10 @@ export async function GET(
       });
       if (openRankResponse.ok) {
         const openRankData = await openRankResponse.json();
-        if (Array.isArray(openRankData) && openRankData.length > 0) {
-          globalRank = openRankData[0].rank;
+        // Response format: {result: [{fid, username, rank, score, percentile}]}
+        const results = openRankData.result || openRankData;
+        if (Array.isArray(results) && results.length > 0 && results[0].rank) {
+          globalRank = results[0].rank;
           globalRankDisplay = `#${globalRank?.toLocaleString()}`;
         }
       }
