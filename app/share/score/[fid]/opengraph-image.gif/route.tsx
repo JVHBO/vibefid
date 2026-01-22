@@ -233,10 +233,12 @@ export async function GET(
 
     const hasMinted = !!cardData;
     const username = cardData?.username || neynarData?.username || `FID ${fid}`;
+    const displayName = cardData?.displayName || neynarData?.displayName || username;
     // Always use current Neynar score, fallback to card score if API fails
     const score = neynarData?.score ?? cardData?.neynarScore ?? 0;
     const rarity = neynarData?.rarity || cardData?.rarity || 'Common';
     const power = cardData?.power ?? 0;
+    const foil = cardData?.foil || 'None';
 
     // Fallback for global rank estimate if still empty
     if (!globalRankDisplay) {
@@ -477,46 +479,52 @@ export async function GET(
                                 border: `2px solid ${gold}`,
                               },
                               children: [
+                                // Display Name
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: gold, fontSize: 32, fontWeight: 700, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' },
-                                    children: 'NEYNAR SCORE',
+                                    style: { color: '#ffffff', fontSize: 36, fontWeight: 700, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' },
+                                    children: displayName,
                                   },
                                 },
+                                // Username
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: { color: gold, fontSize: 20, marginTop: 4, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
+                                    children: `@${username}`,
+                                  },
+                                },
+                                // Divider
                                 {
                                   type: 'div',
                                   props: {
                                     style: {
                                       width: '100%',
                                       height: 2,
-                                      backgroundColor: gold,
-                                      marginTop: 10,
+                                      backgroundColor: `${gold}60`,
+                                      marginTop: 16,
                                       marginBottom: 16,
                                     },
                                   },
                                 },
+                                // Score label
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: '#ffffff', fontSize: 22, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
-                                    children: `@${username}`,
+                                    style: { color: gold, fontSize: 18, fontWeight: 700, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
+                                    children: 'NEYNAR SCORE',
                                   },
                                 },
-                                !hasMinted ? {
-                                  type: 'div',
-                                  props: {
-                                    style: { color: '#ff6b6b', fontSize: 16, marginTop: 4, fontWeight: 700 },
-                                    children: 'NOT MINTED',
-                                  },
-                                } : null,
+                                // Score value
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: '#ffffff', fontSize: 64, fontWeight: 700, marginTop: 12, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' },
+                                    style: { color: '#ffffff', fontSize: 56, fontWeight: 700, marginTop: 4, textShadow: '2px 2px 4px rgba(0,0,0,0.8)' },
                                     children: score.toFixed(3),
                                   },
                                 },
+                                // Rarity + Foil row
                                 {
                                   type: 'div',
                                   props: {
@@ -524,14 +532,46 @@ export async function GET(
                                       display: 'flex',
                                       marginTop: 16,
                                       alignItems: 'center',
-                                      color: borderColor,
-                                      fontSize: 28,
-                                      fontWeight: 700,
-                                      textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                                      gap: 12,
                                     },
-                                    children: rarity,
+                                    children: [
+                                      // Rarity badge
+                                      {
+                                        type: 'div',
+                                        props: {
+                                          style: {
+                                            color: borderColor,
+                                            fontSize: 24,
+                                            fontWeight: 700,
+                                            textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                                            padding: '6px 14px',
+                                            backgroundColor: `${borderColor}30`,
+                                            borderRadius: 6,
+                                            border: `2px solid ${borderColor}`,
+                                          },
+                                          children: rarity.toUpperCase(),
+                                        },
+                                      },
+                                      // Foil badge (if not None)
+                                      foil !== 'None' ? {
+                                        type: 'div',
+                                        props: {
+                                          style: {
+                                            color: foil === 'Prize' ? '#fbbf24' : '#a78bfa',
+                                            fontSize: 20,
+                                            fontWeight: 700,
+                                            padding: '6px 14px',
+                                            backgroundColor: foil === 'Prize' ? 'rgba(251, 191, 36, 0.25)' : 'rgba(167, 139, 250, 0.25)',
+                                            borderRadius: 6,
+                                            border: `2px solid ${foil === 'Prize' ? '#fbbf24' : '#a78bfa'}`,
+                                          },
+                                          children: foil === 'Prize' ? '✨ PRIZE FOIL' : '✨ FOIL',
+                                        },
+                                      } : null,
+                                    ],
                                   },
                                 },
+                                // FID badge
                                 {
                                   type: 'div',
                                   props: {
