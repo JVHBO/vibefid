@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         else if (score >= 0.79) rarity = 'Epic';
         else if (score >= 0.70) rarity = 'Rare';
 
-        scoreText = `@${authorUsername} your Neynar Score is ${score.toFixed(3)} (${rarity})! 🎴\n\nMint your VibeFID card:`;
+        scoreText = `@${authorUsername} your Neynar Score is ${score.toFixed(3)} (${rarity})!\n\nMint your VibeFID card:`;
       }
     }
 
@@ -116,12 +116,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (quoteResponse.ok) {
+      const result = await quoteResponse.json();
       console.log(`✅ Bot quoted @${authorUsername} in /${CHANNEL_ID}`);
-      return NextResponse.json({ ok: true, message: 'Quote posted' });
+      return NextResponse.json({ ok: true, message: 'Quote posted', cast: result.cast?.hash });
     } else {
       const error = await quoteResponse.text();
       console.error('Failed to post quote:', error);
-      return NextResponse.json({ error: 'Failed to post quote' }, { status: 500 });
+      return NextResponse.json({
+        error: 'Failed to post quote',
+        details: error,
+        signerPresent: !!BOT_SIGNER_UUID,
+        signerLength: BOT_SIGNER_UUID?.length || 0
+      }, { status: 500 });
     }
 
   } catch (error) {
