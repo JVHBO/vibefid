@@ -225,3 +225,4 @@ export async function GET(request: NextRequest) {
     triggers: TRIGGER_KEYWORDS,
   });
 }
+// Bot v2
