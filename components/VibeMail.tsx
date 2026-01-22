@@ -249,6 +249,7 @@ export const VIBEMAIL_IMAGES = [
   { id: 'lula', name: '🇧🇷 Lula', file: '/vibemail/lula.png', isVideo: false },
   { id: 'vegetan', name: '💪 Vegetan', file: '/vibemail/vegetan.jpg', isVideo: false },
   { id: 'suck-jones', name: '🏴‍☠️ Suck Jones', file: '/vibemail/suck-jones.mp4', isVideo: true },
+  { id: 'neymar', name: '⚽ Neymar', file: '/vibemail/neymar.png', isVideo: false },
 ] as const;
 
 // Check if audio is a custom recording (vs predefined sound)
