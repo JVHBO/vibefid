@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
 
     const authorFid = cast.author?.fid;
     const castText = cast.text?.toLowerCase() || '';
+    const originalText = cast.text || '';
     const castHash = cast.hash;
     const authorUsername = cast.author?.username || 'anon';
-    const displayName = cast.author?.display_name || authorUsername;
 
     if (!authorFid || !castHash) {
       return NextResponse.json({ ok: true, message: 'Missing author or hash' });
@@ -60,11 +60,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, message: 'No trigger keyword' });
     }
 
-    console.log(`Bot triggered by @${authorUsername} (FID: ${authorFid})`);
+    // Check if there's another @mention (not @vibefid) to look up their score
+    const mentionRegex = /@(\w+(?:\.\w+)*)/g;
+    const mentions = originalText.match(mentionRegex) || [];
+    const otherMentions = mentions.filter(m =>
+      m.toLowerCase() !== '@vibefid' &&
+      m.toLowerCase() !== '@vibefid.base.eth'
+    );
 
-    // Fetch the user's Neynar score
+    let targetFid = authorFid;
+    let targetUsername = authorUsername;
+    let targetDisplayName = cast.author?.display_name || authorUsername;
+    let isLookingUpOther = false;
+
+    // If there's another mention, look up that user instead
+    if (otherMentions.length > 0) {
+      const targetMention = otherMentions[0].substring(1); // Remove @
+      try {
+        const lookupResponse = await fetch(
+          `https://api.neynar.com/v2/farcaster/user/by_username?username=${targetMention}`,
+          { headers: { api_key: NEYNAR_API_KEY } }
+        );
+        if (lookupResponse.ok) {
+          const lookupData = await lookupResponse.json();
+          if (lookupData.user) {
+            targetFid = lookupData.user.fid;
+            targetUsername = lookupData.user.username;
+            targetDisplayName = lookupData.user.display_name || targetUsername;
+            isLookingUpOther = true;
+          }
+        }
+      } catch (e) {
+        console.log(`Failed to lookup @${targetMention}`);
+      }
+    }
+
+    console.log(`Bot triggered by @${authorUsername} for @${targetUsername} (FID: ${targetFid})`);
+
+    // Fetch the target user's Neynar score
     const userResponse = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/bulk?fids=${authorFid}`,
+      `https://api.neynar.com/v2/farcaster/user/bulk?fids=${targetFid}`,
       { headers: { api_key: NEYNAR_API_KEY } }
     );
 
@@ -76,6 +111,8 @@ export async function POST(request: NextRequest) {
       const user = userData.users?.[0];
       if (user) {
         score = user.experimental?.neynar_user_score || user.score || 0;
+        // Update display name from fresh data
+        targetDisplayName = user.display_name || targetUsername;
 
         // Determine rarity
         if (score >= 0.99) rarity = 'Mythic';
@@ -94,7 +131,7 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           path: 'farcasterCards:getVibeFIDRank',
-          args: { fid: authorFid },
+          args: { fid: targetFid },
           format: 'json',
         }),
       });
@@ -114,7 +151,7 @@ export async function POST(request: NextRequest) {
       const openRankResponse = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([authorFid]),
+        body: JSON.stringify([targetFid]),
       });
       if (openRankResponse.ok) {
         const openRankData = await openRankResponse.json();
@@ -128,7 +165,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the score text with all info
-    let scoreText = `${displayName} (@${authorUsername})\n\n`;
+    let scoreText = '';
+    if (isLookingUpOther) {
+      scoreText = `@${authorUsername} asked about @${targetUsername}:\n\n`;
+    }
+    scoreText += `${targetDisplayName} (@${targetUsername})\n\n`;
     scoreText += `Neynar Score: ${score.toFixed(3)} (${rarity})\n`;
     if (vibefidRank) {
       scoreText += `VibeFID Rank: ${vibefidRank}\n`;
@@ -139,7 +180,7 @@ export async function POST(request: NextRequest) {
     scoreText += `\nMint your VibeFID card:`;
 
     // Share page URL (the actual page with OG image)
-    const shareUrl = `https://vibefid.xyz/share/score/${authorFid}`;
+    const shareUrl = `https://vibefid.xyz/share/score/${targetFid}`;
 
     // Original cast URL for quote (warpcast format)
     const quoteCastUrl = `https://warpcast.com/${authorUsername}/${castHash}`;
