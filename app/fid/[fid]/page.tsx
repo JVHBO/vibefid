@@ -173,78 +173,44 @@ export default function FidCardPage() {
     isOwnCard ? { cardFid: fid } : 'skip'
   );
 
-  // Handle share with selected language
+  // Handle share with selected language - uses score GIF
   const handleShareWithLanguage = async (selectedLang: typeof lang) => {
-    if (!card || !backstory) return;
+    if (!card) return;
 
     try {
       setShowShareModal(false);
-      setRegenerationStatus('Generating share image...');
-
-      // Convert card image IPFS URL to data URL
-      const cardImageUrl = card.cardImageUrl || card.imageUrl;
-      const cardImageDataUrl = await convertIpfsToDataUrl(cardImageUrl);
-
-      // Generate share image with selected language
-      const shareImageDataUrl = await generateShareImage({
-        cardImageDataUrl,
-        backstoryData: backstory,
-        displayName: card.displayName || card.username,
-        lang: selectedLang,
-      });
-
-      // Upload to Filebase
-      const uploadResponse = await fetch('/api/upload-nft-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageData: shareImageDataUrl,
-          filename: `vibefid-share-${card.fid}-${selectedLang}.png`,
-        }),
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload share image');
-      }
-
-      const { imageUrl: shareImageUrl } = await uploadResponse.json();
-
-      // Update card with share image URL
-      await updateCardImages({
-        fid: card.fid,
-        shareImageUrl,
-      });
 
       // Get translations for selected language
       const shareT = fidTranslations[selectedLang];
 
-      // Build cast text (clean, no emojis)
+      // Build cast text
       const foilText = currentTraits?.foil !== 'None' ? ` ${currentTraits?.foil} Foil` : '';
 
-      // Check if card was upgraded and build score/upgrade text
-      const wasUpgraded = card.upgradedAt && card.previousRarity && card.previousNeynarScore;
-      let scoreText = `Neynar Score: ${card.neynarScore.toFixed(3)}`;
-      let upgradeText = '';
+      // Calculate score diff from mint
+      const currentScore = neynarScoreData?.score ?? card.neynarScore ?? 0;
+      const mintScore = card.neynarScore ?? currentScore;
+      const scoreDiff = currentScore - mintScore;
+      const diffSign = scoreDiff >= 0 ? '+' : '';
 
-      if (wasUpgraded) {
-        const scoreDiff = card.neynarScore - card.previousNeynarScore!;
-        const diffSign = scoreDiff >= 0 ? '+' : '';
-        scoreText = `Neynar Score: ${card.neynarScore.toFixed(3)} (${diffSign}${scoreDiff.toFixed(3)})`;
-        upgradeText = `\n${card.previousRarity} → ${card.rarity}`;
-      }
+      const scoreText = `Neynar Score: ${currentScore.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${shareT.sinceMint || 'since mint'}`;
 
-      const castText = `${shareT.yourVibeFidCard}\n\n${card.rarity}${foilText}\n${correctPower} ${shareT.shareTextPower}\n${scoreText}${upgradeText}\nFID #${card.fid}\n\n${shareT.shareTextMintYours} @jvhbo`;
+      // Check for rarity upgrade
+      const mintRarity = scoreHistory?.mintRarity || card.rarity;
+      const currentRarity = neynarScoreData?.rarity || card.rarity;
+      const rarityChanged = mintRarity && mintRarity !== currentRarity;
+      const rarityText = rarityChanged
+        ? `${shareT.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${currentRarity}`
+        : currentRarity;
 
-      // Share page URL for miniapp button
-      const shareUrl = `https://vibefid.xyz/share/fid/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
+      const castText = `${shareT.yourVibeFidCard || 'My VibeFID Card'}\n\n${rarityText}${foilText}\n${correctPower} ${shareT.shareTextPower || 'Power'}\n${scoreText}\nFID #${card.fid}\n\n${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
 
-      // Open Warpcast compose with share page (has miniapp button + OG image from Filebase)
+      // Share URL with language param - uses animated GIF
+      const shareUrl = `https://vibefid.xyz/share/score/${card.fid}?lang=${selectedLang}&v=${Date.now()}`;
+
       await shareToFarcaster(castText, shareUrl);
-      setRegenerationStatus('');
     } catch (error) {
       console.error('Share failed:', error);
-      setRegenerationStatus('');
-      alert('Failed to generate share image. Please try again.');
+      alert('Failed to share. Please try again.');
     }
   };
 
@@ -729,18 +695,6 @@ export default function FidCardPage() {
                 />
                             </FoilCardEffect>
 
-              {/* Share Button - Bottom Left Corner (same pattern as Lore) */}
-              <button
-                onClick={() => {
-                  AudioManager.buttonClick();
-                  setShowShareModal(true);
-                }}
-                className="absolute -bottom-2 -left-2 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all bg-vintage-charcoal border border-vintage-gold/50 text-vintage-gold hover:bg-vintage-gold/20"
-                title="Share Card"
-              >
-                <span className="text-xs">↗</span>
-              </button>
-
               {/* Vibe/VibeMail Button - Bottom Right Corner */}
               <button
                 onClick={async () => {
@@ -979,22 +933,9 @@ export default function FidCardPage() {
                   </button>
                   {isOwnCard && (
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         AudioManager.buttonClick();
-                        // Use score share page with OG image showing card + score
-                        const shareUrl = `https://vibefid.xyz/share/score/${fid}?v=${Date.now()}`;
-                        const scoreDiff = card && card.neynarScore ? neynarScoreData.score - card.neynarScore : 0;
-                        const diffSign = scoreDiff >= 0 ? '+' : '';
-                        const mintRarity = scoreHistory?.mintRarity || card?.rarity;
-                        const rarityChanged = mintRarity && mintRarity !== neynarScoreData.rarity;
-                        const scoreLine = card && card.neynarScore
-                          ? `${neynarScoreData.score.toFixed(3)} ${diffSign}${scoreDiff.toFixed(4)} ${t.sinceMint || 'since mint'}`
-                          : `${neynarScoreData.score.toFixed(3)}`;
-                        const rarityLine = rarityChanged
-                          ? `${t.cardLeveledUp || 'Card leveled up!'} ${mintRarity} → ${neynarScoreData.rarity}`
-                          : neynarScoreData.rarity;
-                        const castText = `Neynar Score: ${scoreLine}\n${rarityLine}\n\n${t.neynarScoreCheckMint}`;
-                        await shareToFarcaster(castText, shareUrl);
+                        setShowShareModal(true);
                       }}
                       className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors text-center text-sm"
                     >

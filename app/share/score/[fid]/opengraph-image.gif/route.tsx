@@ -11,6 +11,99 @@ let fontData: ArrayBuffer | null = null;
 const width = 1200;
 const height = 800;
 
+// Translations for GIF labels
+const gifTranslations: Record<string, {
+  neynarScore: string;
+  rarity: string;
+  vibefidRank: string;
+  globalRank: string;
+  needMint: string;
+  prizeFoil: string;
+  foil: string;
+}> = {
+  en: {
+    neynarScore: 'NEYNAR SCORE',
+    rarity: 'Rarity:',
+    vibefidRank: 'VibeFID Rank:',
+    globalRank: 'Global Rank:',
+    needMint: 'Need Mint',
+    prizeFoil: 'PRIZE FOIL',
+    foil: 'FOIL',
+  },
+  'pt-BR': {
+    neynarScore: 'NEYNAR SCORE',
+    rarity: 'Raridade:',
+    vibefidRank: 'Rank VibeFID:',
+    globalRank: 'Rank Global:',
+    needMint: 'Precisa Mintar',
+    prizeFoil: 'FOIL PRIZE',
+    foil: 'FOIL',
+  },
+  es: {
+    neynarScore: 'NEYNAR SCORE',
+    rarity: 'Rareza:',
+    vibefidRank: 'Rank VibeFID:',
+    globalRank: 'Rank Global:',
+    needMint: 'Necesita Mint',
+    prizeFoil: 'FOIL PRIZE',
+    foil: 'FOIL',
+  },
+  ja: {
+    neynarScore: 'NEYNARスコア',
+    rarity: 'レアリティ:',
+    vibefidRank: 'VibeFIDランク:',
+    globalRank: 'グローバルランク:',
+    needMint: 'ミント必要',
+    prizeFoil: 'プライズフォイル',
+    foil: 'フォイル',
+  },
+  'zh-CN': {
+    neynarScore: 'NEYNAR分数',
+    rarity: '稀有度:',
+    vibefidRank: 'VibeFID排名:',
+    globalRank: '全球排名:',
+    needMint: '需要铸造',
+    prizeFoil: '奖品闪卡',
+    foil: '闪卡',
+  },
+  ru: {
+    neynarScore: 'NEYNAR СЧЁТ',
+    rarity: 'Редкость:',
+    vibefidRank: 'Ранг VibeFID:',
+    globalRank: 'Глобальный ранг:',
+    needMint: 'Нужен Минт',
+    prizeFoil: 'ПРИЗОВАЯ ФОЛЬГА',
+    foil: 'ФОЛЬГА',
+  },
+  hi: {
+    neynarScore: 'NEYNAR स्कोर',
+    rarity: 'दुर्लभता:',
+    vibefidRank: 'VibeFID रैंक:',
+    globalRank: 'वैश्विक रैंक:',
+    needMint: 'मिंट चाहिए',
+    prizeFoil: 'प्राइज़ फ़ॉइल',
+    foil: 'फ़ॉइल',
+  },
+  fr: {
+    neynarScore: 'SCORE NEYNAR',
+    rarity: 'Rareté:',
+    vibefidRank: 'Rang VibeFID:',
+    globalRank: 'Rang Global:',
+    needMint: 'Mint Requis',
+    prizeFoil: 'FOIL PRIX',
+    foil: 'FOIL',
+  },
+  id: {
+    neynarScore: 'SKOR NEYNAR',
+    rarity: 'Kelangkaan:',
+    vibefidRank: 'Peringkat VibeFID:',
+    globalRank: 'Peringkat Global:',
+    needMint: 'Perlu Mint',
+    prizeFoil: 'FOIL HADIAH',
+    foil: 'FOIL',
+  },
+};
+
 // Helper to estimate global rank if OpenRank fails
 function estimateGlobalRank(neynarScore: number): string {
   if (neynarScore >= 1.00) return 'Top 50';
@@ -31,6 +124,11 @@ export async function GET(
 ) {
   const { fid } = await params;
   const fidNum = parseInt(fid);
+
+  // Get language from query param
+  const url = new URL(request.url);
+  const lang = url.searchParams.get('lang') || 'en';
+  const t = gifTranslations[lang] || gifTranslations['en'];
 
   try {
     // Load font
@@ -348,7 +446,7 @@ export async function GET(
                             type: 'div',
                             props: {
                               style: { color: gold, fontSize: 36, fontWeight: 700 },
-                              children: 'NEYNAR SCORE',
+                              children: t.neynarScore,
                             },
                           },
                           {
@@ -374,7 +472,7 @@ export async function GET(
                             type: 'div',
                             props: {
                               style: { color: '#ef4444', fontSize: 18, marginTop: 4 },
-                              children: 'Need Mint',
+                              children: t.needMint,
                             },
                           } : null,
                           {
@@ -396,7 +494,7 @@ export async function GET(
                                   type: 'div',
                                   props: {
                                     style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
-                                    children: 'Rarity:',
+                                    children: t.rarity,
                                   },
                                 },
                                 {
@@ -419,7 +517,7 @@ export async function GET(
                                       backgroundColor: foil === 'Prize' ? '#fbbf2420' : '#a78bfa20',
                                       borderRadius: 4,
                                     },
-                                    children: foil === 'Prize' ? 'PRIZE FOIL' : 'FOIL',
+                                    children: foil === 'Prize' ? t.prizeFoil : t.foil,
                                   },
                                 } : null,
                               ],
@@ -438,7 +536,7 @@ export async function GET(
                                   type: 'div',
                                   props: {
                                     style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
-                                    children: 'VibeFID Rank:',
+                                    children: t.vibefidRank,
                                   },
                                 },
                                 {
@@ -464,7 +562,7 @@ export async function GET(
                                   type: 'div',
                                   props: {
                                     style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
-                                    children: 'Global Rank:',
+                                    children: t.globalRank,
                                   },
                                 },
                                 {

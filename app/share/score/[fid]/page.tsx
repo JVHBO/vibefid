@@ -3,10 +3,15 @@ import { redirect } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{ fid: string }>;
+  searchParams: Promise<{ lang?: string; v?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { fid } = await params;
+  const { lang = 'en', v = '2' } = await searchParams;
+
+  // Build GIF URL with language parameter
+  const gifUrl = `https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?lang=${lang}&v=${v}`;
 
   return {
     title: `VibeFID #${fid} - Neynar Score`,
@@ -16,18 +21,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: 'Check your Neynar Score and mint your VibeFID card!',
       siteName: 'VibeFID',
       type: 'website',
-      images: [`https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?v=2`],
+      images: [gifUrl],
     },
     twitter: {
       card: 'summary_large_image',
       title: `VibeFID #${fid} - Neynar Score`,
       description: 'Check your Neynar Score and mint your VibeFID card!',
-      images: [`https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?v=2`],
+      images: [gifUrl],
     },
     other: {
       'fc:frame': JSON.stringify({
         version: 'next',
-        imageUrl: `https://vibefid.xyz/share/score/${fid}/opengraph-image.gif?v=2`,
+        imageUrl: gifUrl,
         button: {
           title: 'Check Your Score',
           action: {
