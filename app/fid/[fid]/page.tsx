@@ -97,7 +97,7 @@ export default function FidCardPage() {
   const [backstory, setBackstory] = useState<any>(null);
 
   // Neynar score state
-  const [neynarScoreData, setNeynarScoreData] = useState<{ score: number; rarity: string; fid: number; username: string } | null>(null);
+  const [neynarScoreData, setNeynarScoreData] = useState<{ score: number; rarity: string; fid: number; username: string; displayName: string; pfpUrl: string } | null>(null);
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -349,6 +349,8 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
         rarity,
         fid: user.fid,
         username: user.username,
+        displayName: user.display_name,
+        pfpUrl: user.pfp_url,
       });
       setShowScoreModal(true);
       setLoading(false);
@@ -420,18 +422,24 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
       let newBounty;
 
       if (isRarityUpgrade()) {
-        // Full upgrade - changes rarity, power, and score
+        // Full upgrade - changes rarity, power, score, and profile
         result = await upgradeCardRarity({
           fid: card.fid,
           newNeynarScore: neynarScoreData.score,
           newRarity: neynarScoreData.rarity,
+          username: neynarScoreData.username,
+          displayName: neynarScoreData.displayName,
+          pfpUrl: neynarScoreData.pfpUrl,
         });
         newBounty = result.newPower * 10;
       } else {
-        // Just refresh score - keep rarity and power
+        // Just refresh score and profile - keep rarity and power
         result = await refreshCardScore({
           fid: card.fid,
           newNeynarScore: neynarScoreData.score,
+          username: neynarScoreData.username,
+          displayName: neynarScoreData.displayName,
+          pfpUrl: neynarScoreData.pfpUrl,
         });
         newBounty = card.power * 10; // Keep same bounty
       }
@@ -440,11 +448,11 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
       setEvolutionPhase('regenerating');
       setRegenerationStatus('Generating new card image...');
 
-      // Generate new card image with updated values
+      // Generate new card image with updated values (use new profile data)
       const cardImageDataUrl = await generateFarcasterCardImage({
-        pfpUrl: card.pfpUrl,
-        displayName: card.displayName,
-        username: card.username,
+        pfpUrl: neynarScoreData.pfpUrl,
+        displayName: neynarScoreData.displayName,
+        username: neynarScoreData.username,
         fid: card.fid,
         neynarScore: neynarScoreData.score, // Use NEW score for card image
         rarity: isRarityUpgrade() && 'newRarity' in result ? result.newRarity : card.rarity, // Use new or keep current
@@ -458,13 +466,13 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
 
       setRegenerationStatus('Generating video with foil effect...');
 
-      // Generate video with foil animation
+      // Generate video with foil animation (use new pfp)
       const videoBlob = await generateCardVideo({
         cardImageDataUrl,
         foilType: card.foil as 'None' | 'Standard' | 'Prize',
         duration: 3,
         fps: 30,
-        pfpUrl: card.pfpUrl,
+        pfpUrl: neynarScoreData.pfpUrl,
       });
 
       setRegenerationStatus('Uploading to IPFS...');

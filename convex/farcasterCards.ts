@@ -576,6 +576,10 @@ export const upgradeCardRarity = mutation({
     fid: v.number(),
     newNeynarScore: v.number(),
     newRarity: v.string(),
+    // Optional profile fields to update (never changes foil/wear)
+    username: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+    pfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Find the card
@@ -616,16 +620,22 @@ export const upgradeCardRarity = mutation({
     const foilMult = foilMultiplier[card.foil] || 1.0;
     const newPower = Math.round(basePower * wearMult * foilMult);
 
-    // Update rarity and power (power recalculated based on new rarity)
-    await ctx.db.patch(card._id, {
+    // Build update object - includes profile fields if provided
+    const updates: Record<string, any> = {
       rarity: args.newRarity,
-      neynarScore: args.newNeynarScore, // Update card score to current score at upgrade time
+      neynarScore: args.newNeynarScore,
       power: newPower,
-      // Mark when upgraded - save history for tracking
       upgradedAt: Date.now(),
       previousRarity: card.rarity,
-      previousNeynarScore: card.neynarScore, // Save the score before upgrade
-    });
+      previousNeynarScore: card.neynarScore,
+    };
+
+    // Add profile updates if provided (never touch foil/wear)
+    if (args.username) updates.username = args.username;
+    if (args.displayName) updates.displayName = args.displayName;
+    if (args.pfpUrl) updates.pfpUrl = args.pfpUrl;
+
+    await ctx.db.patch(card._id, updates);
 
     console.log(`✅ Card upgraded: FID ${args.fid} from ${card.rarity} to ${args.newRarity} (Power: ${card.power} → ${newPower})`);
 
@@ -644,11 +654,16 @@ export const upgradeCardRarity = mutation({
  * Refresh card score WITHOUT changing rarity
  * Used when neynarScore changed but rarity didn't improve
  * Only updates neynarScore - power and rarity stay the same
+ * Can also update profile (username, displayName, pfpUrl) but never foil/wear
  */
 export const refreshCardScore = mutation({
   args: {
     fid: v.number(),
     newNeynarScore: v.number(),
+    // Optional profile fields to update (never changes foil/wear)
+    username: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+    pfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const card = await ctx.db
@@ -660,11 +675,18 @@ export const refreshCardScore = mutation({
       throw new Error(`No card found for FID ${args.fid}`);
     }
 
-    // Only update neynarScore - keep rarity and power unchanged
-    await ctx.db.patch(card._id, {
+    // Build update object
+    const updates: Record<string, any> = {
       latestNeynarScore: args.newNeynarScore,
       latestScoreCheckedAt: Date.now(),
-    });
+    };
+
+    // Add profile updates if provided (never touch foil/wear)
+    if (args.username) updates.username = args.username;
+    if (args.displayName) updates.displayName = args.displayName;
+    if (args.pfpUrl) updates.pfpUrl = args.pfpUrl;
+
+    await ctx.db.patch(card._id, updates);
 
     console.log(`✅ Card refreshed: FID ${args.fid} score ${card.neynarScore} → ${args.newNeynarScore} (rarity unchanged: ${card.rarity})`);
 
