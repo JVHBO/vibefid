@@ -243,8 +243,7 @@ export default function FidCardPage() {
       // Build cast text
       const foilText = currentTraits?.foil !== 'None' ? ` | ${currentTraits?.foil} Foil` : '';
 
-      // Calculate score diff from mint
-      const currentScore = neynarScoreData?.score ?? card.neynarScore ?? 0;
+      // Calculate score diff from mint (currentScore already defined above)
       const mintScore = card.neynarScore ?? currentScore;
       const scoreDiff = currentScore - mintScore;
       const diffSign = scoreDiff >= 0 ? '+' : '';
