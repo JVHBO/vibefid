@@ -123,7 +123,6 @@ export async function POST(request: NextRequest) {
 
     let score = 0;
     let rarity = 'Common';
-    let followers = 0;
 
     if (userResponse.ok) {
       const userData = await userResponse.json();
@@ -131,7 +130,6 @@ export async function POST(request: NextRequest) {
       if (user) {
         score = user.experimental?.neynar_user_score || user.score || 0;
         targetDisplayName = user.display_name || targetUsername;
-        followers = user.follower_count || 0;
 
         if (score >= 0.99) rarity = 'Mythic';
         else if (score >= 0.90) rarity = 'Legendary';
@@ -161,17 +159,9 @@ export async function POST(request: NextRequest) {
         }
       } catch (e) {}
     }
-    // Fallback: estimate rank based on followers
-    if (!globalRank && followers > 0) {
-      let estimatedRank: number;
-      if (followers >= 100000) estimatedRank = Math.round(100 - (followers - 100000) / 5000);
-      else if (followers >= 50000) estimatedRank = Math.round(200 + (100000 - followers) / 500);
-      else if (followers >= 10000) estimatedRank = Math.round(1000 + (50000 - followers) / 40);
-      else if (followers >= 5000) estimatedRank = Math.round(2000 + (10000 - followers) / 10);
-      else if (followers >= 1000) estimatedRank = Math.round(5000 + (5000 - followers) / 0.8);
-      else if (followers >= 500) estimatedRank = Math.round(15000 + (1000 - followers) / 0.1);
-      else estimatedRank = Math.round(30000 + (500 - followers) * 100);
-      estimatedRank = Math.max(1, estimatedRank);
+    // Fallback: estimate rank based on Neynar Score
+    if (!globalRank && score > 0) {
+      const estimatedRank = Math.max(1, Math.round(800000 * (1 - score)));
       globalRank = `~#${estimatedRank.toLocaleString()}`;
       isEstimated = true;
     }
