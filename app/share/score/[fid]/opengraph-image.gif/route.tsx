@@ -297,7 +297,8 @@ export async function GET(
         const pfpResponse = await fetch(neynarData.pfpUrl);
         if (pfpResponse.ok) {
           const buffer = await pfpResponse.arrayBuffer();
-          pfpImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
+          const contentType = pfpResponse.headers.get('content-type') || 'image/jpeg';
+          pfpImageBase64 = `data:${contentType};base64,${Buffer.from(buffer).toString('base64')}`;
         }
       } catch (e) {
         console.log('Failed to fetch PFP');
