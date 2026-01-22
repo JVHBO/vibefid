@@ -234,6 +234,7 @@ export async function GET(
               username: user.username,
               score: neynarScore,
               rarity: neynarRarity,
+              pfpUrl: user.pfp_url,
             };
 
             // If OpenRank failed, use estimate based on score
@@ -286,6 +287,20 @@ export async function GET(
         }
       } catch (e) {
         console.log('Failed to fetch card image');
+      }
+    }
+
+    // Fetch PFP as fallback when no card
+    let pfpImageBase64 = '';
+    if (!hasMinted && neynarData?.pfpUrl) {
+      try {
+        const pfpResponse = await fetch(neynarData.pfpUrl);
+        if (pfpResponse.ok) {
+          const buffer = await pfpResponse.arrayBuffer();
+          pfpImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
+        }
+      } catch (e) {
+        console.log('Failed to fetch PFP');
       }
     }
 
@@ -449,6 +464,50 @@ export async function GET(
                                     style: {
                                       objectFit: 'cover',
                                     },
+                                  },
+                                },
+                              ] : showFront && absScale > 0.15 && pfpImageBase64 ? [
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: {
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '100%',
+                                      height: '100%',
+                                      gap: 12,
+                                    },
+                                    children: [
+                                      {
+                                        type: 'img',
+                                        props: {
+                                          src: pfpImageBase64,
+                                          width: Math.min(Math.max(Math.floor(cardW * 0.6), 80), 180),
+                                          height: Math.min(Math.max(Math.floor(cardW * 0.6), 80), 180),
+                                          style: {
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            border: `3px solid ${borderColor}`,
+                                          },
+                                        },
+                                      },
+                                      absScale > 0.5 ? {
+                                        type: 'div',
+                                        props: {
+                                          style: {
+                                            color: 'white',
+                                            fontSize: 16,
+                                            fontWeight: 600,
+                                          },
+                                          children: `@${username}`,
+                                        },
+                                      } : {
+                                        type: 'div',
+                                        props: { style: { display: 'none' } },
+                                      },
+                                    ],
                                   },
                                 },
                               ] : showFront && absScale > 0.3 ? [
@@ -617,6 +676,29 @@ export async function GET(
                                     },
                                     children: `FID #${fid}`,
                                   },
+                                },
+                                // Need Mint badge
+                                !hasMinted ? {
+                                  type: 'div',
+                                  props: {
+                                    style: {
+                                      marginTop: 12,
+                                      color: '#ef4444',
+                                      fontSize: 16,
+                                      fontWeight: 700,
+                                      padding: '8px 16px',
+                                      backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                      border: '2px solid #ef4444',
+                                      borderRadius: 8,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    },
+                                    children: t.needMint,
+                                  },
+                                } : {
+                                  type: 'div',
+                                  props: { style: { display: 'none' } },
                                 },
                               ],
                             },
