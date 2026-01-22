@@ -148,7 +148,8 @@ export async function POST(request: NextRequest) {
       } catch (e) {}
     }
 
-    let globalRank = 'Not ranked';
+    let globalRank = '';
+    let isEstimated = false;
     if (openRankResponse?.ok) {
       try {
         const openRankData = await openRankResponse.json();
@@ -157,6 +158,12 @@ export async function POST(request: NextRequest) {
           globalRank = `#${results[0].rank.toLocaleString()}`;
         }
       } catch (e) {}
+    }
+    // Fallback: estimate rank based on Neynar Score (~800k active users)
+    if (!globalRank && score > 0) {
+      const estimatedRank = Math.round(800000 * (1 - score));
+      globalRank = `~#${estimatedRank.toLocaleString()}`;
+      isEstimated = true;
     }
 
     // Build the score text with all info
@@ -169,7 +176,9 @@ export async function POST(request: NextRequest) {
     if (vibefidRank) {
       scoreText += `VibeFID Rank: ${vibefidRank}\n`;
     }
-    scoreText += `Global Rank: ${globalRank}\n`;
+    if (globalRank) {
+      scoreText += `Global Rank: ${globalRank}${isEstimated ? ' (est.)' : ''}\n`;
+    }
     scoreText += `\nGet your playable VibeFID card:`;
 
     // Share page URL (the actual page with OG image)
