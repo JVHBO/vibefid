@@ -7,14 +7,19 @@ const BOT_SIGNER_UUID = process.env.BOT_SIGNER_UUID!;
 // Channel to post quotes
 const CHANNEL_ID = 'vibe-most-wanted';
 
-// Keywords that trigger the bot
+// Keywords that trigger the bot (includes "neymar" typo)
 const TRIGGER_KEYWORDS = [
   'what is my neynar score',
   'what\'s my neynar score',
   'whats my neynar score',
   'my neynar score',
-  'check my score',
   'neynar score',
+  'what is my neymar score',
+  'what\'s my neymar score',
+  'whats my neymar score',
+  'my neymar score',
+  'neymar score',
+  'check my score',
   'my score',
   'score?',
 ];
