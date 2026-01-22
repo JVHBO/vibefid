@@ -19,8 +19,6 @@ const gifTranslations: Record<string, {
   vibefidRank: string;
   globalRank: string;
   needMint: string;
-  prizeFoil: string;
-  foil: string;
 }> = {
   en: {
     neynarScore: 'NEYNAR SCORE',
@@ -28,8 +26,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'VibeFID Rank:',
     globalRank: 'Global Rank:',
     needMint: 'Need Mint',
-    prizeFoil: 'PRIZE FOIL',
-    foil: 'FOIL',
   },
   'pt-BR': {
     neynarScore: 'NEYNAR SCORE',
@@ -37,8 +33,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'Rank VibeFID:',
     globalRank: 'Rank Global:',
     needMint: 'Precisa Mintar',
-    prizeFoil: 'FOIL PRIZE',
-    foil: 'FOIL',
   },
   es: {
     neynarScore: 'NEYNAR SCORE',
@@ -46,8 +40,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'Rank VibeFID:',
     globalRank: 'Rank Global:',
     needMint: 'Necesita Mint',
-    prizeFoil: 'FOIL PRIZE',
-    foil: 'FOIL',
   },
   ja: {
     neynarScore: 'NEYNARスコア',
@@ -55,8 +47,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'VibeFIDランク:',
     globalRank: 'グローバルランク:',
     needMint: 'ミント必要',
-    prizeFoil: 'プライズフォイル',
-    foil: 'フォイル',
   },
   'zh-CN': {
     neynarScore: 'NEYNAR分数',
@@ -64,8 +54,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'VibeFID排名:',
     globalRank: '全球排名:',
     needMint: '需要铸造',
-    prizeFoil: '奖品闪卡',
-    foil: '闪卡',
   },
   ru: {
     neynarScore: 'NEYNAR СЧЁТ',
@@ -73,8 +61,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'Ранг VibeFID:',
     globalRank: 'Глобальный ранг:',
     needMint: 'Нужен Минт',
-    prizeFoil: 'ПРИЗОВАЯ ФОЛЬГА',
-    foil: 'ФОЛЬГА',
   },
   hi: {
     neynarScore: 'NEYNAR स्कोर',
@@ -82,8 +68,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'VibeFID रैंक:',
     globalRank: 'वैश्विक रैंक:',
     needMint: 'मिंट चाहिए',
-    prizeFoil: 'प्राइज़ फ़ॉइल',
-    foil: 'फ़ॉइल',
   },
   fr: {
     neynarScore: 'SCORE NEYNAR',
@@ -91,8 +75,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'Rang VibeFID:',
     globalRank: 'Rang Global:',
     needMint: 'Mint Requis',
-    prizeFoil: 'FOIL PRIX',
-    foil: 'FOIL',
   },
   id: {
     neynarScore: 'SKOR NEYNAR',
@@ -100,8 +82,6 @@ const gifTranslations: Record<string, {
     vibefidRank: 'Peringkat VibeFID:',
     globalRank: 'Peringkat Global:',
     needMint: 'Perlu Mint',
-    prizeFoil: 'FOIL HADIAH',
-    foil: 'FOIL',
   },
 };
 
@@ -257,7 +237,6 @@ export async function GET(
     const score = neynarData?.score ?? cardData?.neynarScore ?? 0;
     const rarity = neynarData?.rarity || cardData?.rarity || 'Common';
     const power = cardData?.power ?? 0;
-    const foil = cardData?.foil || 'None';
 
     // Fallback for global rank estimate if still empty
     if (!globalRankDisplay) {
@@ -546,31 +525,7 @@ export async function GET(
                                       marginTop: 16,
                                       alignItems: 'center',
                                     },
-                                    children: [
-                                      {
-                                        type: 'div',
-                                        props: {
-                                          style: { color: borderColor, fontSize: 24, fontWeight: 700, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' },
-                                          children: rarity,
-                                        },
-                                      },
-                                      // Show foil if not None
-                                      foil !== 'None' ? {
-                                        type: 'div',
-                                        props: {
-                                          style: {
-                                            color: foil === 'Prize' ? '#fbbf24' : '#a78bfa',
-                                            fontSize: 16,
-                                            fontWeight: 700,
-                                            marginLeft: 16,
-                                            padding: '4px 10px',
-                                            backgroundColor: foil === 'Prize' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(167, 139, 250, 0.3)',
-                                            borderRadius: 4,
-                                          },
-                                          children: foil === 'Prize' ? 'PRIZE FOIL' : 'FOIL',
-                                        },
-                                      } : null,
-                                    ],
+                                    children: rarity,
                                   },
                                 },
                                 {

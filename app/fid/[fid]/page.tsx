@@ -217,8 +217,10 @@ export default function FidCardPage() {
         });
         if (openRankResponse.ok) {
           const openRankData = await openRankResponse.json();
-          if (Array.isArray(openRankData) && openRankData.length > 0 && openRankData[0].rank) {
-            globalRankText = `🌍 Global Rank: #${openRankData[0].rank.toLocaleString()}`;
+          // Response format: {result: [{fid, username, rank, score, percentile}]}
+          const results = openRankData.result || openRankData;
+          if (Array.isArray(results) && results.length > 0 && results[0].rank) {
+            globalRankText = `🌍 Global Rank: #${results[0].rank.toLocaleString()}`;
           }
         }
       } catch (e) {
