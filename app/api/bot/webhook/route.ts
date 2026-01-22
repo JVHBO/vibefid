@@ -219,13 +219,8 @@ export async function POST(request: NextRequest) {
 
 // Health check endpoint
 export async function GET(request: NextRequest) {
-  // TEMP DEBUG - remove after fixing
-  const signerDebug = BOT_SIGNER_UUID ?
-    `len=${BOT_SIGNER_UUID.length} first=${BOT_SIGNER_UUID.charCodeAt(0)} last=${BOT_SIGNER_UUID.charCodeAt(BOT_SIGNER_UUID.length-1)}` :
-    'EMPTY';
   return NextResponse.json({
     status: 'VibeFID Bot is running',
     configured: !!BOT_SIGNER_UUID && !!NEYNAR_API_KEY,
-    signerDebug,
   });
 }
