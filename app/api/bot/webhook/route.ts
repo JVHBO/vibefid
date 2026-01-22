@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       } catch (e) {}
     }
 
-    let globalRank = '';
+    let globalRank = 'Not ranked';
     if (openRankResponse?.ok) {
       try {
         const openRankData = await openRankResponse.json();
@@ -169,9 +169,7 @@ export async function POST(request: NextRequest) {
     if (vibefidRank) {
       scoreText += `VibeFID Rank: ${vibefidRank}\n`;
     }
-    if (globalRank) {
-      scoreText += `Global Rank: ${globalRank}\n`;
-    }
+    scoreText += `Global Rank: ${globalRank}\n`;
     scoreText += `\nGet your playable VibeFID card:`;
 
     // Share page URL (the actual page with OG image)
