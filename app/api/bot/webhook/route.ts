@@ -97,11 +97,29 @@ export async function POST(request: NextRequest) {
 
     console.log(`Bot triggered by @${authorUsername} for @${targetUsername} (FID: ${targetFid})`);
 
-    // Fetch the target user's Neynar score
-    const userResponse = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/bulk?fids=${targetFid}`,
-      { headers: { api_key: NEYNAR_API_KEY } }
-    );
+    // Fetch all data in parallel for speed
+    const [userResponse, rankResponse, openRankResponse] = await Promise.all([
+      // Neynar score
+      fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${targetFid}`, {
+        headers: { api_key: NEYNAR_API_KEY }
+      }),
+      // VibeFID rank from Convex
+      fetch("https://scintillating-mandrill-101.convex.cloud/api/query", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: 'farcasterCards:getVibeFIDRank',
+          args: { fid: targetFid },
+          format: 'json',
+        }),
+      }).catch(() => null),
+      // OpenRank global rank
+      fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([targetFid]),
+      }).catch(() => null),
+    ]);
 
     let score = 0;
     let rarity = 'Common';
@@ -111,10 +129,8 @@ export async function POST(request: NextRequest) {
       const user = userData.users?.[0];
       if (user) {
         score = user.experimental?.neynar_user_score || user.score || 0;
-        // Update display name from fresh data
         targetDisplayName = user.display_name || targetUsername;
 
-        // Determine rarity
         if (score >= 0.99) rarity = 'Mythic';
         else if (score >= 0.90) rarity = 'Legendary';
         else if (score >= 0.79) rarity = 'Epic';
@@ -122,46 +138,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch VibeFID rank from Convex
     let vibefidRank = '';
-    try {
-      const convexUrl = "https://scintillating-mandrill-101.convex.cloud";
-      const rankResponse = await fetch(`${convexUrl}/api/query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: 'farcasterCards:getVibeFIDRank',
-          args: { fid: targetFid },
-          format: 'json',
-        }),
-      });
-      if (rankResponse.ok) {
+    if (rankResponse?.ok) {
+      try {
         const rankData = await rankResponse.json();
         if (rankData.value?.rank) {
           vibefidRank = `#${rankData.value.rank.toLocaleString()}`;
         }
-      }
-    } catch (e) {
-      console.log('Failed to fetch VibeFID rank');
+      } catch (e) {}
     }
 
-    // Fetch Global rank from OpenRank
     let globalRank = '';
-    try {
-      const openRankResponse = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([targetFid]),
-      });
-      if (openRankResponse.ok) {
+    if (openRankResponse?.ok) {
+      try {
         const openRankData = await openRankResponse.json();
         const results = openRankData.result || openRankData;
         if (Array.isArray(results) && results.length > 0 && results[0].rank) {
           globalRank = `#${results[0].rank.toLocaleString()}`;
         }
-      }
-    } catch (e) {
-      console.log('Failed to fetch OpenRank');
+      } catch (e) {}
     }
 
     // Build the score text with all info
