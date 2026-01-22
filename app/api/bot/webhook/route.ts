@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Check if there's another @mention (not @vibefid) to look up their score
     const mentionRegex = /@(\w+(?:\.\w+)*)/g;
     const mentions = originalText.match(mentionRegex) || [];
-    const otherMentions = mentions.filter(m =>
+    const otherMentions = mentions.filter((m: string) =>
       m.toLowerCase() !== '@vibefid' &&
       m.toLowerCase() !== '@vibefid.base.eth'
     );
@@ -177,15 +177,15 @@ export async function POST(request: NextRequest) {
     if (globalRank) {
       scoreText += `Global Rank: ${globalRank}\n`;
     }
-    scoreText += `\nMint your VibeFID card:`;
+    scoreText += `\nGet your playable VibeFID card:`;
 
     // Share page URL (the actual page with OG image)
     const shareUrl = `https://vibefid.xyz/share/score/${targetFid}`;
 
-    // Original cast URL for quote (warpcast format)
+    // Quote cast URL (warpcast format to embed the original cast)
     const quoteCastUrl = `https://warpcast.com/${authorUsername}/${castHash}`;
 
-    // Post quote in channel using Neynar
+    // Post quote in channel - embeds the original cast
     const quoteResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
       method: 'POST',
       headers: {
@@ -197,8 +197,8 @@ export async function POST(request: NextRequest) {
         text: scoreText,
         channel_id: CHANNEL_ID,
         embeds: [
-          { url: shareUrl },      // Share page link with OG image
-          { url: quoteCastUrl }   // Quote the original cast via URL
+          { url: shareUrl },       // Share page link with OG image
+          { url: quoteCastUrl }    // Embed/quote the original cast
         ],
       }),
     });
