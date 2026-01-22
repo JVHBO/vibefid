@@ -6,6 +6,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 30;
 
 let fontData: ArrayBuffer | null = null;
+let backgroundImageBase64: string | null = null;
 
 // Farcaster Frames v2 size (3:2 aspect ratio)
 const width = 1200;
@@ -137,6 +138,19 @@ export async function GET(
         'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff'
       );
       fontData = await fontResponse.arrayBuffer();
+    }
+
+    // Load background image
+    if (!backgroundImageBase64) {
+      try {
+        const bgResponse = await fetch('https://vibefid.xyz/images/gif-background.png');
+        if (bgResponse.ok) {
+          const buffer = await bgResponse.arrayBuffer();
+          backgroundImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
+        }
+      } catch (e) {
+        console.log('Failed to load background image');
+      }
     }
 
     const convexUrl = "https://agile-orca-761.convex.cloud";
@@ -302,11 +316,39 @@ export async function GET(
               display: 'flex',
               width: '100%',
               height: '100%',
-              background: 'linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 50%, #1a1a2e 100%)',
               position: 'relative',
               fontFamily: 'Inter',
             },
             children: [
+              // Background image
+              backgroundImageBase64 ? {
+                type: 'img',
+                props: {
+                  src: backgroundImageBase64,
+                  width: width,
+                  height: height,
+                  style: {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  },
+                },
+              } : {
+                type: 'div',
+                props: {
+                  style: {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 50%, #1a1a2e 100%)',
+                  },
+                },
+              },
               // Outer gold border
               {
                 type: 'div',
