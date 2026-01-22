@@ -147,7 +147,7 @@ export async function GET(
       }
     }
 
-    const convexUrl = "https://agile-orca-761.convex.cloud";
+    const convexUrl = "https://scintillating-mandrill-101.convex.cloud";
     const neynarApiKey = process.env.NEYNAR_API_KEY;
 
     // Fetch card data from Convex
