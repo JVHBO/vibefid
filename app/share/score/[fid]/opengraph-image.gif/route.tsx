@@ -11,11 +11,26 @@ let fontData: ArrayBuffer | null = null;
 const width = 1200;
 const height = 800;
 
+// Helper to estimate global rank if OpenRank fails
+function estimateGlobalRank(neynarScore: number): string {
+  if (neynarScore >= 1.00) return 'Top 50';
+  if (neynarScore >= 0.99) return 'Top 200';
+  if (neynarScore >= 0.95) return 'Top 1k';
+  if (neynarScore >= 0.90) return 'Top 2.5k';
+  if (neynarScore >= 0.85) return 'Top 5k';
+  if (neynarScore >= 0.80) return 'Top 10k';
+  if (neynarScore >= 0.70) return 'Top 25k';
+  if (neynarScore >= 0.60) return 'Top 50k';
+  if (neynarScore >= 0.50) return 'Top 100k';
+  return 'Top 50%';
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ fid: string }> }
 ) {
   const { fid } = await params;
+  const fidNum = parseInt(fid);
 
   try {
     // Load font
@@ -36,7 +51,7 @@ export async function GET(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         path: 'farcasterCards:getFarcasterCardByFid',
-        args: { fid: parseInt(fid) },
+        args: { fid: fidNum },
         format: 'json',
       }),
     });
@@ -44,6 +59,48 @@ export async function GET(
     if (cardResponse.ok) {
       const data = await cardResponse.json();
       cardData = data.value;
+    }
+
+    // Fetch VibeFID rank from Convex
+    let vibefidRank: number | null = null;
+    let totalCards: number = 0;
+    try {
+      const rankResponse = await fetch(`${convexUrl}/api/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: 'farcasterCards:getVibeFIDRank',
+          args: { fid: fidNum },
+          format: 'json',
+        }),
+      });
+      if (rankResponse.ok) {
+        const rankData = await rankResponse.json();
+        vibefidRank = rankData.value?.rank;
+        totalCards = rankData.value?.totalCards || 0;
+      }
+    } catch (e) {
+      console.log('VibeFID rank fetch failed');
+    }
+
+    // Fetch global rank from OpenRank API
+    let globalRank: number | null = null;
+    let globalRankDisplay: string = '';
+    try {
+      const openRankResponse = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([fidNum]),
+      });
+      if (openRankResponse.ok) {
+        const openRankData = await openRankResponse.json();
+        if (Array.isArray(openRankData) && openRankData.length > 0) {
+          globalRank = openRankData[0].rank;
+          globalRankDisplay = `#${globalRank?.toLocaleString()}`;
+        }
+      }
+    } catch (e) {
+      console.log('OpenRank API fetch failed');
     }
 
     // Always fetch current score from Neynar API
@@ -70,6 +127,11 @@ export async function GET(
               score: neynarScore,
               rarity: neynarRarity,
             };
+
+            // If OpenRank failed, use estimate based on score
+            if (!globalRank) {
+              globalRankDisplay = estimateGlobalRank(neynarScore);
+            }
           }
         }
       } catch (e) {
@@ -83,6 +145,11 @@ export async function GET(
     const score = neynarData?.score ?? cardData?.neynarScore ?? 0;
     const rarity = neynarData?.rarity || cardData?.rarity || 'Common';
     const power = cardData?.power ?? 0;
+
+    // Fallback for global rank estimate if still empty
+    if (!globalRankDisplay) {
+      globalRankDisplay = estimateGlobalRank(score);
+    }
 
     const rarityColors: Record<string, string> = {
       Common: '#9ca3af',
@@ -321,46 +388,73 @@ export async function GET(
                             props: {
                               style: {
                                 display: 'flex',
-                                marginTop: 30,
+                                marginTop: 20,
                               },
                               children: [
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: '#c9a961', fontSize: 20, marginRight: 12 },
+                                    style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
                                     children: 'Rarity:',
                                   },
                                 },
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: borderColor, fontSize: 24, fontWeight: 700 },
+                                    style: { color: borderColor, fontSize: 20, fontWeight: 700 },
                                     children: rarity,
                                   },
                                 },
                               ],
                             },
                           },
-                          {
+                          // VibeFID Rank row
+                          hasMinted && vibefidRank ? {
                             type: 'div',
                             props: {
                               style: {
                                 display: 'flex',
-                                marginTop: 16,
+                                marginTop: 12,
                               },
                               children: [
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: '#c9a961', fontSize: 20, marginRight: 12 },
-                                    children: 'Power:',
+                                    style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
+                                    children: 'VibeFID Rank:',
                                   },
                                 },
                                 {
                                   type: 'div',
                                   props: {
-                                    style: { color: '#fbbf24', fontSize: 24, fontWeight: 700 },
-                                    children: `${power}`,
+                                    style: { color: '#22c55e', fontSize: 20, fontWeight: 700 },
+                                    children: `#${vibefidRank} / ${totalCards}`,
+                                  },
+                                },
+                              ],
+                            },
+                          } : null,
+                          // Global Rank row
+                          {
+                            type: 'div',
+                            props: {
+                              style: {
+                                display: 'flex',
+                                marginTop: 12,
+                              },
+                              children: [
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: { color: '#c9a961', fontSize: 18, marginRight: 12 },
+                                    children: 'Global Rank:',
+                                  },
+                                },
+                                {
+                                  type: 'div',
+                                  props: {
+                                    style: { color: '#60a5fa', fontSize: 20, fontWeight: 700 },
+                                    children: globalRankDisplay,
                                   },
                                 },
                               ],
@@ -370,10 +464,10 @@ export async function GET(
                             type: 'div',
                             props: {
                               style: {
-                                marginTop: 35,
+                                marginTop: 25,
                                 color: gold,
-                                fontSize: 20,
-                                padding: '10px 24px',
+                                fontSize: 18,
+                                padding: '8px 20px',
                                 border: `2px solid ${gold}`,
                                 borderRadius: 8,
                               },

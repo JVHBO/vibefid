@@ -600,3 +600,97 @@ export async function checkCastInteractions(
     return { liked: false, recasted: false, replied: false };
   }
 }
+
+// ============================================================================
+// OPENRANK GLOBAL RANKING
+// ============================================================================
+
+// Cache for OpenRank results (15 minutes TTL)
+const openRankCache = new Map<number, CacheEntry<{ rank: number; score: number }>>();
+const OPENRANK_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Get global rank from OpenRank API
+ * Endpoint: POST https://graph.cast.k3l.io/scores/global/engagement/fids
+ * Returns rank position among all Farcaster users
+ */
+export async function getGlobalRankFromOpenRank(fid: number): Promise<{
+  rank: number | null;
+  score: number | null;
+  source: 'openrank' | 'estimate';
+}> {
+  // Check cache first
+  const cached = getFromCache(openRankCache, fid);
+  if (cached) {
+    return { rank: cached.rank, score: cached.score, source: 'openrank' };
+  }
+
+  try {
+    const response = await fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([fid]),
+    });
+
+    if (!response.ok) {
+      console.error(`[OpenRank] API error: ${response.status}`);
+      return { rank: null, score: null, source: 'estimate' };
+    }
+
+    const data = await response.json();
+
+    // Response format: [{ fid, rank, score }]
+    if (Array.isArray(data) && data.length > 0) {
+      const result = data[0];
+      const rankData = { rank: result.rank, score: result.score };
+      setInCache(openRankCache, fid, rankData, OPENRANK_CACHE_TTL);
+      return { rank: result.rank, score: result.score, source: 'openrank' };
+    }
+
+    return { rank: null, score: null, source: 'estimate' };
+  } catch (error) {
+    console.error('[OpenRank] Error fetching global rank:', error);
+    return { rank: null, score: null, source: 'estimate' };
+  }
+}
+
+/**
+ * Estimate global rank based on Neynar score
+ * These are rough estimates based on typical score distributions
+ */
+export function estimateGlobalRankFromScore(neynarScore: number): {
+  estimatedRank: string;
+  percentile: string;
+} {
+  // Estimates based on Neynar score distribution
+  // ~800k+ Farcaster users, score distribution is roughly:
+  // 1.00+: Top ~50 users
+  // 0.99+: Top ~200 users
+  // 0.95+: Top ~1,000 users
+  // 0.90+: Top ~2,500 users
+  // 0.80+: Top ~10,000 users
+  // 0.70+: Top ~25,000 users
+  // 0.50+: Top ~100,000 users
+
+  if (neynarScore >= 1.00) {
+    return { estimatedRank: 'Top 50', percentile: 'Top 0.01%' };
+  } else if (neynarScore >= 0.99) {
+    return { estimatedRank: 'Top 200', percentile: 'Top 0.03%' };
+  } else if (neynarScore >= 0.95) {
+    return { estimatedRank: 'Top 1k', percentile: 'Top 0.1%' };
+  } else if (neynarScore >= 0.90) {
+    return { estimatedRank: 'Top 2.5k', percentile: 'Top 0.3%' };
+  } else if (neynarScore >= 0.85) {
+    return { estimatedRank: 'Top 5k', percentile: 'Top 0.6%' };
+  } else if (neynarScore >= 0.80) {
+    return { estimatedRank: 'Top 10k', percentile: 'Top 1.3%' };
+  } else if (neynarScore >= 0.70) {
+    return { estimatedRank: 'Top 25k', percentile: 'Top 3%' };
+  } else if (neynarScore >= 0.60) {
+    return { estimatedRank: 'Top 50k', percentile: 'Top 6%' };
+  } else if (neynarScore >= 0.50) {
+    return { estimatedRank: 'Top 100k', percentile: 'Top 12%' };
+  } else {
+    return { estimatedRank: 'Top 50%', percentile: 'Top 50%' };
+  }
+}

@@ -1054,3 +1054,48 @@ export const fixCardFoilAndPower = mutation({
     };
   },
 });
+
+/**
+ * Get VibeFID rank for a card by Neynar score
+ * Returns the position among all cards, ordered by latestNeynarScore descending
+ */
+export const getVibeFIDRank = query({
+  args: {
+    fid: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get the target card
+    const targetCard = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+
+    if (!targetCard) {
+      return { rank: null, totalCards: 0, score: null };
+    }
+
+    const targetScore = targetCard.latestNeynarScore ?? targetCard.neynarScore;
+
+    // Count cards with higher score
+    const allCards = await ctx.db
+      .query("farcasterCards")
+      .collect();
+
+    // Sort by latestNeynarScore descending
+    const sortedCards = allCards
+      .map(c => ({
+        fid: c.fid,
+        score: c.latestNeynarScore ?? c.neynarScore,
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    // Find position (1-indexed)
+    const rank = sortedCards.findIndex(c => c.fid === args.fid) + 1;
+
+    return {
+      rank,
+      totalCards: sortedCards.length,
+      score: targetScore,
+    };
+  },
+});
