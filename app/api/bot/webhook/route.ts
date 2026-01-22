@@ -222,7 +222,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: 'VibeFID Bot is running',
     channel: CHANNEL_ID,
-    triggers: TRIGGER_KEYWORDS,
+    signerSet: !!BOT_SIGNER_UUID,
+    signerLen: BOT_SIGNER_UUID?.length || 0,
+    signerStart: BOT_SIGNER_UUID?.substring(0, 12) || 'NONE',
   });
 }
-// Bot v2
