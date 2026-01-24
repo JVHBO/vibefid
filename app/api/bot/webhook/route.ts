@@ -4,21 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY!;
 const BOT_SIGNER_UUID = process.env.BOT_SIGNER_UUID!;
 
-// Keywords that trigger the bot (includes "neymar" typo)
+// Keywords that trigger the bot
 const TRIGGER_KEYWORDS = [
-  'what is my neynar score',
-  'what\'s my neynar score',
-  'whats my neynar score',
-  'my neynar score',
   'neynar score',
-  'what is my neymar score',
-  'what\'s my neymar score',
-  'whats my neymar score',
-  'my neymar score',
-  'neymar score',
-  'check my score',
+  'neymar score',  // typo variant
   'my score',
+  'check score',
   'score?',
+  'what is',       // "what is @user score" pattern
+  'whats',         // "whats @user score" pattern
+  'score @',       // "score @user" pattern
 ];
 
 export async function POST(request: NextRequest) {
