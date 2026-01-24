@@ -269,7 +269,7 @@ FID #${card.fid}
 
 ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
 
-      // Share URL - uses animated GIF
+      // Share URL - uses static PNG image
       const shareUrl = `https://vibefid.xyz/share/score/${card.fid}?v=${Date.now()}`;
 
       await shareToFarcaster(castText, shareUrl);
