@@ -886,6 +886,7 @@ export default defineSchema({
     .index("by_address_equipped", ["address", "equipped"])
     .index("by_rarity", ["rarity"])
     .index("by_score", ["neynarScore"])
+    .index("by_latest_score", ["latestNeynarScore"]) // 🚀 BANDWIDTH FIX: For VibeFID rank
     .index("by_contract", ["contractAddress"])
     .index("by_score_diff", ["scoreDiff"]) // 🚀 BANDWIDTH FIX: For Most Wanted ranking
     .searchIndex("search_username", {

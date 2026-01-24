@@ -747,7 +747,7 @@ export const getRecentVibeMails = query({
   },
 });
 
-// Get sent messages by a user (voterFid or senderFid for backwards compatibility)
+// 🚀 BANDWIDTH FIX: Get sent messages with limited fetch
 export const getSentMessages = query({
   args: {
     voterFid: v.optional(v.number()),
@@ -762,11 +762,13 @@ export const getSentMessages = query({
       return [];
     }
 
-    // Get all votes sent by this user that have messages
+    // 🚀 BANDWIDTH FIX: Take limited sample instead of collecting all
+    // Take 3x limit to account for filtering
     const allVotes = await ctx.db
       .query("cardVotes")
       .withIndex("by_voter_date", (q) => q.eq("voterFid", fid))
-      .collect();
+      .order("desc")
+      .take(limit * 3);
 
     // Filter to only votes with messages and sort by creation time
     const messages = allVotes
@@ -1097,22 +1099,23 @@ export const clearAllVibeMails = mutation({
   },
 });
 
-// Get a random card (excluding sender)
+// 🚀 BANDWIDTH FIX: Get a random card from a sample
 export const getRandomCard = query({
   args: { excludeFid: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const allCards = await ctx.db
+    // Take a sample instead of all cards
+    const sample = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .take(100);
 
     // Filter out the sender's card
     const eligibleCards = args.excludeFid
-      ? allCards.filter(c => c.fid !== args.excludeFid)
-      : allCards;
+      ? sample.filter(c => c.fid !== args.excludeFid)
+      : sample;
 
     if (eligibleCards.length === 0) return null;
 
-    // Pick a random card
+    // Pick a random card from the sample
     const randomIndex = Math.floor(Math.random() * eligibleCards.length);
     const card = eligibleCards[randomIndex];
 
@@ -1125,21 +1128,23 @@ export const getRandomCard = query({
   },
 });
 
-// Get multiple random cards for broadcast
+// 🚀 BANDWIDTH FIX: Get multiple random cards from a sample
 export const getRandomCards = query({
   args: {
     count: v.number(),
     excludeFid: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const allCards = await ctx.db
+    // Take a larger sample to have enough variety
+    const sampleSize = Math.max(100, args.count * 3);
+    const sample = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .take(sampleSize);
 
     // Filter out the sender's card
     const eligibleCards = args.excludeFid
-      ? allCards.filter(c => c.fid !== args.excludeFid)
-      : allCards;
+      ? sample.filter(c => c.fid !== args.excludeFid)
+      : sample;
 
     if (eligibleCards.length === 0) return [];
 
@@ -1155,22 +1160,24 @@ export const getRandomCards = query({
   },
 });
 
-// Get a random card (mutation version for non-cached results)
+// 🚀 BANDWIDTH FIX: Get a random card without loading all cards
 export const getRandomCardMutation = mutation({
   args: { excludeFid: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const allCards = await ctx.db
+    // Take a sample of 100 cards (much lighter than all cards)
+    const sampleSize = 100;
+    const sample = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .take(sampleSize);
 
     // Filter out the sender's card
     const eligibleCards = args.excludeFid
-      ? allCards.filter(c => c.fid !== args.excludeFid)
-      : allCards;
+      ? sample.filter(c => c.fid !== args.excludeFid)
+      : sample;
 
     if (eligibleCards.length === 0) return null;
 
-    // Pick a random card
+    // Pick a random card from the sample
     const randomIndex = Math.floor(Math.random() * eligibleCards.length);
     const card = eligibleCards[randomIndex];
 
@@ -1184,21 +1191,23 @@ export const getRandomCardMutation = mutation({
   },
 });
 
-// Get multiple random cards (mutation version for non-cached results)
+// 🚀 BANDWIDTH FIX: Get multiple random cards from a sample
 export const getRandomCardsMutation = mutation({
   args: {
     count: v.number(),
     excludeFid: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const allCards = await ctx.db
+    // Take a sample instead of all cards
+    const sampleSize = Math.max(100, args.count * 3);
+    const sample = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .take(sampleSize);
 
     // Filter out the sender's card
     const eligibleCards = args.excludeFid
-      ? allCards.filter(c => c.fid !== args.excludeFid)
-      : allCards;
+      ? sample.filter(c => c.fid !== args.excludeFid)
+      : sample;
 
     if (eligibleCards.length === 0) return [];
 

@@ -1112,6 +1112,7 @@ export const fixCardFoilAndPower = mutation({
  * Get VibeFID rank for a card by Neynar score
  * Returns the position among all cards, ordered by latestNeynarScore descending
  */
+// 🚀 BANDWIDTH FIX: Optimized version - only counts cards with HIGHER score
 export const getVibeFIDRank = query({
   args: {
     fid: v.number(),
@@ -1129,25 +1130,36 @@ export const getVibeFIDRank = query({
 
     const targetScore = targetCard.latestNeynarScore ?? targetCard.neynarScore;
 
-    // Count cards with higher score
-    const allCards = await ctx.db
+    // 🚀 BANDWIDTH FIX: Count cards with higher score using ordered index
+    // Since we order by score DESC, we stop as soon as we hit equal/lower scores
+    let cardsWithHigherScore = 0;
+
+    const cardsAbove = await ctx.db
       .query("farcasterCards")
-      .collect();
+      .withIndex("by_latest_score")
+      .order("desc")
+      .take(10000); // Safety limit
 
-    // Sort by latestNeynarScore descending
-    const sortedCards = allCards
-      .map(c => ({
-        fid: c.fid,
-        score: c.latestNeynarScore ?? c.neynarScore,
-      }))
-      .sort((a, b) => b.score - a.score);
+    for (const card of cardsAbove) {
+      const cardScore = card.latestNeynarScore ?? card.neynarScore;
+      if (cardScore > targetScore) {
+        cardsWithHigherScore++;
+      } else {
+        // Since ordered desc, no more cards with higher score
+        break;
+      }
+    }
 
-    // Find position (1-indexed)
-    const rank = sortedCards.findIndex(c => c.fid === args.fid) + 1;
+    // For total count, use a cached estimate or simple count
+    // This is less critical for the rank calculation
+    const totalEstimate = cardsAbove.length;
+
+    // Rank is 1-indexed (1 = highest score)
+    const rank = cardsWithHigherScore + 1;
 
     return {
       rank,
-      totalCards: sortedCards.length,
+      totalCards: totalEstimate,
       score: targetScore,
     };
   },

@@ -4,9 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY!;
 const BOT_SIGNER_UUID = process.env.BOT_SIGNER_UUID!;
 
-// Channel to post quotes
-const CHANNEL_ID = 'vibe-most-wanted';
-
 // Keywords that trigger the bot (includes "neymar" typo)
 const TRIGGER_KEYWORDS = [
   'what is my neynar score',
@@ -184,11 +181,8 @@ export async function POST(request: NextRequest) {
     // Share page URL (the actual page with OG image)
     const shareUrl = `https://vibefid.xyz/share/score/${targetFid}`;
 
-    // Quote cast URL (warpcast format to embed the original cast)
-    const quoteCastUrl = `https://warpcast.com/${authorUsername}/${castHash}`;
-
-    // Post quote in channel - embeds the original cast
-    const quoteResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
+    // Reply directly to the user's cast
+    const replyResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -197,23 +191,22 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         signer_uuid: BOT_SIGNER_UUID,
         text: scoreText,
-        channel_id: CHANNEL_ID,
+        parent: castHash,  // Reply to the original cast
         embeds: [
-          { url: shareUrl },       // Share page link with OG image
-          { url: quoteCastUrl }    // Embed/quote the original cast
+          { url: shareUrl }  // Share page link with OG image
         ],
       }),
     });
 
-    if (quoteResponse.ok) {
-      const result = await quoteResponse.json();
-      console.log(`Bot quoted @${authorUsername} in /${CHANNEL_ID}`);
-      return NextResponse.json({ ok: true, message: 'Quote posted', cast: result.cast?.hash });
+    if (replyResponse.ok) {
+      const result = await replyResponse.json();
+      console.log(`Bot replied to @${authorUsername}`);
+      return NextResponse.json({ ok: true, message: 'Reply posted', cast: result.cast?.hash });
     } else {
-      const error = await quoteResponse.text();
-      console.error('Failed to post quote:', error);
+      const error = await replyResponse.text();
+      console.error('Failed to post reply:', error);
       return NextResponse.json({
-        error: 'Failed to post quote',
+        error: 'Failed to post reply',
         details: error,
       }, { status: 500 });
     }
