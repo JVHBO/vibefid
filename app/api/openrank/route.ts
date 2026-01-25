@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
         rank: results[0].rank,
         percentile: results[0].percentile,
         score: results[0].score,
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+        },
       });
     }
 

@@ -1,5 +1,7 @@
 import satori from 'satori';
 import sharp from 'sharp';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -119,16 +121,14 @@ export async function GET(
       fontData = await fontResponse.arrayBuffer();
     }
 
-    // Load background image
+    // Load background image from filesystem (cached in memory)
     if (!backgroundImageBase64) {
       try {
-        const bgResponse = await fetch('https://vibefid.xyz/images/gif-background.png');
-        if (bgResponse.ok) {
-          const buffer = await bgResponse.arrayBuffer();
-          backgroundImageBase64 = `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`;
-        }
+        const bgPath = join(process.cwd(), 'public', 'images', 'gif-background.png');
+        const buffer = readFileSync(bgPath);
+        backgroundImageBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
       } catch (e) {
-        console.log('Failed to load background image');
+        console.log('Failed to load background image from filesystem');
       }
     }
 
@@ -693,7 +693,7 @@ export async function GET(
     return new Response(pngBuffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800',
       },
     });
 

@@ -48,6 +48,10 @@ export async function GET(request: NextRequest) {
       username: user.username,
       score,
       rarity,
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+      },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
