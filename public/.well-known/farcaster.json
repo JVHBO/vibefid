@@ -9,7 +9,7 @@
     "name": "VibeFID - Mint and VibeMail",
     "iconUrl": "https://vibefid.xyz/images/vibefid-icon.png",
     "homeUrl": "https://vibefid.xyz",
-    "imageUrl": "https://ipfs.filebase.io/ipfs/QmYXLY6s18PZjdGMZALFmgaEHf7qa5DErK7rcSpArvp2Te",
+    "imageUrl": "https://vibefid.xyz/images/share-vibefid.gif",
     "aspectRatio": "3:2",
     "buttonTitle": "Mint Your Card",
     "splashImageUrl": "https://vibefid.xyz/images/splash-200.png",
@@ -29,11 +29,11 @@
       "cards",
       "base"
     ],
-    "heroImageUrl": "https://ipfs.filebase.io/ipfs/QmWbJ6JveX56Bse2L55PtDq5pkqfR9GLNoa1U41FNTNtwt",
+    "heroImageUrl": "https://vibefid.xyz/images/vibefid-card-og.gif",
     "tagline": "Your FID, Your Card",
     "ogTitle": "VibeFID - FID Cards",
     "ogDescription": "Generate and mint your unique Farcaster identity card as an NFT on Base!",
-    "ogImageUrl": "https://ipfs.filebase.io/ipfs/QmWbJ6JveX56Bse2L55PtDq5pkqfR9GLNoa1U41FNTNtwt",
+    "ogImageUrl": "https://vibefid.xyz/images/vibefid-card-og.gif",
     "requiredChains": [
       "eip155:8453"
     ],
