@@ -1,159 +1,47 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useFarcasterContext } from '@/lib/hooks/useFarcasterContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuery, useMutation, useAction } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { useAccount } from 'wagmi';
-import { useClaimVBMS } from '@/lib/hooks/useVBMSContracts';
-import { VibeMailInboxWithClaim } from '@/components/VibeMail';
-import { fidTranslations } from '@/lib/fidTranslations';
-import { sdk } from '@farcaster/miniapp-sdk';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useEffect } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
 
-export default function VibeMailPage() {
-  const { lang } = useLanguage();
-  const t = fidTranslations[lang];
-  const farcasterContext = useFarcasterContext();
-  const { address } = useAccount();
-  const searchParams = useSearchParams();
-
-  // Support testFid for development
-  const testFid = searchParams.get('testFid');
-
-  // Get user FID (from Farcaster context or testFid param)
-  const userFid = testFid ? parseInt(testFid) : farcasterContext?.user?.fid;
-
-  // Get card data
-  const myCard = useQuery(
-    api.farcasterCards.getFarcasterCardByFid,
-    userFid ? { fid: userFid } : 'skip'
-  );
-
-  // Get vibe rewards
-  const vibeRewards = useQuery(
-    api.vibeRewards.getRewards,
-    userFid ? { fid: userFid } : 'skip'
-  );
-
-  // Claim VBMS hooks and actions
-  const { claimVBMS, isConfirming: isClaimTxPending } = useClaimVBMS();
-  const prepareVibeRewardsClaim = useAction(api.vibeRewards.prepareVibeRewardsClaim);
-  const restoreClaimOnTxFailure = useMutation(api.vibeRewards.restoreClaimOnTxFailure);
-  const [isClaimingRewards, setIsClaimingRewards] = useState(false);
-  const [claimError, setClaimError] = useState<string | null>(null);
-
-  // Initialize Farcaster SDK
+export default function VibeMailMigrated() {
   useEffect(() => {
-    const initSDK = async () => {
+    const init = async () => {
       try {
-        if (typeof window === 'undefined') return;
         if (!sdk || typeof sdk.actions?.ready !== 'function') return;
         await sdk.actions.ready();
-      } catch (error) {
-        console.error('[VibeMail] SDK ready error:', error);
-      }
+      } catch (e) {}
     };
-    initSDK();
+    init();
   }, []);
 
-  // Debug log
-  console.log('[VibeMail Page] userFid:', userFid, 'testFid:', testFid, 'context:', farcasterContext);
-
-  // Loading state - waiting for Farcaster context
-  if (!userFid && !farcasterContext?.isReady) {
-    return (
-      <div className="min-h-screen bg-vintage-dark flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-vintage-gold border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-vintage-ice">{t.loading || 'Loading...'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // No FID available
-  if (!userFid) {
-    return (
-      <div className="min-h-screen bg-vintage-dark flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">📧</div>
-          <h1 className="text-vintage-gold font-bold text-xl mb-2">VibeMail</h1>
-          <p className="text-vintage-ice/70 mb-4">
-            Abra no miniapp do Farcaster ou use ?testFid=SEU_FID
-          </p>
-          <Link href="/fid" className="text-vintage-gold hover:text-vintage-gold/80">
-            ← Voltar
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle claim
-  const handleClaim = async () => {
-    if (!vibeRewards?.pendingVbms || !address || !userFid) return;
-
-    setIsClaimingRewards(true);
-    setClaimError(null);
-    let claimResult: { success: boolean; amount?: number; nonce?: string; signature?: string; error?: string } | null = null;
-
+  const handleOpen = async () => {
+    const MINIAPP_URL = 'https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast';
     try {
-      console.log('📝 Preparing claim via Convex action...');
-      claimResult = await prepareVibeRewardsClaim({
-        fid: userFid,
-        claimerAddress: address,
-      });
-
-      if (!claimResult || !claimResult.success || !claimResult.nonce || !claimResult.signature || !claimResult.amount) {
-        throw new Error(claimResult?.error || 'Failed to prepare claim');
-      }
-
-      console.log('✅ Got nonce + signature from Convex');
-      console.log('🔗 Calling claimVBMS on contract...');
-
-      const txHash = await claimVBMS(
-        claimResult.amount.toString(),
-        claimResult.nonce as `0x${string}`,
-        claimResult.signature as `0x${string}`
-      );
-      console.log('✅ Claim TX:', txHash);
-      alert(`Claimed ${claimResult.amount} VBMS! TX: ${txHash}`);
-    } catch (e: any) {
-      console.error('❌ Claim failed:', e);
-      if (claimResult?.amount) {
-        console.log('🔄 Restoring rewards after TX failure...');
-        try {
-          await restoreClaimOnTxFailure({ fid: userFid, amount: claimResult.amount });
-          console.log('✅ Rewards restored');
-        } catch (restoreErr) {
-          console.error('Failed to restore rewards:', restoreErr);
-        }
-      }
-      setClaimError(e.message || 'Claim failed');
-      setTimeout(() => setClaimError(null), 5000);
+      await sdk.actions.openMiniApp({ url: MINIAPP_URL });
+    } catch (err) {
+      window.open('https://vibemostwanted.xyz/fid/vibemail', '_blank');
     }
-    setIsClaimingRewards(false);
   };
 
   return (
-    <VibeMailInboxWithClaim
-      cardFid={userFid}
-      username={myCard?.username}
-      onClose={() => {
-        // Navigate back to home
-        window.location.href = '/fid';
-      }}
-      pendingVbms={vibeRewards?.pendingVbms || 0}
-      address={address}
-      myFid={userFid}
-      myAddress={address}
-      isClaimingRewards={isClaimingRewards}
-      isClaimTxPending={isClaimTxPending}
-      onClaim={handleClaim}
-      asPage={true}
-    />
+    <div className="min-h-screen bg-gradient-to-b from-vintage-charcoal to-vintage-deep-black flex items-center justify-center p-4">
+      <div className="max-w-sm w-full text-center">
+        <div className="text-7xl mb-6">♠</div>
+        <h1 className="text-3xl font-bold text-vintage-gold mb-3">VibeFID Migrated</h1>
+        <p className="text-vintage-ice/80 text-sm mb-2">
+          VibeMail is now on <span className="text-vintage-gold font-bold">Vibe Most Wanted</span>.
+        </p>
+        <p className="text-vintage-ice/60 text-xs mb-8">
+          All cards and features have been moved to the main app.
+        </p>
+        <button
+          onClick={handleOpen}
+          className="w-full px-6 py-4 bg-vintage-gold hover:bg-yellow-500 text-vintage-black font-bold rounded-xl transition-all text-lg shadow-lg shadow-yellow-500/20"
+        >
+          Open Vibe Most Wanted ♠
+        </button>
+        <p className="text-vintage-ice/40 text-xs mt-6">vibemostwanted.xyz/fid/vibemail</p>
+      </div>
+    </div>
   );
 }
