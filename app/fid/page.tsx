@@ -1465,6 +1465,33 @@ ${shareT.shareTextMintYours || 'Mint yours at'} @jvhbo`;
       {/* Language Selection Modal - shows once per player */}
       <LanguageSelectionModal />
 
+      {/* Migration Notice Banner */}
+      <div className="fixed top-[52px] left-0 right-0 z-[9998] bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-yellow-500/20 border-b border-yellow-500/50 px-3 py-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
+          <p className="text-yellow-200 text-xs flex-1">
+            <span className="font-bold text-yellow-400">VibeFID migrated!</span> Now inside Vibe Most Wanted app.
+          </p>
+          <button
+            onClick={async () => {
+              AudioManager.buttonClick();
+              const VBMS_MINIAPP_URL = 'https://farcaster.xyz/miniapps/0sNKxskaSKsH/vbms---game-and-wanted-cast';
+              if (farcasterContext.isInMiniapp) {
+                try {
+                  await sdk.actions.openMiniApp({ url: VBMS_MINIAPP_URL });
+                } catch (err) {
+                  window.open(VBMS_MINIAPP_URL, '_blank');
+                }
+              } else {
+                window.open(VBMS_MINIAPP_URL, '_blank');
+              }
+            }}
+            className="px-3 py-1.5 bg-vintage-gold hover:bg-yellow-500 text-vintage-black font-bold rounded-lg transition-all text-xs whitespace-nowrap"
+          >
+            Open Vibe ♠
+          </button>
+        </div>
+      </div>
+
       {/* Floating Cards Background */}
       <FloatingCardsBackground userFid={userFid} onMessageClick={() => window.location.href = '/vibemail'} />
 
