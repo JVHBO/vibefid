@@ -862,6 +862,7 @@ export const sendDirectVibeMail = mutation({
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
+    castUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -911,6 +912,7 @@ export const sendDirectVibeMail = mutation({
       giftNftName: args.giftNftName,
       giftNftImageUrl: args.giftNftImageUrl,
       giftNftCollection: args.giftNftCollection,
+      castUrl: args.castUrl,
       // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
       hasMessage: true,
     });

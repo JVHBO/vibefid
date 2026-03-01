@@ -839,6 +839,7 @@ export default defineSchema({
 
     // Contract Info
     contractAddress: v.optional(v.string()), // NFT contract address (VibeFID V1 or V2)
+    chain: v.optional(v.string()), // "base" | "arbitrum" (default "base" for existing cards)
 
     // Card Properties (same as other cards)
     cardId: v.string(), // Unique card ID (farcaster_{fid})
@@ -1639,6 +1640,8 @@ export default defineSchema({
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
+    // Cast embed
+    castUrl: v.optional(v.string()),
     // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
     hasMessage: v.optional(v.boolean()),
   })
