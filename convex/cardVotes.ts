@@ -1375,3 +1375,85 @@ export const backfillDailyStats = mutation({
     return { success: true, created, updated, total: statsByCard.size };
   },
 });
+
+// Query claimed quest rewards for a message (by recipient)
+export const getQuestMailClaims = query({
+  args: {
+    messageId: v.id("cardVotes"),
+    claimerFid: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("questMailClaims")
+      .withIndex("by_message_claimer", (q) =>
+        q.eq("messageId", args.messageId).eq("claimerFid", args.claimerFid)
+      )
+      .collect();
+  },
+});
+
+// Claim quest reward — 200 VBMS per quest, only recipient can claim, one time per quest
+export const claimQuestMailReward = mutation({
+  args: {
+    messageId: v.id("cardVotes"),
+    claimerFid: v.number(),
+    questIndex: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const QUEST_REWARD_VBMS = 200;
+
+    // Verify message exists and claimer is the recipient
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+    if (message.cardFid !== args.claimerFid) throw new Error("Not the recipient");
+
+    // Parse quest data to validate questIndex
+    const match = (message.message || '').match(/\[VQUEST:(\{.*?\})\]/s);
+    if (!match) throw new Error("Not a quest mail");
+    let questData: { quests: any[] };
+    try { questData = JSON.parse(match[1]); } catch { throw new Error("Invalid quest data"); }
+    if (args.questIndex < 0 || args.questIndex >= (questData.quests?.length ?? 0)) {
+      throw new Error("Invalid quest index");
+    }
+
+    // Check not already claimed
+    const existing = await ctx.db
+      .query("questMailClaims")
+      .withIndex("by_message_claimer_quest", (q) =>
+        q.eq("messageId", args.messageId).eq("claimerFid", args.claimerFid).eq("questIndex", args.questIndex)
+      )
+      .first();
+    if (existing) throw new Error("Already claimed");
+
+    // Record the claim
+    await ctx.db.insert("questMailClaims", {
+      messageId: args.messageId,
+      claimerFid: args.claimerFid,
+      questIndex: args.questIndex,
+      amount: QUEST_REWARD_VBMS,
+      claimedAt: Date.now(),
+    });
+
+    // Add reward to vibeRewards
+    const existingReward = await ctx.db
+      .query("vibeRewards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.claimerFid))
+      .first();
+
+    if (existingReward) {
+      await ctx.db.patch(existingReward._id, {
+        pendingVbms: existingReward.pendingVbms + QUEST_REWARD_VBMS,
+      });
+    } else {
+      await ctx.db.insert("vibeRewards", {
+        fid: args.claimerFid,
+        pendingVbms: QUEST_REWARD_VBMS,
+        claimedVbms: 0,
+        totalVotes: 0,
+        lastVoteAt: Date.now(),
+      });
+    }
+
+    return { success: true, amount: QUEST_REWARD_VBMS };
+  },
+});

@@ -1628,7 +1628,7 @@ export default defineSchema({
     isPaid: v.boolean(),
     voteCount: v.number(),
     createdAt: v.number(),
-    // VibeMail - Anonymous message with vote
+    // VibeMail - message with vote
     message: v.optional(v.string()),
     audioId: v.optional(v.string()),
     imageId: v.optional(v.string()),
@@ -1636,12 +1636,16 @@ export default defineSchema({
     isSent: v.optional(v.boolean()),
     recipientFid: v.optional(v.number()),
     recipientUsername: v.optional(v.string()),
+    voterUsername: v.optional(v.string()),
+    voterPfpUrl: v.optional(v.string()),
     // NFT Gift
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
     // Cast embed
     castUrl: v.optional(v.string()),
+    // Miniapp link embed
+    miniappUrl: v.optional(v.string()),
     // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
     hasMessage: v.optional(v.boolean()),
   })
@@ -1839,4 +1843,14 @@ export default defineSchema({
     totalNftsTracked: v.number(),
   })
     .index("by_contract", ["contractAddress"]),
+
+  questMailClaims: defineTable({
+    messageId: v.id("cardVotes"),
+    claimerFid: v.number(),
+    questIndex: v.number(),
+    amount: v.number(),
+    claimedAt: v.number(),
+  })
+    .index("by_message_claimer_quest", ["messageId", "claimerFid", "questIndex"])
+    .index("by_message_claimer", ["messageId", "claimerFid"]),
 });
