@@ -43,7 +43,8 @@ export const mintFarcasterCard = mutation({
 
     // Contract
     contractAddress: v.optional(v.string()), // NFT contract address
-    
+    chain: v.optional(v.string()), // "base" | "arbitrum"
+
     // Optional: User language preference
     language: v.optional(v.string()),
   },
@@ -91,6 +92,7 @@ export const mintFarcasterCard = mutation({
 
       // Contract
       contractAddress: args.contractAddress,
+      chain: args.chain || "base",
 
       // Card Properties
       cardId,
@@ -833,6 +835,27 @@ export const updateCardPfp = mutation({
 });
 
 /**
+ * Admin: fix card field (suitSymbol, etc.)
+ */
+export const adminPatchCard = mutation({
+  args: {
+    fid: v.number(),
+    suitSymbol: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const card = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.fid))
+      .first();
+    if (!card) throw new Error(`No card found for FID ${args.fid}`);
+    const updates: Record<string, string> = {};
+    if (args.suitSymbol) updates.suitSymbol = args.suitSymbol;
+    await ctx.db.patch(card._id, updates);
+    return { success: true, fid: args.fid, updates };
+  },
+});
+
+/**
  * Delete a card that was never minted on-chain (admin only)
  */
 export const deleteUnmintedCard = mutation({
@@ -882,6 +905,41 @@ export const getCardImagesOnly = query({
       fid: card.fid,
       cardImageUrl: card.cardImageUrl,
     }));
+  },
+});
+
+export const getHighRarityCards = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit || 7, 20);
+
+    const rarities = ['Mythic', 'Legendary', 'Epic'];
+    const results: Array<{ _id: string; fid: number; cardImageUrl: string; rarity: string }> = [];
+
+    for (const rarity of rarities) {
+      if (results.length >= limit) break;
+      const cards = await ctx.db
+        .query("farcasterCards")
+        .withIndex("by_rarity", q => q.eq("rarity", rarity))
+        .filter(q => q.neq(q.field("cardImageUrl"), undefined))
+        .take(limit * 3);
+
+      for (const card of cards) {
+        if (results.length >= limit) break;
+        if (card.cardImageUrl) {
+          results.push({
+            _id: card._id,
+            fid: card.fid,
+            cardImageUrl: card.cardImageUrl,
+            rarity: card.rarity || 'Common',
+          });
+        }
+      }
+    }
+
+    return results;
   },
 });
 
