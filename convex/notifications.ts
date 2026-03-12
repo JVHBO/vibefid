@@ -1241,15 +1241,19 @@ export const sendVibemailNotification = internalAction({
   args: {
     recipientFid: v.number(),
     hasAudio: v.boolean(),
+    hasQuest: v.optional(v.boolean()),
   },
-  handler: async (ctx, { recipientFid, hasAudio }) => {
-    const title = "💌 New VibeMail!";
-    const body = hasAudio
-      ? "Someone sent you a message with a sound! 🎵 Check your inbox"
+  handler: async (ctx, { recipientFid, hasAudio, hasQuest }) => {
+    const title = hasQuest ? "Quest VibeMail!" : "New VibeMail!";
+    const body = hasQuest
+      ? "You received a Quest VibeMail! Complete quests and claim VBMS rewards"
+      : hasAudio
+      ? "Someone sent you a message with a sound! Check your inbox"
       : "Someone sent you an anonymous message! Check your inbox";
 
     // Use VibeFID's API key for VibeMail notifications
-    const apiKey = process.env.NEYNAR_API_KEY_VIBEFID || process.env.NEYNAR_API_KEY;
+    // Use VBMS key so notification reaches users who have the main VBMS miniapp added
+    const apiKey = process.env.NEYNAR_API_KEY_VBMS || process.env.NEYNAR_API_KEY_VIBEFID || process.env.NEYNAR_API_KEY;
 
     if (!apiKey) {
       console.log("📱 No NEYNAR_API_KEY_VIBEFID configured");
@@ -1260,7 +1264,7 @@ export const sendVibemailNotification = internalAction({
       const uuid = crypto.randomUUID();
       const payload = {
         target_fids: [recipientFid],
-        notification: { title, body, target_url: "https://vibefid.xyz", uuid }
+        notification: { title, body, target_url: "https://vibemostwanted.xyz/fid", uuid }
       };
 
       const response = await fetch("https://api.neynar.com/v2/farcaster/frame/notifications/", {
