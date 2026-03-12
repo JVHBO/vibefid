@@ -1397,6 +1397,7 @@ export const claimQuestMailReward = mutation({
   args: {
     messageId: v.id("cardVotes"),
     claimerFid: v.number(),
+    claimerAddress: v.string(),
     questIndex: v.number(),
   },
   handler: async (ctx, args) => {
@@ -1440,6 +1441,7 @@ export const claimQuestMailReward = mutation({
       .withIndex("by_fid", (q) => q.eq("fid", args.claimerFid))
       .first();
 
+    const balanceBefore = existingReward?.pendingVbms ?? 0;
     if (existingReward) {
       await ctx.db.patch(existingReward._id, {
         pendingVbms: existingReward.pendingVbms + QUEST_REWARD_VBMS,
@@ -1453,6 +1455,19 @@ export const claimQuestMailReward = mutation({
         lastVoteAt: Date.now(),
       });
     }
+
+    // Audit log
+    await ctx.db.insert("coinAuditLog", {
+      playerAddress: args.claimerAddress.toLowerCase(),
+      type: "earn",
+      amount: QUEST_REWARD_VBMS,
+      balanceBefore,
+      balanceAfter: balanceBefore + QUEST_REWARD_VBMS,
+      source: "claimQuestMailReward",
+      sourceId: args.messageId,
+      metadata: { reason: `quest_index_${args.questIndex}` },
+      timestamp: Date.now(),
+    });
 
     return { success: true, amount: QUEST_REWARD_VBMS };
   },
