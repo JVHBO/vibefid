@@ -60,7 +60,13 @@ export const getUserFreeVotesRemaining = query({
   args: { voterFid: v.number() },
   handler: async (ctx, args) => {
     const today = new Date().toISOString().split('T')[0];
-    const maxFreeVotes = 1;
+
+    // VibeFID holders (minted card) get 5 free mails/day; others get 1
+    const ownCard = await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.voterFid))
+      .first();
+    const maxFreeVotes = ownCard ? 5 : 1;
 
     // Query the dedicated limits table (only invalidates when THIS user votes)
     const userLimits = await ctx.db
@@ -74,6 +80,7 @@ export const getUserFreeVotesRemaining = query({
       remaining: Math.max(0, maxFreeVotes - freeVotesUsed),
       used: freeVotesUsed,
       max: maxFreeVotes,
+      isHolder: !!ownCard,
     };
   },
 });
@@ -165,7 +172,7 @@ export const voteForCard = mutation({
       voteCount: voteCount,
       createdAt: now,
       // VibeMail fields
-      message: hasMessageContent && args.message ? args.message.slice(0, 200) : undefined,
+      message: hasMessageContent && args.message ? args.message.slice(0, 2000) : undefined,
       audioId: hasContent ? args.audioId : undefined,
       imageId: args.imageId || undefined,
       isRead: hasContent ? false : undefined,
@@ -522,7 +529,11 @@ export const getMessagesForCard = query({
         message: m.message,
         audioId: m.audioId,
         imageId: m.imageId,
+        castUrl: m.castUrl,
+        miniappUrl: m.miniappUrl,
         voterFid: m.voterFid,
+        voterUsername: m.voterUsername,
+        voterPfpUrl: m.voterPfpUrl,
         isRead: m.isRead ?? false,
         createdAt: m.createdAt,
         voteCount: m.voteCount,
@@ -538,7 +549,11 @@ export const getMessagesForCard = query({
       message: m.message,
       audioId: m.audioId,
       imageId: m.imageId,
+      castUrl: m.castUrl,
+      miniappUrl: m.miniappUrl,
       voterFid: m.voterFid,
+      voterUsername: m.voterUsername,
+      voterPfpUrl: m.voterPfpUrl,
       isRead: m.isRead ?? false,
       createdAt: m.createdAt,
       voteCount: m.voteCount,
@@ -646,6 +661,8 @@ export const broadcastVibeMail = mutation({
     imageId: v.optional(v.string()), // Meme image
     senderAddress: v.optional(v.string()), // Sender address
     senderFid: v.optional(v.number()), // Admin sender FID (default: 0 for system)
+    senderUsername: v.optional(v.string()),
+    senderPfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -670,12 +687,16 @@ export const broadcastVibeMail = mutation({
           audioId: args.audioId,
           imageId: args.imageId,
           isRead: false,
+          voterUsername: args.senderUsername,
+          voterPfpUrl: args.senderPfpUrl,
         });
 
         // Send notification
+        const hasQuest = args.message?.trimStart().startsWith('[VQUEST:') ?? false;
         await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
           recipientFid,
           hasAudio: !!args.audioId,
+          hasQuest,
         });
 
         results.push({ fid: recipientFid, success: true });
@@ -790,16 +811,17 @@ export const getSentMessages = query({
           message: m.message,
           audioId: m.audioId,
           imageId: m.imageId,
+          castUrl: m.castUrl,
+          miniappUrl: m.miniappUrl,
           recipientFid: m.cardFid,
           recipientUsername: recipientCard?.username || m.recipientUsername || `FID ${m.cardFid}`,
           recipientPfpUrl: recipientCard?.pfpUrl || "",
           createdAt: m.createdAt,
           voteCount: m.voteCount,
           isPaid: m.isPaid,
-      // NFT Gift fields
-      giftNftName: m.giftNftName,
-      giftNftImageUrl: m.giftNftImageUrl,
-      giftNftCollection: m.giftNftCollection,
+          giftNftName: m.giftNftName,
+          giftNftImageUrl: m.giftNftImageUrl,
+          giftNftCollection: m.giftNftCollection,
         };
       })
     );
@@ -855,6 +877,8 @@ export const sendDirectVibeMail = mutation({
     recipientFid: v.number(),
     senderFid: v.number(),
     senderAddress: v.string(),
+    senderUsername: v.optional(v.string()),
+    senderPfpUrl: v.optional(v.string()),
     message: v.string(),
     audioId: v.optional(v.string()),
     imageId: v.optional(v.string()), // Meme image
@@ -863,6 +887,7 @@ export const sendDirectVibeMail = mutation({
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
     castUrl: v.optional(v.string()),
+    miniappUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -873,14 +898,23 @@ export const sendDirectVibeMail = mutation({
       throw new Error("Cannot send VibeMail to yourself");
     }
 
+    // Quest Mails (With Social Quest) are always paid — free quota is only for "Just a Message"
+    const isQuestMail = args.message.trimStart().startsWith('[VQUEST:');
+
+    // VibeFID holders get 5 free mails/day (Just a Message only); others get 1
+    const senderCard = !isQuestMail ? await ctx.db
+      .query("farcasterCards")
+      .withIndex("by_fid", (q) => q.eq("fid", args.senderFid))
+      .first() : null;
+    const maxFreeVotes = senderCard ? 5 : 1;
+
     // 🚀 BANDWIDTH FIX: Determine if paid using dedicated limits table
-    const userLimits = await ctx.db
+    const userLimits = !isQuestMail ? await ctx.db
       .query("userDailyLimits")
       .withIndex("by_fid_date", (q) => q.eq("fid", args.senderFid).eq("date", today))
-      .first();
+      .first() : null;
     const freeVotesUsed = userLimits?.freeVotesUsed ?? 0;
-    const maxFreeVotes = 1;
-    const isPaid = freeVotesUsed >= maxFreeVotes;
+    const isPaid = isQuestMail || freeVotesUsed >= maxFreeVotes;
 
     // Get recipient card info
     const recipientCard = await ctx.db
@@ -901,18 +935,21 @@ export const sendDirectVibeMail = mutation({
       isPaid,
       voteCount: 1,
       createdAt: now,
-      message: args.message.slice(0, 200),
+      message: args.message.slice(0, 2000),
       audioId: args.audioId,
       imageId: args.imageId,
       isRead: false,
       isSent: true,
       recipientFid: args.recipientFid,
       recipientUsername: recipientCard.username,
+      voterUsername: args.senderUsername,
+      voterPfpUrl: args.senderPfpUrl,
       // NFT Gift
       giftNftName: args.giftNftName,
       giftNftImageUrl: args.giftNftImageUrl,
       giftNftCollection: args.giftNftCollection,
       castUrl: args.castUrl,
+      miniappUrl: args.miniappUrl,
       // 🚀 BANDWIDTH FIX: Boolean for efficient message queries
       hasMessage: true,
     });
@@ -956,7 +993,7 @@ export const sendDirectVibeMail = mutation({
       });
     }
 
-    // Give 100 VBMS to recipient (always, both free and paid give rewards)
+    // Give 500 VBMS to recipient (always, both free and paid give rewards)
     const existingReward = await ctx.db
       .query("vibeRewards")
       .withIndex("by_fid", (q) => q.eq("fid", args.recipientFid))
@@ -964,14 +1001,14 @@ export const sendDirectVibeMail = mutation({
 
     if (existingReward) {
       await ctx.db.patch(existingReward._id, {
-        pendingVbms: existingReward.pendingVbms + 100,
+        pendingVbms: existingReward.pendingVbms + 500,
         totalVotes: existingReward.totalVotes + 1,
         lastVoteAt: now,
       });
     } else {
       await ctx.db.insert("vibeRewards", {
         fid: args.recipientFid,
-        pendingVbms: 100,
+        pendingVbms: 500,
         claimedVbms: 0,
         totalVotes: 1,
         lastVoteAt: now,
@@ -981,9 +1018,11 @@ export const sendDirectVibeMail = mutation({
     // Send notification
     const hasContent = args.message?.trim() || args.imageId;
     if (hasContent) {
+      const hasQuest = args.message?.trimStart().startsWith('[VQUEST:') ?? false;
       await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
         recipientFid: args.recipientFid,
         hasAudio: !!args.audioId,
+        hasQuest,
       });
     }
 
@@ -997,6 +1036,8 @@ export const replyToMessage = mutation({
     originalMessageId: v.id("cardVotes"),
     senderFid: v.number(),
     senderAddress: v.string(),
+    senderUsername: v.optional(v.string()),
+    senderPfpUrl: v.optional(v.string()),
     message: v.string(),
     audioId: v.optional(v.string()),
     imageId: v.optional(v.string()), // Meme image
@@ -1004,6 +1045,7 @@ export const replyToMessage = mutation({
     giftNftName: v.optional(v.string()),
     giftNftImageUrl: v.optional(v.string()),
     giftNftCollection: v.optional(v.string()),
+    miniappUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -1043,20 +1085,23 @@ export const replyToMessage = mutation({
       isPaid: false,
       voteCount: 1,
       createdAt: now,
-      message: args.message.slice(0, 200),
+      message: args.message.slice(0, 2000),
       audioId: args.audioId,
       imageId: args.imageId,
       isRead: false,
       isSent: true,
       recipientFid: recipientFid,
       recipientUsername: recipientCard?.username || `FID ${recipientFid}`,
+      voterUsername: args.senderUsername,
+      voterPfpUrl: args.senderPfpUrl,
       // NFT Gift fields
       giftNftName: args.giftNftName,
       giftNftImageUrl: args.giftNftImageUrl,
       giftNftCollection: args.giftNftCollection,
+      miniappUrl: args.miniappUrl,
     });
 
-    // Give 100 VBMS to recipient
+    // Give 500 VBMS to recipient
     const existingReward = await ctx.db
       .query("vibeRewards")
       .withIndex("by_fid", (q) => q.eq("fid", recipientFid))
@@ -1064,19 +1109,26 @@ export const replyToMessage = mutation({
 
     if (existingReward) {
       await ctx.db.patch(existingReward._id, {
-        pendingVbms: existingReward.pendingVbms + 100,
+        pendingVbms: existingReward.pendingVbms + 500,
         totalVotes: existingReward.totalVotes + 1,
         lastVoteAt: now,
       });
     } else {
       await ctx.db.insert("vibeRewards", {
         fid: recipientFid,
-        pendingVbms: 100,
+        pendingVbms: 500,
         claimedVbms: 0,
         totalVotes: 1,
         lastVoteAt: now,
       });
     }
+
+    // Send notification
+    await ctx.scheduler.runAfter(0, internal.notifications.sendVibemailNotification, {
+      recipientFid,
+      hasAudio: !!args.audioId,
+      hasQuest: false,
+    });
 
     return { success: true };
   },
