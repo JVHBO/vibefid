@@ -916,7 +916,7 @@ export const getHighRarityCards = query({
     const limit = Math.min(args.limit || 7, 20);
 
     const rarities = ['Mythic', 'Legendary', 'Epic'];
-    const results: Array<{ _id: string; fid: number; cardImageUrl: string; rarity: string }> = [];
+    const results: Array<{ _id: string; fid: number; username: string; cardImageUrl: string; rarity: string }> = [];
 
     for (const rarity of rarities) {
       if (results.length >= limit) break;
@@ -932,6 +932,7 @@ export const getHighRarityCards = query({
           results.push({
             _id: card._id,
             fid: card.fid,
+            username: card.username || '',
             cardImageUrl: card.cardImageUrl,
             rarity: card.rarity || 'Common',
           });
