@@ -370,8 +370,9 @@ function getEndOfDayTimestamp(): number {
 
 // Reset all votes (admin/dev only)
 export const resetAllVotes = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     // Delete all cardVotes
     const votes = await ctx.db.query("cardVotes").collect();
     for (const vote of votes) {
@@ -394,8 +395,9 @@ export const resetAllVotes = mutation({
 
 // Distribute daily prize (called by cron job)
 export const distributeDailyPrize = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const date = yesterday.toISOString().split('T')[0];
@@ -655,6 +657,7 @@ export const getUnreadMessageCount = query({
 
 export const broadcastVibeMail = mutation({
   args: {
+    adminKey: v.string(),
     recipientFids: v.array(v.number()), // List of FIDs to send to
     message: v.string(),
     audioId: v.optional(v.string()),
@@ -665,6 +668,7 @@ export const broadcastVibeMail = mutation({
     senderPfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
     const senderFid = args.senderFid || 0;
@@ -1136,8 +1140,9 @@ export const replyToMessage = mutation({
 
 // Admin: Clear all VibeMails
 export const clearAllVibeMails = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const allVotes = await ctx.db
       .query("cardVotes")
       .filter((q) => q.neq(q.field("message"), undefined))

@@ -165,8 +165,9 @@ export const getScoreHistory = query({
  * Backfill score history from existing farcasterCards
  */
 export const backfillScoreHistory = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const cards = await ctx.db.query("farcasterCards").collect();
 
     let backfilledCount = 0;
@@ -202,8 +203,9 @@ export const backfillScoreHistory = mutation({
  * Delete duplicate score entries (entries with same score as previous)
  */
 export const cleanupDuplicateScores = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const allHistory = await ctx.db.query("neynarScoreHistory").collect();
 
     // Group by FID

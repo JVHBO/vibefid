@@ -183,6 +183,7 @@ export const removeToken = mutation({
  */
 export const importTokens = mutation({
   args: {
+    adminKey: v.string(),
     tokens: v.array(
       v.object({
         fid: v.string(),
@@ -192,7 +193,8 @@ export const importTokens = mutation({
       })
     ),
   },
-  handler: async (ctx, { tokens }) => {
+  handler: async (ctx, { adminKey, tokens }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     let imported = 0;
     let updated = 0;
 
@@ -1030,10 +1032,12 @@ export const triggerDailyLoginReminder = mutation({
  */
 export const sendCustomNotification = action({
   args: {
+    adminKey: v.string(),
     title: v.string(),
     body: v.string(),
   },
-  handler: async (ctx, { title, body }) => {
+  handler: async (ctx, { adminKey, title, body }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     try {
       console.log(`📬 Sending custom notification: "${title}"`);
 

@@ -575,6 +575,7 @@ export const resetCardRarity = internalMutation({
 // Note: Called from frontend /fid/[fid]/page.tsx
 export const upgradeCardRarity = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     newNeynarScore: v.number(),
     newRarity: v.string(),
@@ -584,6 +585,7 @@ export const upgradeCardRarity = mutation({
     pfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     // Find the card
     const card = await ctx.db
       .query("farcasterCards")
@@ -660,6 +662,7 @@ export const upgradeCardRarity = mutation({
  */
 export const refreshCardScore = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     newNeynarScore: v.number(),
     // Optional profile fields to update (never changes foil/wear)
@@ -668,6 +671,7 @@ export const refreshCardScore = mutation({
     pfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))
@@ -839,10 +843,12 @@ export const updateCardPfp = mutation({
  */
 export const adminPatchCard = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     suitSymbol: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))
@@ -860,9 +866,11 @@ export const adminPatchCard = mutation({
  */
 export const deleteUnmintedCard = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))
@@ -1057,10 +1065,12 @@ export const updateNeynarScore = mutation({
 // Fix card address (admin function)
 export const fixCardAddress = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     newAddress: v.string(),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))
@@ -1082,10 +1092,12 @@ export const fixCardAddress = mutation({
 // Fix card rarity (admin function - for correcting wrong rarities)
 export const fixCardRarity = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     newRarity: v.string(),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))
@@ -1107,11 +1119,13 @@ export const fixCardRarity = mutation({
 // Fix card rarity AND power (admin function)
 export const fixCardRarityAndPower = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     newRarity: v.string(),
     newPower: v.number(),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))
@@ -1134,11 +1148,13 @@ export const fixCardRarityAndPower = mutation({
 // Fix card foil and power (admin function for FID-based deterministic foil)
 export const fixCardFoilAndPower = mutation({
   args: {
+    adminKey: v.string(),
     fid: v.number(),
     newFoil: v.string(),
     newPower: v.number(),
   },
   handler: async (ctx, args) => {
+    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const card = await ctx.db
       .query("farcasterCards")
       .withIndex("by_fid", (q) => q.eq("fid", args.fid))

@@ -166,8 +166,9 @@ export const getFidsForScoreUpdate = query({
  * Run once after deploy: npx convex run mostWanted:backfillScoreDiff
  */
 export const backfillScoreDiff = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { adminKey: v.string() },
+  handler: async (ctx, { adminKey }) => {
+    if (adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const cards = await ctx.db.query("farcasterCards").collect();
     let updated = 0;
 
