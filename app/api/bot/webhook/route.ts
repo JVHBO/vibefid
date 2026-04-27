@@ -1,27 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Neynar API key for posting
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY!;
 const BOT_SIGNER_UUID = process.env.BOT_SIGNER_UUID!;
+const BOT_FID = 2411608;
 
-// Keywords that trigger the bot
+// Anti-spam: in-memory set of already-replied cast hashes
+const repliedHashes = new Set<string>();
+
+// Score keywords — must be specific enough to avoid false positives
 const TRIGGER_KEYWORDS = [
   'neynar score',
-  'neymar score',  // typo variant
-  'my score',
+  'neymar score',
   'check score',
-  'score?',
-  'what is',       // "what is @user score" pattern
-  'whats',         // "whats @user score" pattern
-  'score @',       // "score @user" pattern
+  'my neynar',
+  'qual meu score',
+  'qual o score',
+  'score @',
 ];
 
+const GAY_KEYWORDS_JP = ['私はゲイですか', 'ゲイですか', 'ゲイ？', 'gei desu ka', 'watashi wa gei', 'ore wa gei', 'boku wa gei'];
 const GAY_KEYWORDS = [
-  'eu sou gay', 'sou gay', 'i am gay', 'am i gay', 'are you gay',
-  'ゲイ', '私はゲイ', 'ゲイですか',
+  'eu sou gay', 'sou gay?', 'i am gay', 'am i gay', 'are you gay',
+  ...GAY_KEYWORDS_JP,
 ];
 
-const GAY_REPLY = `Sim, você é gay 🏳️‍🌈\nYes, you are gay 🏳️‍🌈\nはい、あなたはゲイです 🏳️‍🌈`;
+// Helper: fetch with timeout
+function fetchWithTimeout(url: string, opts: RequestInit, ms = 6000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,17 +58,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, message: 'Missing author or hash' });
     }
 
+    // Ignore own casts
+    if (authorFid === BOT_FID) {
+      return NextResponse.json({ ok: true, message: 'Own cast ignored' });
+    }
+
+    // Anti-spam: ignore already-replied hashes
+    if (repliedHashes.has(castHash)) {
+      return NextResponse.json({ ok: true, message: 'Already replied' });
+    }
+
     // Gay question handler
     const isGayQuestion = GAY_KEYWORDS.some(k => castText.includes(k.toLowerCase()));
     if (isGayQuestion) {
-      await fetch('https://api.neynar.com/v2/farcaster/cast', {
+      const isJP = GAY_KEYWORDS_JP.some(k => castText.includes(k));
+      const replyText = isJP
+        ? 'はい、あなたはゲイです 🏳️‍🌈'
+        : 'Sim, você é gay 🏳️‍🌈\nYes, you are gay 🏳️‍🌈\nはい、あなたはゲイです 🏳️‍🌈';
+      const replyImg = isJP
+        ? 'https://m.media-amazon.com/images/I/61eTb-caKiL._UF1000,1000_QL80_.jpg'
+        : 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
+      repliedHashes.add(castHash);
+      await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY },
         body: JSON.stringify({
           signer_uuid: BOT_SIGNER_UUID,
-          text: GAY_REPLY,
+          text: replyText,
           parent: castHash,
-          embeds: [{ url: 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg' }],
+          embeds: [{ url: replyImg }],
         }),
       });
       return NextResponse.json({ ok: true, message: 'Gay reply sent' });
@@ -92,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (otherMentions.length > 0) {
       const targetMention = otherMentions[0].substring(1); // Remove @
       try {
-        const lookupResponse = await fetch(
+        const lookupResponse = await fetchWithTimeout(
           `https://api.neynar.com/v2/farcaster/user/by_username?username=${targetMention}`,
           { headers: { api_key: NEYNAR_API_KEY } }
         );
@@ -112,24 +138,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`Bot triggered by @${authorUsername} for @${targetUsername} (FID: ${targetFid})`);
 
-    // Fetch all data in parallel for speed
+    // Fetch all data in parallel with timeout
     const [userResponse, rankResponse, openRankResponse] = await Promise.all([
-      // Neynar score
-      fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${targetFid}`, {
+      fetchWithTimeout(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${targetFid}`, {
         headers: { api_key: NEYNAR_API_KEY }
-      }),
-      // VibeFID rank from Convex
-      fetch("https://scintillating-mandrill-101.convex.cloud/api/query", {
+      }).catch(() => null),
+      fetchWithTimeout("https://scintillating-mandrill-101.convex.cloud/api/query", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: 'farcasterCards:getVibeFIDRank',
-          args: { fid: targetFid },
-          format: 'json',
-        }),
+        body: JSON.stringify({ path: 'farcasterCards:getVibeFIDRank', args: { fid: targetFid }, format: 'json' }),
       }).catch(() => null),
-      // OpenRank global rank
-      fetch('https://graph.cast.k3l.io/scores/global/engagement/fids', {
+      fetchWithTimeout('https://graph.cast.k3l.io/scores/global/engagement/fids', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([targetFid]),
@@ -139,7 +158,7 @@ export async function POST(request: NextRequest) {
     let score = 0;
     let rarity = 'Common';
 
-    if (userResponse.ok) {
+    if (userResponse?.ok) {
       const userData = await userResponse.json();
       const user = userData.users?.[0];
       if (user) {
@@ -199,8 +218,8 @@ export async function POST(request: NextRequest) {
     // Share page URL (the actual page with OG image)
     const shareUrl = `https://vibefid.xyz/share/score/${targetFid}`;
 
-    // Reply directly to the user's cast
-    const replyResponse = await fetch('https://api.neynar.com/v2/farcaster/cast', {
+    repliedHashes.add(castHash);
+    const replyResponse = await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
