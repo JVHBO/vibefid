@@ -22,7 +22,7 @@ const GAY_KEYWORDS_JP = [
   'ore wa geidesu', 'boku wa geidesu',
 ];
 const GAY_KEYWORDS_EN = [
-  'i am gay', 'am i gay', 'are you gay', 'is he gay', 'is she gay',
+  'i am gay', 'am i gay', 'are you gay', 'is he gay', 'is she gay', 'is gay',
   'i think i am gay', 'i think i\'m gay', 'am i actually gay',
 ];
 const GAY_KEYWORDS_PT = [
@@ -161,14 +161,19 @@ export async function POST(request: NextRequest) {
         'https://images3.memedroid.com/images/UPLOADED356/5dd70d2ca502c.jpeg',
         'https://ih1.redbubble.net/image.5662721872.6818/fposter,small,wall_texture,square_product,600x600.jpg',
       ];
-      const replyImg = isJP
-        ? jpImages[Math.floor(Math.random() * jpImages.length)]
-        : isEN
-          ? enImages[Math.floor(Math.random() * enImages.length)]
-          : [
-              'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
-              'https://images7.memedroid.com/images/UPLOADED347/5ae77b1270483.jpeg',
-              'https://preview.redd.it/eae-voc%C3%AAs-s%C3%A3o-v0-7ap0afaqqxdf1.jpeg?width=640&crop=smart&auto=webp&s=1ad3b8773ed83073187c896214ad9cc9ab3f42bf',
+      const notGayImg = isJP
+        ? 'https://i.scdn.co/image/ab67616d0000b27360dc8d59c48845c0d65a91ae'
+        : 'https://m.media-amazon.com/images/I/41UeVERMojL._UXNaN_FMjpg_QL85_.jpg';
+      const replyImg = notGay
+        ? notGayImg
+        : isJP
+          ? jpImages[Math.floor(Math.random() * jpImages.length)]
+          : isEN
+            ? enImages[Math.floor(Math.random() * enImages.length)]
+            : [
+                'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
+                'https://images7.memedroid.com/images/UPLOADED347/5ae77b1270483.jpeg',
+                'https://preview.redd.it/eae-voc%C3%AAs-s%C3%A3o-v0-7ap0afaqqxdf1.jpeg?width=640&crop=smart&auto=webp&s=1ad3b8773ed83073187c896214ad9cc9ab3f42bf',
             ][Math.floor(Math.random() * 3)];
       repliedHashes.add(castHash);
       await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {

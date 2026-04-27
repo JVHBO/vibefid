@@ -1,0 +1,3 @@
+{
+  "ignoreCommand": "git diff HEAD~1 --name-only | grep -q 'app/api/bot/webhook' || exit 0"
+}
