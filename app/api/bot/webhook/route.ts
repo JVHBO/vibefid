@@ -19,10 +19,9 @@ const TRIGGER_KEYWORDS = [
 ];
 
 const GAY_KEYWORDS_JP = ['私はゲイですか', 'ゲイですか', 'ゲイ？', 'gei desu ka', 'watashi wa gei', 'ore wa gei', 'boku wa gei'];
-const GAY_KEYWORDS = [
-  'eu sou gay', 'sou gay?', 'i am gay', 'am i gay', 'are you gay',
-  ...GAY_KEYWORDS_JP,
-];
+const GAY_KEYWORDS_EN = ['i am gay', 'am i gay', 'are you gay', 'is he gay', 'is she gay'];
+const GAY_KEYWORDS_PT = ['eu sou gay', 'sou gay', 'é gay', 'ele é gay', 'ela é gay'];
+const GAY_KEYWORDS = [...GAY_KEYWORDS_PT, ...GAY_KEYWORDS_EN, ...GAY_KEYWORDS_JP];
 
 // Helper: fetch with timeout
 function fetchWithTimeout(url: string, opts: RequestInit, ms = 6000) {
@@ -72,9 +71,12 @@ export async function POST(request: NextRequest) {
     const isGayQuestion = GAY_KEYWORDS.some(k => castText.includes(k.toLowerCase()));
     if (isGayQuestion) {
       const isJP = GAY_KEYWORDS_JP.some(k => castText.includes(k));
+      const isEN = GAY_KEYWORDS_EN.some(k => castText.includes(k));
       const replyText = isJP
         ? 'はい、あなたはゲイです 🏳️‍🌈'
-        : 'Sim, você é gay 🏳️‍🌈\nYes, you are gay 🏳️‍🌈\nはい、あなたはゲイです 🏳️‍🌈';
+        : isEN
+          ? 'Yes, you are gay 🏳️‍🌈'
+          : 'Sim, você é gay 🏳️‍🌈';
       const replyImg = isJP
         ? 'https://m.media-amazon.com/images/I/61eTb-caKiL._UF1000,1000_QL80_.jpg'
         : 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
