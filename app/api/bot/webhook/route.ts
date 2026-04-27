@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       if (authorIsCandidate) mentionedUsers.unshift(`@${authorUsername}`);
       const allMentions = [...new Set(mentionedUsers)];
       if (allMentions.length >= 2) {
-        const chosen = allMentions[Math.floor(Math.random() * allMentions.length)];
+        const chosen = allMentions[Math.floor(Math.random() * allMentions.length)] as string;
         const username = chosen.substring(1);
         // Fetch pfp
         let pfpUrl = 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
@@ -139,11 +139,18 @@ export async function POST(request: NextRequest) {
       );
       const target = gayTarget || null;
 
-      const replyText = isJP
-        ? `はい、${target ?? 'あなた'}はゲイです 🏳️‍🌈`
-        : isEN
-          ? `Yes, ${target ?? 'you'} ${target ? 'is' : 'are'} gay 🏳️‍🌈`
-          : `Sim, ${target ?? 'você'} é gay 🏳️‍🌈`;
+      const notGay = Math.random() < 0.1;
+      const replyText = notGay
+        ? isJP
+          ? `いいえ、${target ?? 'あなた'}はゲイではありません 🏳️‍🌈`
+          : isEN
+            ? `No, ${target ?? 'you'} ${target ? 'is' : 'are'} not gay 🏳️‍🌈`
+            : `Não, ${target ?? 'você'} não é gay 🏳️‍🌈`
+        : isJP
+          ? `はい、${target ?? 'あなた'}はゲイです 🏳️‍🌈`
+          : isEN
+            ? `Yes, ${target ?? 'you'} ${target ? 'is' : 'are'} gay 🏳️‍🌈`
+            : `Sim, ${target ?? 'você'} é gay 🏳️‍🌈`;
       const jpImages = [
         'https://m.media-amazon.com/images/I/61eTb-caKiL._UF1000,1000_QL80_.jpg',
         'https://uploads.spiritfanfiction.com/historias/capas/202111/sanji-x-zoro-23215447-051120211126.png',
