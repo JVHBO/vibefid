@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@/convex/_generated/api";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 
 export async function GET(request: NextRequest) {
   const fid = request.nextUrl.searchParams.get("fid");
@@ -12,9 +10,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const card = await convex.query(api.farcasterCards.getFarcasterCardByFid, {
-      fid: parseInt(fid),
+    const r = await fetch(`${CONVEX_URL}/api/query`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: "farcasterCards:getFarcasterCardByFid",
+        args: { fid: parseInt(fid) },
+        format: "json",
+      }),
     });
+    const data = await r.json();
+    const card = data.value;
 
     if (!card) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
