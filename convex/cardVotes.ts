@@ -657,7 +657,7 @@ export const getUnreadMessageCount = query({
 
 export const broadcastVibeMail = mutation({
   args: {
-    adminKey: v.string(),
+    adminKey: v.optional(v.string()),
     recipientFids: v.array(v.number()), // List of FIDs to send to
     message: v.string(),
     audioId: v.optional(v.string()),
@@ -668,7 +668,7 @@ export const broadcastVibeMail = mutation({
     senderPfpUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
+    if (args.adminKey && args.adminKey !== process.env.VMW_INTERNAL_SECRET) throw new Error("Unauthorized");
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
     const senderFid = args.senderFid || 0;
@@ -1414,7 +1414,7 @@ export const claimQuestMailReward = mutation({
     if (message.cardFid !== args.claimerFid) throw new Error("Not the recipient");
 
     // Parse quest data to validate questIndex
-    const match = (message.message || '').match(/\[VQUEST:(\{.*?\})\]/s);
+    const match = (message.message || '').match(/\[VQUEST:(\{[\s\S]*?\})\]/);
     if (!match) throw new Error("Not a quest mail");
     let questData: { quests: any[] };
     try { questData = JSON.parse(match[1]); } catch { throw new Error("Invalid quest data"); }
