@@ -44,11 +44,33 @@ const GAY_VERSUS_KEYWORDS = [
   'どっちがゲイ', 'どちらがゲイ', 'docchi ga gei', 'dochira ga gei',
 ];
 
+// Deterministic "random" from cast hash — same hash = same choice across all instances
+function hashRand(hash: string, max: number): number {
+  let n = 0;
+  for (let i = 0; i < hash.length; i++) n = (n * 31 + hash.charCodeAt(i)) >>> 0;
+  return n % max;
+}
+
 // Helper: fetch with timeout
 function fetchWithTimeout(url: string, opts: RequestInit, ms = 6000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
+// Check if bot already replied to this cast hash
+async function alreadyReplied(parentHash: string): Promise<boolean> {
+  try {
+    const r = await fetchWithTimeout(
+      `https://api.neynar.com/v2/farcaster/cast/conversation?identifier=${parentHash}&type=hash&reply_depth=1&limit=20`,
+      { headers: { api_key: NEYNAR_API_KEY } },
+      4000
+    );
+    if (!r.ok) return false;
+    const d = await r.json();
+    const replies = d.conversation?.cast?.direct_replies || [];
+    return replies.some((c: any) => c.author?.fid === BOT_FID);
+  } catch { return false; }
 }
 
 export async function POST(request: NextRequest) {
@@ -100,7 +122,7 @@ export async function POST(request: NextRequest) {
       if (authorIsCandidate) mentionedUsers.unshift(`@${authorUsername}`);
       const allMentions = [...new Set(mentionedUsers)];
       if (allMentions.length >= 2) {
-        const chosen = allMentions[Math.floor(Math.random() * allMentions.length)] as string;
+        const chosen = allMentions[hashRand(castHash, allMentions.length)] as string;
         const username = chosen.substring(1);
         // Fetch pfp
         let pfpUrl = 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
@@ -117,6 +139,7 @@ export async function POST(request: NextRequest) {
           : castText.includes('who') || castText.includes('which')
             ? `${chosen} is gayer 🏳️‍🌈`
             : `${chosen} é mais gay 🏳️‍🌈`;
+        if (await alreadyReplied(castHash)) return NextResponse.json({ ok: true, message: 'Already replied (versus)' });
         repliedHashes.add(castHash);
         await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
           method: 'POST',
@@ -139,7 +162,7 @@ export async function POST(request: NextRequest) {
       );
       const target = gayTarget || null;
 
-      const notGay = Math.random() < 0.1;
+      const notGay = hashRand(castHash, 10) === 0;
       const replyText = notGay
         ? isJP
           ? `いいえ、${target ?? 'あなた'}はゲイではありません 🏳️‍🌈`
@@ -167,14 +190,15 @@ export async function POST(request: NextRequest) {
       const replyImg = notGay
         ? notGayImg
         : isJP
-          ? jpImages[Math.floor(Math.random() * jpImages.length)]
+          ? jpImages[hashRand(castHash, jpImages.length)]
           : isEN
-            ? enImages[Math.floor(Math.random() * enImages.length)]
+            ? enImages[hashRand(castHash, enImages.length)]
             : [
                 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
                 'https://images7.memedroid.com/images/UPLOADED347/5ae77b1270483.jpeg',
                 'https://preview.redd.it/eae-voc%C3%AAs-s%C3%A3o-v0-7ap0afaqqxdf1.jpeg?width=640&crop=smart&auto=webp&s=1ad3b8773ed83073187c896214ad9cc9ab3f42bf',
-            ][Math.floor(Math.random() * 3)];
+            ][hashRand(castHash, 3)];
+      if (await alreadyReplied(castHash)) return NextResponse.json({ ok: true, message: 'Already replied (gay)' });
       repliedHashes.add(castHash);
       await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
         method: 'POST',
