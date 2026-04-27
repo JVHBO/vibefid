@@ -18,7 +18,7 @@ const TRIGGER_KEYWORDS = [
   'score @',
 ];
 
-const GAY_KEYWORDS_JP = ['私はゲイですか', 'ゲイですか', 'ゲイ？', 'gei desu ka', 'watashi wa gei', 'ore wa gei', 'boku wa gei'];
+const GAY_KEYWORDS_JP = ['私はゲイですか', 'ゲイですか', 'ゲイ？', 'gei desu ka', 'geidesu ka', 'watashi wa gei', 'watashi wa geidesu', 'ore wa gei', 'boku wa gei'];
 const GAY_KEYWORDS_EN = ['i am gay', 'am i gay', 'are you gay', 'is he gay', 'is she gay'];
 const GAY_KEYWORDS_PT = ['eu sou gay', 'sou gay', 'é gay', 'ele é gay', 'ela é gay'];
 const GAY_KEYWORDS = [...GAY_KEYWORDS_PT, ...GAY_KEYWORDS_EN, ...GAY_KEYWORDS_JP];
