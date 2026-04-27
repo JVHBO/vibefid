@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       repliedHashes.add(castHash);
       await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY },
+        headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY, 'Idempotency-Key': `gay-${castHash}` },
         body: JSON.stringify({
           signer_uuid: BOT_SIGNER_UUID,
           text: replyText,
@@ -226,6 +226,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'api_key': NEYNAR_API_KEY,
+        'Idempotency-Key': `score-${castHash}`,
       },
       body: JSON.stringify({
         signer_uuid: BOT_SIGNER_UUID,
