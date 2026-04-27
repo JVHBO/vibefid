@@ -16,6 +16,13 @@ const TRIGGER_KEYWORDS = [
   'score @',       // "score @user" pattern
 ];
 
+const GAY_KEYWORDS = [
+  'eu sou gay', 'sou gay', 'i am gay', 'am i gay', 'are you gay',
+  'ゲイ', '私はゲイ', 'ゲイですか',
+];
+
+const GAY_REPLY = `Sim, você é gay 🏳️‍🌈\nYes, you are gay 🏳️‍🌈\nはい、あなたはゲイです 🏳️‍🌈`;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -41,6 +48,22 @@ export async function POST(request: NextRequest) {
 
     if (!authorFid || !castHash) {
       return NextResponse.json({ ok: true, message: 'Missing author or hash' });
+    }
+
+    // Gay question handler
+    const isGayQuestion = GAY_KEYWORDS.some(k => castText.includes(k.toLowerCase()));
+    if (isGayQuestion) {
+      await fetch('https://api.neynar.com/v2/farcaster/cast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY },
+        body: JSON.stringify({
+          signer_uuid: BOT_SIGNER_UUID,
+          text: GAY_REPLY,
+          parent: castHash,
+          embeds: [{ url: 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg' }],
+        }),
+      });
+      return NextResponse.json({ ok: true, message: 'Gay reply sent' });
     }
 
     // Check if message contains trigger keywords
