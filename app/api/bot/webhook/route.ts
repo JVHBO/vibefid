@@ -42,6 +42,7 @@ const GAY_VERSUS_KEYWORDS = [
   'whos gayer', 'which one is gay', 'which is gayer', 'who is the gayest', "who's the gayest",
   // JP / Rōmaji
   'どっちがゲイ', 'どちらがゲイ', 'docchi ga gei', 'dochira ga gei',
+  'どっちがより gay', 'どちらがより gay', 'docchi ga yori gei', 'dochira ga yori gei',
 ];
 
 // Deterministic "random" from cast hash — same hash = same choice across all instances
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
             pfpUrl = d.user?.pfp_url || pfpUrl;
           }
         } catch (_) {}
-        const isJP = castText.includes('どっち') || castText.includes('docchi');
+        const isJP = castText.includes('どっち') || castText.includes('どちら') || castText.includes('docchi') || castText.includes('dochira');
         const replyText = isJP
           ? `${chosen} の方がゲイです 🏳️‍🌈`
           : castText.includes('who') || castText.includes('which')
