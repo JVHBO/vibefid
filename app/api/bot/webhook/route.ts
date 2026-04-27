@@ -109,6 +109,11 @@ export async function POST(request: NextRequest) {
     if (repliedHashes.has(castHash)) {
       return NextResponse.json({ ok: true, message: 'Already replied' });
     }
+    if (await alreadyReplied(castHash)) {
+      repliedHashes.add(castHash);
+      return NextResponse.json({ ok: true, message: 'Already replied (remote)' });
+    }
+    repliedHashes.add(castHash);
 
     // Gay question handler
     // "Quem é mais gay?" handler
@@ -139,8 +144,6 @@ export async function POST(request: NextRequest) {
           : castText.includes('who') || castText.includes('which')
             ? `${chosen} is gayer 🏳️‍🌈`
             : `${chosen} é mais gay 🏳️‍🌈`;
-        if (await alreadyReplied(castHash)) return NextResponse.json({ ok: true, message: 'Already replied (versus)' });
-        repliedHashes.add(castHash);
         await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY, 'Idempotency-Key': `gayversus-${castHash}` },
@@ -165,12 +168,12 @@ export async function POST(request: NextRequest) {
       const notGay = hashRand(castHash, 10) === 0;
       const replyText = notGay
         ? isJP
-          ? `いいえ、${target ?? 'あなた'}はゲイではありません 🏳️‍🌈`
+          ? `いいえ、${target ?? 'あなた'} はゲイではありません 🏳️‍🌈`
           : isEN
             ? `No, ${target ?? 'you'} ${target ? 'is' : 'are'} not gay 🏳️‍🌈`
             : `Não, ${target ?? 'você'} não é gay 🏳️‍🌈`
         : isJP
-          ? `はい、${target ?? 'あなた'}はゲイです 🏳️‍🌈`
+          ? `はい、${target ?? 'あなた'} はゲイです 🏳️‍🌈`
           : isEN
             ? `Yes, ${target ?? 'you'} ${target ? 'is' : 'are'} gay 🏳️‍🌈`
             : `Sim, ${target ?? 'você'} é gay 🏳️‍🌈`;
@@ -198,8 +201,6 @@ export async function POST(request: NextRequest) {
                 'https://images7.memedroid.com/images/UPLOADED347/5ae77b1270483.jpeg',
                 'https://preview.redd.it/eae-voc%C3%AAs-s%C3%A3o-v0-7ap0afaqqxdf1.jpeg?width=640&crop=smart&auto=webp&s=1ad3b8773ed83073187c896214ad9cc9ab3f42bf',
             ][hashRand(castHash, 3)];
-      if (await alreadyReplied(castHash)) return NextResponse.json({ ok: true, message: 'Already replied (gay)' });
-      repliedHashes.add(castHash);
       await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY, 'Idempotency-Key': `gay-${castHash}` },
