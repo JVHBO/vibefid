@@ -7,21 +7,42 @@ const BOT_FID = 2411608;
 // Anti-spam: in-memory set of already-replied cast hashes
 const repliedHashes = new Set<string>();
 
-// Score keywords — must be specific enough to avoid false positives
+// Score keywords
 const TRIGGER_KEYWORDS = [
-  'neynar score',
-  'neymar score',
-  'check score',
-  'my neynar',
-  'qual meu score',
-  'qual o score',
-  'score @',
+  // EN
+  'neynar score', 'neymar score', 'check score', 'my neynar', 'what is my score', "what's my score", 'score @',
+  // PT
+  'qual meu score', 'qual é meu score', 'qual o score', 'me diz meu score', 'meu score',
 ];
 
-const GAY_KEYWORDS_JP = ['私はゲイですか', 'ゲイですか', 'ゲイ？', 'gei desu ka', 'geidesu ka', 'watashi wa gei', 'watashi wa geidesu', 'ore wa gei', 'boku wa gei'];
-const GAY_KEYWORDS_EN = ['i am gay', 'am i gay', 'are you gay', 'is he gay', 'is she gay'];
-const GAY_KEYWORDS_PT = ['eu sou gay', 'sou gay', 'é gay', 'ele é gay', 'ela é gay'];
+// Gay — individual
+const GAY_KEYWORDS_JP = [
+  '私はゲイですか', 'ゲイですか', 'ゲイ？',
+  'gei desu ka', 'geidesu ka', 'watashi wa gei', 'watashi wa geidesu', 'ore wa gei', 'boku wa gei',
+  'ore wa geidesu', 'boku wa geidesu',
+];
+const GAY_KEYWORDS_EN = [
+  'i am gay', 'am i gay', 'are you gay', 'is he gay', 'is she gay',
+  'i think i am gay', 'i think i\'m gay', 'am i actually gay',
+];
+const GAY_KEYWORDS_PT = [
+  'eu sou gay', 'sou gay', 'é gay', 'ele é gay', 'ela é gay',
+  'sou viado', 'eu sou viado', 'é viado', 'ele é viado', 'ela é viada',
+  'vc é gay', 'você é gay',
+];
 const GAY_KEYWORDS = [...GAY_KEYWORDS_PT, ...GAY_KEYWORDS_EN, ...GAY_KEYWORDS_JP];
+
+// Gay — versus
+const GAY_VERSUS_KEYWORDS = [
+  // PT
+  'quem é mais gay', 'qual é mais gay', 'quem é o mais gay', 'quem é mais viado',
+  'qual dos dois é gay', 'qual é mais viado', 'quem é o mais viado', 'qual dos dois é viado',
+  // EN
+  'who is more gay', "who's more gay", 'whos more gay', 'who is gayer', "who's gayer",
+  'whos gayer', 'which one is gay', 'which is gayer', 'who is the gayest', "who's the gayest",
+  // JP / Rōmaji
+  'どっちがゲイ', 'どちらがゲイ', 'docchi ga gei', 'dochira ga gei',
+];
 
 // Helper: fetch with timeout
 function fetchWithTimeout(url: string, opts: RequestInit, ms = 6000) {
@@ -68,18 +89,80 @@ export async function POST(request: NextRequest) {
     }
 
     // Gay question handler
+    // "Quem é mais gay?" handler
+    const isGayVersus = GAY_VERSUS_KEYWORDS.some(k => castText.includes(k.toLowerCase()));
+    if (isGayVersus) {
+      const mentionedUsers = (originalText.match(/@(\w+(?:\.\w+)*)/g) || [])
+        .filter((m: string) => m.toLowerCase() !== '@vibefid' && m.toLowerCase() !== '@vibefid.base.eth');
+      // Include author if they used "eu"/"me"/"i" as a candidate
+      const selfWords = ['\\beu\\b', '\\beu mesmo\\b', '\\bme or\\b', '\\bor me\\b', 'myself', '\\bi or\\b', '\\bor i\\b'];
+      const authorIsCandidate = selfWords.some(w => new RegExp(w, 'i').test(castText));
+      if (authorIsCandidate) mentionedUsers.unshift(`@${authorUsername}`);
+      const allMentions = [...new Set(mentionedUsers)];
+      if (allMentions.length >= 2) {
+        const chosen = allMentions[Math.floor(Math.random() * allMentions.length)];
+        const username = chosen.substring(1);
+        // Fetch pfp
+        let pfpUrl = 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
+        try {
+          const r = await fetchWithTimeout(`https://api.neynar.com/v2/farcaster/user/by_username?username=${username}`, { headers: { api_key: NEYNAR_API_KEY } });
+          if (r.ok) {
+            const d = await r.json();
+            pfpUrl = d.user?.pfp_url || pfpUrl;
+          }
+        } catch (_) {}
+        const isJP = castText.includes('どっち') || castText.includes('docchi');
+        const replyText = isJP
+          ? `${chosen} の方がゲイです 🏳️‍🌈`
+          : castText.includes('who') || castText.includes('which')
+            ? `${chosen} is gayer 🏳️‍🌈`
+            : `${chosen} é mais gay 🏳️‍🌈`;
+        repliedHashes.add(castHash);
+        await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'api_key': NEYNAR_API_KEY, 'Idempotency-Key': `gayversus-${castHash}` },
+          body: JSON.stringify({ signer_uuid: BOT_SIGNER_UUID, text: replyText, parent: castHash, embeds: [{ url: pfpUrl }] }),
+        });
+        return NextResponse.json({ ok: true, message: 'Gay versus reply sent' });
+      }
+    }
+
     const isGayQuestion = GAY_KEYWORDS.some(k => castText.includes(k.toLowerCase()));
     if (isGayQuestion) {
       const isJP = GAY_KEYWORDS_JP.some(k => castText.includes(k));
       const isEN = GAY_KEYWORDS_EN.some(k => castText.includes(k));
+
+      // Detect if asking about another user (@mention that isn't @vibefid)
+      const gayMentionMatch = originalText.match(/@(\w+(?:\.\w+)*)/g) || [];
+      const gayTarget = gayMentionMatch.find((m: string) =>
+        m.toLowerCase() !== '@vibefid' && m.toLowerCase() !== '@vibefid.base.eth'
+      );
+      const target = gayTarget || null;
+
       const replyText = isJP
-        ? 'はい、あなたはゲイです 🏳️‍🌈'
+        ? `はい、${target ?? 'あなた'}はゲイです 🏳️‍🌈`
         : isEN
-          ? 'Yes, you are gay 🏳️‍🌈'
-          : 'Sim, você é gay 🏳️‍🌈';
+          ? `Yes, ${target ?? 'you'} ${target ? 'is' : 'are'} gay 🏳️‍🌈`
+          : `Sim, ${target ?? 'você'} é gay 🏳️‍🌈`;
+      const jpImages = [
+        'https://m.media-amazon.com/images/I/61eTb-caKiL._UF1000,1000_QL80_.jpg',
+        'https://uploads.spiritfanfiction.com/historias/capas/202111/sanji-x-zoro-23215447-051120211126.png',
+        'https://cdn.polyspeak.ai/speakmaster/poly-sdispatcher/superresolution/images/20250111/38381fd2-b0d5-4c97-9c89-692f1bf3a250.webp',
+      ];
+      const enImages = [
+        'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
+        'https://images3.memedroid.com/images/UPLOADED356/5dd70d2ca502c.jpeg',
+        'https://ih1.redbubble.net/image.5662721872.6818/fposter,small,wall_texture,square_product,600x600.jpg',
+      ];
       const replyImg = isJP
-        ? 'https://m.media-amazon.com/images/I/61eTb-caKiL._UF1000,1000_QL80_.jpg'
-        : 'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg';
+        ? jpImages[Math.floor(Math.random() * jpImages.length)]
+        : isEN
+          ? enImages[Math.floor(Math.random() * enImages.length)]
+          : [
+              'https://ih1.redbubble.net/image.5311218987.4442/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg',
+              'https://images7.memedroid.com/images/UPLOADED347/5ae77b1270483.jpeg',
+              'https://preview.redd.it/eae-voc%C3%AAs-s%C3%A3o-v0-7ap0afaqqxdf1.jpeg?width=640&crop=smart&auto=webp&s=1ad3b8773ed83073187c896214ad9cc9ab3f42bf',
+            ][Math.floor(Math.random() * 3)];
       repliedHashes.add(castHash);
       await fetchWithTimeout('https://api.neynar.com/v2/farcaster/cast', {
         method: 'POST',
